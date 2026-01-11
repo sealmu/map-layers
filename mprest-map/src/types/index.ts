@@ -150,6 +150,7 @@ export interface CesiumMapApi {
 
 export interface LayersPanelProps {
   api: LayersPanelApi;
+  onFilter?: () => void;
 }
 
 // DroneAnimation Hook

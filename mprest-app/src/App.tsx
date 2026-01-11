@@ -16,9 +16,11 @@ import {
   LayersPanel,
   DataConnector,
 } from "@mprest/map";
+import type { LayerConfig } from "@mprest/map";
 
 import DynamicPanel from "./components/DynamicPanel";
 import DynamicRawDataPanel from "./components/DynamicRawDataPanel";
+import FilterModal from "./components/FilterModal";
 
 import type {
   AppContentProps,
@@ -145,6 +147,83 @@ function AppContent({
   const { viewer } = useViewer();
   const layersConfig = useMemo(() => getLayersConfig(), []);
   const [mapApi, setMapApi] = useState<CesiumMapApi | null>(null);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [filterData, setFilterData] = useState<Record<string, { types: Record<string, boolean>; layerType?: string }>>({});
+
+  const handleFilter = () => {
+    if (!mapApi || !viewer) return;
+
+    // Collect filter data from all actual layers being rendered
+    const newFilterData: Record<string, { types: Record<string, boolean>; layerType?: string }> = {};
+
+    // Get all layers from the map API, excluding base/imagery layers
+    const allLayers = mapApi.api.layersPanel.layers.filter((layer: LayerConfig) => {
+      // Exclude base map layers and imagery layers
+      const excludeIds = ['street-map', 'openstreetmap', 'base-layer', 'imagery'];
+      return !excludeIds.includes(layer.id.toLowerCase()) &&
+        !layer.id.includes('imagery') &&
+        !layer.id.includes('base');
+    });
+
+    allLayers.forEach(layer => {
+      // Collect unique renderTypes from actual entities in the viewer
+      const types = new Set<string>();
+
+      // Find the data source for this layer and collect entity types
+      const dataSources = (viewer as ViewerWithConfigs).dataSources;
+      for (let i = 0; i < dataSources.length; i++) {
+
+        const dataSource = dataSources.get(i);
+        // Match data source name/id to layer id
+        const dsName = dataSource.name?.toLowerCase();
+        const layerId = layer.id.toLowerCase();
+        if (dsName === layerId || dsName?.includes(layerId)) {
+          // Extract entity types from this data source using stored properties
+          const entities = dataSource.entities.values;
+          entities.forEach(entity => {
+            // Get rendererType from entity properties
+            const rendererType = entity.properties?.rendererType?.getValue();
+            if (rendererType) {
+              types.add(rendererType);
+            }
+          });
+          break;
+        }
+      }
+
+      // If no types found, use "custom" as fallback
+      if (types.size === 0) {
+        types.add("custom");
+      }
+
+      newFilterData[layer.id] = {
+        types: {},
+        layerType: "custom",
+      };
+
+      types.forEach(type => {
+        newFilterData[layer.id].types[type] = true; // Default to visible
+      });
+    });
+
+    setFilterData(newFilterData);
+    setIsFilterModalOpen(true);
+  };
+
+  const handleFilterChange = (layerName: string, type: string, visible: boolean) => {
+    setFilterData(prev => ({
+      ...prev,
+      [layerName]: {
+        ...prev[layerName],
+        types: {
+          ...prev[layerName]?.types,
+          [type]: visible,
+        },
+      },
+    }));
+    // TODO: Apply the filter to actually hide/show entities based on type
+    console.log(`Layer ${layerName}, type ${type}: ${visible ? 'visible' : 'hidden'}`);
+  };
 
   useDroneAnimation(viewer as ViewerWithConfigs, {
     droneId: "drone2",
@@ -203,11 +282,11 @@ function AppContent({
         <Layer
           id="mixed"
           name="Mixed"
-          isDocked={true}
+          isDocked={false}
           type={RenderTypes.CUSTOM}
           data={extractMixed(data)}
-          isActive={false}
-          isVisible={true}
+          isActive={true}
+          isVisible={false}
           description="Mixed types and custom renderers"
         />
         <Layer
@@ -223,10 +302,10 @@ function AppContent({
         <Layer
           id="dynamic-raw"
           name="dynamic-raw"
-          isDocked={false}
+          isDocked={true}
           type={RenderTypes.CUSTOM}
           data={[]}
-          isActive={true}
+          isActive={false}
           isVisible={true}
           description="Dynamic raw data layer updated externally"
         />
@@ -234,7 +313,14 @@ function AppContent({
 
       <DataConnector dataSource={dataSourceDynamic} config={DataConnectorConfig} />
 
-      {mapApi && <LayersPanel api={mapApi.api.layersPanel} />}
+      {mapApi && <LayersPanel api={mapApi.api.layersPanel} onFilter={handleFilter} />}
+
+      <FilterModal
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        filterData={filterData}
+        onFilterChange={handleFilterChange}
+      />
 
       <div className="dynamic-panels-container">
         <DynamicPanel renderers={renderers} />

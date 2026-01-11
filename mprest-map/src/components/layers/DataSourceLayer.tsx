@@ -94,6 +94,7 @@ const DataSourceLayer = <R extends RendererRegistry>({
           type,
           itemWithRenderer,
           renderers,
+          name.toLocaleLowerCase(),
         );
         if (entityOptions) {
           dataSourceInstance.entities.add(entityOptions);

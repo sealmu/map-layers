@@ -24,7 +24,7 @@ const DynamicPanel = ({ renderers }: DynamicPanelProps) => {
     if (!dataManager) return false;
     try {
       const entities = dataManager.getLayerItems("dynamic");
-      return entities.length > 0;
+      return entities && entities.length > 0;
     } catch {
       return false;
     }
@@ -51,6 +51,8 @@ const DynamicPanel = ({ renderers }: DynamicPanelProps) => {
 
       const entities = dataManager.getLayerItems("dynamic");
       const elapsed = time - startTime;
+
+      if (!entities) return;
 
       entities.forEach((entity) => {
         if (!entity.position) return;

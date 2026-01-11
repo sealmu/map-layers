@@ -11,8 +11,9 @@ import {
   CallbackPositionProperty,
   Cartesian3,
 } from "cesium";
-import type { ViewerWithConfigs, LayerData } from "../../types";
-import { createRenderTypes } from "../../types";
+import type { ViewerWithConfigs, LayerData, RenderTypeFromRegistry } from "@mprest/map";
+import { createRenderTypes } from "@mprest/map";
+import { createEntityFromData } from "@mprest/map";
 
 export class DataManager {
   private viewer: ViewerWithConfigs;
@@ -80,20 +81,31 @@ export class DataManager {
       return null;
     }
 
-    // Create entity options
-    let entityOptions: Entity.ConstructorOptions;
+    // Prepare the type parameter for createEntityFromData
+    let type: string;
+    let itemToUse: LayerData = data;
 
-    if (customRenderer) {
-      // Use custom renderer
-      entityOptions = customRenderer(data);
-    } else {
-      // Use standard renderer
-      const renderer = renderers[rendererType];
-      if (!renderer) {
-        console.warn(`Renderer not found for type: ${rendererType}`);
-        return null;
+    if (rendererType === RenderTypes.CUSTOM) {
+      type = "custom";
+      // For custom type, ensure the item has the customRenderer
+      if (customRenderer) {
+        itemToUse = { ...data, customRenderer };
       }
-      entityOptions = renderer(data);
+    } else {
+      type = rendererType;
+    }
+
+    // Use createEntityFromData to create and enrich the entity options
+    const entityOptions = createEntityFromData(
+      type as RenderTypeFromRegistry<typeof renderers>,
+      itemToUse,
+      renderers,
+      layerId
+    );
+
+    if (!entityOptions) {
+      console.warn(`Failed to create entity options for data item ${data.id} in layer ${layerId}`);
+      return null;
     }
 
     return { entityOptions, rendererType, customRenderer };

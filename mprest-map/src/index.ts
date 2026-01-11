@@ -6,5 +6,6 @@ export { ViewerProvider } from "./context/providers/ViewerProvider";
 export { useViewer } from "./hooks/useViewer";
 export { applyExtractor } from "./helpers/extractors/byPathValue.extractor";
 export { DataManager } from "./helpers/data/DataManager";
+export { createEntityFromData, enrichEntity } from "./components/layers/renderers";
 export * from "./components/layers/renderers";
 export * from "./types";
