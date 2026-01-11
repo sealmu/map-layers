@@ -190,7 +190,8 @@ export interface ViewerWithConfigs extends CesiumViewer {
 
 // DataConnector
 export type DataConnectorConfig = {
-  fetchInterval: number;
+  fetchInterval?: number;
+  fetchIntervals?: Record<string, number>;
 };
 
 export type DataConnectorProps = {

@@ -33,14 +33,27 @@ export function DataConnector({ dataSource, config }: DataConnectorProps) {
   useEffect(() => {
     if (!dataManager) return;
 
-    const interval = setInterval(() => {
-      runDataConnectorLogic();
-    }, config.fetchInterval);
-    
+    const intervals: number[] = [];
+
+    Object.keys(dataSource).forEach((layerName) => {
+      const intervalMs = config.fetchIntervals?.[layerName] || config.fetchInterval || 0;
+      if (intervalMs > 0) {
+        const interval = setInterval(() => {
+          const data = dataSource[layerName];
+          if (Array.isArray(data)) {
+            data.forEach((item) => {
+              dataManager.updateOrInsertDataItem(item, layerName);
+            });
+          }
+        }, intervalMs);
+        intervals.push(interval);
+      }
+    });
+
     return () => {
-      clearInterval(interval);
+      intervals.forEach(clearInterval);
     };
-  }, [dataManager, config.fetchInterval, runDataConnectorLogic]);
+  }, [dataManager, config, dataSource]);
 
   return null;
 }

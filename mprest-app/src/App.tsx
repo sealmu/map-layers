@@ -119,6 +119,12 @@ function DataUpdater(
 })();
 
 
+const DataConnectorConfig = {
+  // fetchInterval: 1000,
+  fetchIntervals: {
+    "dynamic-raw": 1000,
+  },
+};
 
 
 function App() {
@@ -226,7 +232,7 @@ function AppContent({
         />
       </CesiumMap>
 
-      <DataConnector dataSource={dataSourceDynamic} config={{ fetchInterval: 1000 }} />
+      <DataConnector dataSource={dataSourceDynamic} config={DataConnectorConfig} />
 
       {mapApi && <LayersPanel api={mapApi.api.layersPanel} />}
 
