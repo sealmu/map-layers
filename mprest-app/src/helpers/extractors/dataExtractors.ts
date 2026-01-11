@@ -1,0 +1,20 @@
+import type { LayerData } from "@mprest/map";
+import { extractByView } from "./byView.extractor";
+export {
+  extractByPathValue,
+  resolveExtractor,
+  applyExtractor,
+} from "./byPathValue.extractor";
+
+export const extractPoints = <T extends LayerData>(data: T[]): T[] =>
+  extractByView(data, "points");
+export const extractPolygons = <T extends LayerData>(data: T[]): T[] =>
+  extractByView(data, "polygons");
+export const extractPolylines = <T extends LayerData>(data: T[]): T[] =>
+  extractByView(data, "polylines");
+export const extractLabels = <T extends LayerData>(data: T[]): T[] =>
+  extractByView(data, "labels");
+export const extractDrones = <T extends LayerData>(data: T[]): T[] =>
+  extractByView(data, "drones");
+export const extractMixed = <T extends LayerData>(data: T[]): T[] =>
+  extractByView(data, "mixed");

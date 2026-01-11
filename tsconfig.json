@@ -1,0 +1,7 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./mprest-app" },
+    { "path": "./mprest-map" }
+  ]
+}

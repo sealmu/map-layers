@@ -1,0 +1,15 @@
+{
+  "name": "mprest-workspace",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": [
+    "mprest-map",
+    "mprest-app"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace mprest-app",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "test": "npm test --workspaces"
+  }
+}
