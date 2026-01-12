@@ -2,7 +2,7 @@ import type { LayersPanelProps } from "../../../types";
 import { useState } from "react";
 import LayerCard from "../../layers/LayerCard";
 
-const LayersPanel = ({ api, onFilter }: LayersPanelProps) => {
+const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
   const {
     layers,
     layerStates,
@@ -63,6 +63,14 @@ const LayersPanel = ({ api, onFilter }: LayersPanelProps) => {
               onClick={onFilter}
             >
               Filter
+            </button>
+          )}
+          {onSearch && (
+            <button
+              className="bulk-button"
+              onClick={onSearch}
+            >
+              Search
             </button>
           )}
           <button

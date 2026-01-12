@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
+import { collectLayerData } from "../helpers/collectLayerData";
 import type { LayerConfig, ViewerWithConfigs } from "../types";
 
 export type FilterData = Record<
@@ -8,6 +9,7 @@ export type FilterData = Record<
     layerType?: string;
     hasDataSource?: boolean;
     isVisible?: boolean;
+    displayName: string;
   }
 >;
 
@@ -50,69 +52,22 @@ export const useFilterManager = () => {
 
       setViewerRef(viewer);
 
-      // Collect filter data from all actual layers being rendered
+      const layerData = collectLayerData(layers, viewer);
+
+      // Create filter data from layer data
       const newFilterData: FilterData = {};
-
-      // Get all layers from the map API, excluding base/imagery layers
-      const allLayers = layers.filter((layer: LayerConfig) => {
-        // Exclude base map layers and imagery layers
-        const excludeIds = [
-          "street-map",
-          "openstreetmap",
-          "base-layer",
-          "imagery",
-        ];
-        return (
-          !excludeIds.includes(layer.id.toLowerCase()) &&
-          !layer.id.includes("imagery") &&
-          !layer.id.includes("base")
-        );
-      });
-
-      allLayers.forEach((layer) => {
-        // Collect unique renderTypes from actual entities in the viewer
-        const types = new Set<string>();
-        let hasDataSource = false;
-        const isVisible = layer.isVisible !== false; // Default to true if not specified
-
-        // Find the data source for this layer and collect entity types
-        const dataSources = viewer.dataSources;
-        for (let i = 0; i < dataSources.length; i++) {
-          const dataSource = dataSources.get(i);
-          // Match data source name/id to layer id
-          const dsName = dataSource.name?.toLowerCase();
-          const layerId = layer.id.toLowerCase();
-          if (dsName === layerId) {
-            hasDataSource = true;
-            // Extract entity types from this data source using stored properties
-            const entities = dataSource.entities.values;
-            entities.forEach((entity) => {
-              // Get rendererType from entity properties
-              const rendererType = entity.properties?.rendererType?.getValue();
-              if (rendererType) {
-                if (rendererType != layerId) types.add(rendererType);
-              }
-            });
-            break;
-          }
-        }
-
-        // If no types found, use "custom" as fallback
-        if (types.size === 0) {
-          types.add(layer.id.toLowerCase());
-        }
-
-        newFilterData[layer.id] = {
+      Object.entries(layerData).forEach(([layerId, data]) => {
+        newFilterData[layerId] = {
           types: {},
-          hasDataSource,
-          isVisible,
-          // layerType: "custom",
+          hasDataSource: data.hasDataSource,
+          isVisible: data.isVisible,
+          displayName: data.displayName,
         };
 
         // Preserve existing filter state or default to visible
-        types.forEach((type) => {
-          const existingState = filterData[layer.id]?.types[type];
-          newFilterData[layer.id].types[type] =
+        data.types.forEach((type) => {
+          const existingState = filterData[layerId]?.types[type];
+          newFilterData[layerId].types[type] =
             existingState !== undefined ? existingState : true;
         });
       });
@@ -127,7 +82,7 @@ export const useFilterManager = () => {
   );
 
   const handleFilterChange = useCallback(
-    (layerName: string, type: string, visible: boolean) => {
+    (layerName: string, displayName: string, type: string, visible: boolean) => {
       setFilterData((prev) => ({
         ...prev,
         [layerName]: {
@@ -146,8 +101,7 @@ export const useFilterManager = () => {
           const dataSource = dataSources.get(i);
           // Match data source name/id to layer id
           const dsName = dataSource.name?.toLowerCase();
-          const layerId = layerName.toLowerCase();
-          if (dsName === layerId) {
+          if (dsName === (displayName || layerName).toLowerCase()) {
             // Update entity visibility based on type
             const entities = dataSource.entities.values;
             entities.forEach((entity) => {
@@ -163,10 +117,10 @@ export const useFilterManager = () => {
       }
 
       console.log(
-        `Layer ${layerName}, type ${type}: ${visible ? "visible" : "hidden"}`,
+        `Layer ${displayName}, type ${type}: ${visible ? "visible" : "hidden"}`,
       );
     },
-    [viewerRef],
+    [viewerRef, filterData],
   );
 
   const openFilterModal = useCallback(() => {

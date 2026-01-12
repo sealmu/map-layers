@@ -16,6 +16,7 @@ import {
   applyExtractor,
   LayersPanel,
   FiltersPanel,
+  SearchPanel,
   DataConnector,
 } from "@mprest/map";
 
@@ -169,6 +170,11 @@ function AppContent({
     mapApi.api.filtersPanel.collectFilterData(mapApi.api.layersPanel.layers, viewer as ViewerWithConfigs);
   };
 
+  const handleSearch = () => {
+    if (!mapApi || !viewer) return;
+    mapApi.api.searchPanel.collectSearchData(mapApi.api.layersPanel.layers, viewer as ViewerWithConfigs);
+  };
+
   useDroneAnimation(viewer as ViewerWithConfigs, {
     droneId: "drone2",
     centerLon: -104.99,
@@ -259,9 +265,11 @@ function AppContent({
 
       <DataConnector dataSource={dataSourceDynamic} config={DataConnectorConfig} />
 
-      {mapApi && <LayersPanel api={mapApi.api.layersPanel} onFilter={handleFilter} />}
+      {mapApi && <LayersPanel api={mapApi.api.layersPanel} onFilter={handleFilter} onSearch={handleSearch} />}
 
       {mapApi && <FiltersPanel api={mapApi.api.filtersPanel} />}
+
+      {mapApi && <SearchPanel api={mapApi.api.searchPanel} />}
 
       <div className="dynamic-panels-container">
         <DynamicPanel renderers={renderers} />

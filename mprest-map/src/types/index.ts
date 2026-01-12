@@ -157,6 +157,7 @@ export interface FiltersPanelApi {
       layerType?: string;
       hasDataSource?: boolean;
       isVisible?: boolean;
+      displayName: string;
     }
   >;
   isFilterModalOpen: boolean;
@@ -166,6 +167,7 @@ export interface FiltersPanelApi {
   ) => void;
   handleFilterChange: (
     layerName: string,
+    displayName: string,
     type: string,
     visible: boolean,
   ) => void;
@@ -174,20 +176,58 @@ export interface FiltersPanelApi {
   getFilters: () => (renderType: string, layerName: string) => boolean;
 }
 
+export interface SearchPanelApi {
+  searchData: Record<
+    string,
+    {
+      enabled: boolean;
+      hasDataSource?: boolean;
+      isVisible?: boolean;
+      entities: Array<{
+        id: string;
+        name: string;
+        layerId: string;
+      }>;
+      displayName: string;
+    }
+  >;
+  isSearchModalOpen: boolean;
+  searchResults: Array<{
+    id: string;
+    name: string;
+    layerId: string;
+  }>;
+  searchQuery: string;
+  collectSearchData: (
+    layers: LayerConfig[],
+    viewer: ViewerWithConfigs | null,
+  ) => void;
+  handleLayerToggle: (layerName: string, enabled: boolean) => void;
+  performSearch: (query: string) => void;
+  openSearchModal: () => void;
+  closeSearchModal: () => void;
+}
+
 export interface CesiumMapApi {
   api: {
     layersPanel: LayersPanelApi;
     filtersPanel: FiltersPanelApi;
+    searchPanel: SearchPanelApi;
   };
 }
 
 export interface LayersPanelProps {
   api: LayersPanelApi;
   onFilter?: () => void;
+  onSearch?: () => void;
 }
 
 export interface FiltersPanelProps {
   api: FiltersPanelApi;
+}
+
+export interface SearchPanelProps {
+  api: SearchPanelApi;
 }
 
 // DroneAnimation Hook

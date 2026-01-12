@@ -3,8 +3,8 @@
 interface FilterModalProps {
   isOpen: boolean;
   onClose: () => void;
-  filterData: Record<string, { types: Record<string, boolean>; layerType?: string; hasDataSource?: boolean; isVisible?: boolean }>;
-  onFilterChange: (layerName: string, type: string, visible: boolean) => void;
+  filterData: Record<string, { types: Record<string, boolean>; layerType?: string; hasDataSource?: boolean; isVisible?: boolean; displayName: string }>;
+  onFilterChange: (layerName: string, displayName: string, type: string, visible: boolean) => void;
 }
 
 const FilterModal = ({ isOpen, onClose, filterData, onFilterChange }: FilterModalProps) => {
@@ -40,7 +40,7 @@ const FilterModal = ({ isOpen, onClose, filterData, onFilterChange }: FilterModa
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ padding: '20px', paddingBottom: '0' }}>
-          <h3 style={{ marginTop: 0, marginBottom: '20px' }}>Filter Layers by Type</h3>
+          <h3 style={{ marginTop: 0, marginBottom: '20px' }}>Filter Layers</h3>
         </div>
 
         <div style={{
@@ -51,18 +51,18 @@ const FilterModal = ({ isOpen, onClose, filterData, onFilterChange }: FilterModa
         }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '20px' }}>
             {Object.entries(filterData)
-              .filter(([, layerData]) => Object.keys(layerData.types).length > 0 || !layerData.hasDataSource)
+              .filter(() => true)
               .sort(([, a], [, b]) => {
-                const aEnabled = (a.hasDataSource !== false) && (a.isVisible !== false);
-                const bEnabled = (b.hasDataSource !== false) && (b.isVisible !== false);
+                const aEnabled = (a.hasDataSource !== false) && (a.isVisible !== false) && Object.keys(a.types).length > 0;
+                const bEnabled = (b.hasDataSource !== false) && (b.isVisible !== false) && Object.keys(b.types).length > 0;
                 // Enabled layers first (true comes before false in sort)
                 return Number(bEnabled) - Number(aEnabled);
               })
               .map(([layerName, layerData]) => {
-                const { types, hasDataSource = true, isVisible = true } = layerData;
+                const { types, hasDataSource = true, isVisible = true, displayName } = layerData;
                 const allTypes = Object.keys(types);
                 const allVisible = allTypes.every(type => types[type]);
-                const isDisabled = !hasDataSource || !isVisible;
+                const isDisabled = !hasDataSource || !isVisible || Object.keys(types).length === 0;
 
                 return (
                   <div
@@ -117,7 +117,7 @@ const FilterModal = ({ isOpen, onClose, filterData, onFilterChange }: FilterModa
                         fontSize: '14px',
                         paddingTop: '4px',
                       }}>
-                        {layerName}
+                        {displayName}
                       </div>
 
                       <div style={{
@@ -146,7 +146,7 @@ const FilterModal = ({ isOpen, onClose, filterData, onFilterChange }: FilterModa
                                 onClick={() => {
                                   const newState = !allVisible;
                                   allTypes.forEach(type => {
-                                    onFilterChange(layerName, type, newState);
+                                    onFilterChange(layerName, displayName, type, newState);
                                   });
                                 }}
                                 style={{
@@ -187,7 +187,7 @@ const FilterModal = ({ isOpen, onClose, filterData, onFilterChange }: FilterModa
                               <button
                                 key={type}
                                 disabled={isDisabled}
-                                onClick={() => onFilterChange(layerName, type, !isVisible)}
+                                onClick={() => onFilterChange(layerName, displayName, type, !isVisible)}
                                 style={{
                                   padding: '6px 12px',
                                   border: '1px solid #2196f3',

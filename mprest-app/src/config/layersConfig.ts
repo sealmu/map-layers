@@ -7,7 +7,7 @@ const config = [
     name: "Routes",
     type: "polylines",
     extractor: extractPolylines,
-    isActive: false,
+    isActive: true,
     isVisible: true,
     description: "Line routes connecting locations",
   },

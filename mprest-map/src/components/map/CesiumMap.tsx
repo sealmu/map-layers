@@ -25,6 +25,7 @@ import type {
 import { useViewer } from "../../hooks/useViewer";
 import { useLayerManager } from "../../hooks/useLayerManager";
 import { useFilterManager } from "../../hooks/useFilterManager";
+import { useSearchManager } from "../../hooks/useSearchManager";
 
 const CesiumMap = <R extends RendererRegistry>({
   children,
@@ -71,6 +72,7 @@ const CesiumMap = <R extends RendererRegistry>({
 
   const layersPanelApi = useLayerManager(layers);
   const filtersPanelApi = useFilterManager();
+  const searchPanelApi = useSearchManager();
 
   // Initialize Cesium Viewer
   useEffect(() => {
@@ -158,14 +160,15 @@ const CesiumMap = <R extends RendererRegistry>({
   }, [layersPanelApi.layerStates]);
 
   const api = useMemo<CesiumMapApi | null>(() => {
-    if (!layersPanelApi || !filtersPanelApi) return null;
+    if (!layersPanelApi || !filtersPanelApi || !searchPanelApi) return null;
     return {
       api: {
         layersPanel: layersPanelApi,
         filtersPanel: filtersPanelApi,
+        searchPanel: searchPanelApi,
       },
     };
-  }, [layersPanelApi, filtersPanelApi]);
+  }, [layersPanelApi, filtersPanelApi, searchPanelApi]);
 
   const prevApiRef = useRef<CesiumMapApi | null>(null);
 
