@@ -281,9 +281,14 @@ function AppContent({
         isDocked={dynamicPanelsDocked}
         onToggle={setDynamicPanelsDocked}
       >
-        <div className="dynamic-panels-container">
-          <DynamicPanel renderers={renderers} />
-          <DynamicRawDataPanel />
+        <div className="dynamic-panels-container" style={{ marginLeft: "10px", marginTop: "10px" }}>
+          <div style={{ marginRight: "20px" }}>
+            <DynamicPanel renderers={renderers} />
+          </div>
+          <div style={{ marginRight: "20px" }}>
+            <DynamicRawDataPanel />
+          </div>
+
         </div>
       </Expander>
 
