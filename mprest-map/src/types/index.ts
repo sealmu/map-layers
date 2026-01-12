@@ -161,10 +161,6 @@ export interface FiltersPanelApi {
     }
   >;
   isFilterModalOpen: boolean;
-  collectFilterData: (
-    layers: LayerConfig[],
-    viewer: ViewerWithConfigs | null,
-  ) => void;
   handleFilterChange: (
     layerName: string,
     displayName: string,
@@ -199,10 +195,6 @@ export interface SearchPanelApi {
     renderType?: string;
   }>;
   searchQuery: string;
-  collectSearchData: (
-    layers: LayerConfig[],
-    viewer: ViewerWithConfigs | null,
-  ) => void;
   handleLayerToggle: (layerName: string, enabled: boolean) => void;
   performSearch: (query: string) => void;
   openSearchModal: () => void;

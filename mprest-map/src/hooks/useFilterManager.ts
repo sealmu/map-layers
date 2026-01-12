@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { collectLayerData } from "../helpers/collectLayerData";
-import type { LayerConfig, ViewerWithConfigs } from "../types";
+import { useViewer } from "./useViewer";
+import type { LayerConfig } from "../types";
 
 export type FilterData = Record<
   string,
@@ -13,73 +14,10 @@ export type FilterData = Record<
   }
 >;
 
-export const useFilterManager = () => {
+export const useFilterManager = (layers?: LayerConfig[]) => {
   const [filterData, setFilterData] = useState<FilterData>({});
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const [viewerRef, setViewerRef] = useState<ViewerWithConfigs | null>(null);
-
-  const reapplyFilters = useCallback(
-    (currentFilterData: FilterData) => {
-      if (!viewerRef) return;
-
-      // Apply current filter state to all entities
-      Object.entries(currentFilterData).forEach(([layerName, layerData]) => {
-        const dataSources = viewerRef.dataSources;
-        for (let i = 0; i < dataSources.length; i++) {
-          const dataSource = dataSources.get(i);
-          const dsName = dataSource.name?.toLowerCase();
-          const layerId = layerName.toLowerCase();
-
-          if (dsName === layerId) {
-            const entities = dataSource.entities.values;
-            entities.forEach((entity) => {
-              const rendererType = entity.properties?.rendererType?.getValue();
-              if (rendererType && layerData.types[rendererType] !== undefined) {
-                entity.show = layerData.types[rendererType];
-              }
-            });
-            break;
-          }
-        }
-      });
-    },
-    [viewerRef],
-  );
-
-  const collectFilterData = useCallback(
-    (layers: LayerConfig[], viewer: ViewerWithConfigs | null) => {
-      if (!viewer) return;
-
-      setViewerRef(viewer);
-
-      const layerData = collectLayerData(layers, viewer);
-
-      // Create filter data from layer data
-      const newFilterData: FilterData = {};
-      Object.entries(layerData).forEach(([layerId, data]) => {
-        newFilterData[layerId] = {
-          types: {},
-          hasDataSource: data.hasDataSource,
-          isVisible: data.isVisible,
-          displayName: data.displayName,
-        };
-
-        // Preserve existing filter state or default to visible
-        data.types.forEach((type) => {
-          const existingState = filterData[layerId]?.types[type];
-          newFilterData[layerId].types[type] =
-            existingState !== undefined ? existingState : true;
-        });
-      });
-
-      setFilterData(newFilterData);
-      setIsFilterModalOpen(true);
-
-      // Reapply current filter state to entities
-      reapplyFilters(newFilterData);
-    },
-    [viewerRef, filterData, reapplyFilters],
-  );
+  const { viewer } = useViewer();
 
   const handleFilterChange = useCallback(
     (layerName: string, displayName: string, type: string, visible: boolean) => {
@@ -95,8 +33,8 @@ export const useFilterManager = () => {
       }));
 
       // Apply the filter to actually hide/show entities based on type
-      if (viewerRef) {
-        const dataSources = viewerRef.dataSources;
+      if (viewer) {
+        const dataSources = viewer.dataSources;
         for (let i = 0; i < dataSources.length; i++) {
           const dataSource = dataSources.get(i);
           // Match data source name/id to layer id
@@ -120,12 +58,64 @@ export const useFilterManager = () => {
         `Layer ${displayName}, type ${type}: ${visible ? "visible" : "hidden"}`,
       );
     },
-    [viewerRef, filterData],
+    [viewer],
   );
 
+  const collectFilterData = useCallback(() => {
+    if (!layers || !viewer) return {};
+
+    const layerData = collectLayerData(layers, viewer);
+
+    // Create filter data from layer data
+    const newFilterData: FilterData = {};
+    Object.entries(layerData).forEach(([layerId, data]) => {
+      newFilterData[layerId] = {
+        types: {},
+        hasDataSource: data.hasDataSource,
+        isVisible: data.isVisible,
+        displayName: data.displayName,
+      };
+
+      // Read current entity visibility state from the map
+      data.types.forEach((type) => {
+        // Find the data source for this layer
+        const dataSources = viewer.dataSources;
+        let typeVisible = true; // Default to visible
+
+        for (let i = 0; i < dataSources.length; i++) {
+          const dataSource = dataSources.get(i);
+          const dsName = dataSource.name?.toLowerCase();
+          const layerIdLower = layerId.toLowerCase();
+
+          if (dsName === layerIdLower) {
+            // Check current visibility of entities of this type
+            const entities = dataSource.entities.values;
+            const typeEntities = entities.filter((entity) => {
+              const rendererType = entity.properties?.rendererType?.getValue();
+              return rendererType === type;
+            });
+
+            // If any entities of this type exist, use the visibility of the first one
+            // (assuming all entities of the same type have the same visibility)
+            if (typeEntities.length > 0) {
+              typeVisible = typeEntities[0].show;
+            }
+            break;
+          }
+        }
+
+        newFilterData[layerId].types[type] = typeVisible;
+      });
+    });
+
+    return newFilterData;
+  }, [layers, viewer]);
+
   const openFilterModal = useCallback(() => {
+    const newFilterData = collectFilterData();
+    setFilterData(newFilterData);
     setIsFilterModalOpen(true);
-  }, []);
+  }, [collectFilterData]);
 
   const closeFilterModal = useCallback(() => {
     setIsFilterModalOpen(false);
@@ -135,7 +125,6 @@ export const useFilterManager = () => {
     () => ({
       filterData,
       isFilterModalOpen,
-      collectFilterData,
       handleFilterChange,
       openFilterModal,
       closeFilterModal,
@@ -143,7 +132,6 @@ export const useFilterManager = () => {
     [
       filterData,
       isFilterModalOpen,
-      collectFilterData,
       handleFilterChange,
       openFilterModal,
       closeFilterModal,

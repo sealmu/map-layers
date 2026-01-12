@@ -166,13 +166,13 @@ function AppContent({
   // }, []);
 
   const handleFilter = () => {
-    if (!mapApi || !viewer) return;
-    mapApi.api.filtersPanel.collectFilterData(mapApi.api.layersPanel.layers, viewer as ViewerWithConfigs);
+    if (!mapApi) return;
+    mapApi.api.filtersPanel.openFilterModal();
   };
 
   const handleSearch = () => {
-    if (!mapApi || !viewer) return;
-    mapApi.api.searchPanel.collectSearchData(mapApi.api.layersPanel.layers, viewer as ViewerWithConfigs);
+    if (!mapApi) return;
+    mapApi.api.searchPanel.openSearchModal();
   };
 
   useDroneAnimation(viewer as ViewerWithConfigs, {

@@ -1,4 +1,5 @@
-import type { LayerConfig, ViewerWithConfigs } from "../types";
+import type { LayerConfig } from "../types";
+import { Viewer as CesiumViewer } from "cesium";
 
 export interface LayerData {
     hasDataSource: boolean;
@@ -15,7 +16,7 @@ export interface LayerData {
 
 export const collectLayerData = (
     layers: LayerConfig[],
-    viewer: ViewerWithConfigs | null,
+    viewer: CesiumViewer | null,
 ): Record<string, LayerData> => {
     if (!viewer) return {};
 

@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { collectLayerData, type LayerData } from "../helpers/collectLayerData";
-import type { LayerConfig, ViewerWithConfigs } from "../types";
+import { useViewer } from "./useViewer";
+import type { LayerConfig } from "../types";
 import type { FilterData } from "./useFilterManager";
 
 export type SearchData = Record<string, LayerData & { enabled: boolean }>;
@@ -12,15 +13,16 @@ export type SearchResult = {
     renderType?: string;
 };
 
-export const useSearchManager = (filterData?: FilterData) => {
+export const useSearchManager = (filterData?: FilterData, layers?: LayerConfig[]) => {
     const [searchData, setSearchData] = useState<SearchData>({});
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
+    const { viewer } = useViewer();
 
     const collectSearchData = useCallback(
-        (layers: LayerConfig[], viewer: ViewerWithConfigs | null) => {
-            if (!viewer) return;
+        (layers: LayerConfig[]) => {
+            if (!viewer) return {};
 
             const layerData = collectLayerData(layers, viewer);
 
@@ -37,10 +39,9 @@ export const useSearchManager = (filterData?: FilterData) => {
                 };
             });
 
-            setSearchData(newSearchData);
-            setIsSearchModalOpen(true);
+            return newSearchData;
         },
-        [filterData],
+        [viewer, filterData],
     );
 
     const handleLayerToggle = useCallback((layerName: string, enabled: boolean) => {
@@ -84,8 +85,11 @@ export const useSearchManager = (filterData?: FilterData) => {
     );
 
     const openSearchModal = useCallback(() => {
+        if (!layers) return;
+        const newSearchData = collectSearchData(layers);
+        setSearchData(newSearchData);
         setIsSearchModalOpen(true);
-    }, []);
+    }, [collectSearchData, layers]);
 
     const closeSearchModal = useCallback(() => {
         setIsSearchModalOpen(false);
@@ -99,7 +103,6 @@ export const useSearchManager = (filterData?: FilterData) => {
             isSearchModalOpen,
             searchResults,
             searchQuery,
-            collectSearchData,
             handleLayerToggle,
             performSearch,
             openSearchModal,
@@ -110,7 +113,6 @@ export const useSearchManager = (filterData?: FilterData) => {
             isSearchModalOpen,
             searchResults,
             searchQuery,
-            collectSearchData,
             handleLayerToggle,
             performSearch,
             openSearchModal,
