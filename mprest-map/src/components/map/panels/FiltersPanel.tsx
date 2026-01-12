@@ -1,5 +1,4 @@
-import FilterModal from "./FilterModal";
-import type { FiltersPanelProps } from "../../../types";
+import { FilterModal, type FiltersPanelProps } from "@mprest/map";
 
 const FiltersPanel = ({ api }: FiltersPanelProps) => {
   const {

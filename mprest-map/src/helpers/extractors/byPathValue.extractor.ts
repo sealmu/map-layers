@@ -1,4 +1,4 @@
-import type { LayerData, ExtractorSpec } from "../../types";
+import type { LayerData, ExtractorSpec } from "@mprest/map";
 
 type CacheKey = string;
 

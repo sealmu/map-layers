@@ -1,6 +1,6 @@
-import type { LayersPanelProps } from "../../../types";
 import { useState } from "react";
 import LayerCard from "../../layers/LayerCard";
+import type { LayersPanelProps } from "@mprest/map";
 
 const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
   const {

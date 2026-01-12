@@ -1,4 +1,4 @@
-import type { LayerConfig, CollectedLayerData } from "../types";
+import type { LayerConfig, CollectedLayerData } from "@mprest/map";
 import { Viewer as CesiumViewer } from "cesium";
 
 export const collectLayerData = (

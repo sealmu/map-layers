@@ -1,4 +1,4 @@
-import type { LayerConfig } from "../../types";
+import type { LayerConfig } from "@mprest/map";
 
 interface LayerCardProps {
   layer: LayerConfig;

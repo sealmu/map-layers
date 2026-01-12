@@ -1,5 +1,4 @@
-import SearchModal from "./SearchModal";
-import type { SearchPanelProps } from "../../../types";
+import { SearchModal, type SearchPanelProps } from "@mprest/map";
 
 const SearchPanel = ({ api }: SearchPanelProps) => {
     const {

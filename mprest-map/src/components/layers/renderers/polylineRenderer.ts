@@ -1,5 +1,5 @@
 import { Entity } from "cesium";
-import type { LayerData } from "../../../types";
+import type { LayerData } from "@mprest/map";
 
 export function createPolylineEntity(
   item: LayerData,

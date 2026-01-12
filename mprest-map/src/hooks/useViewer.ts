@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { ViewerContext } from "../context/viewerProvider";
-import type { ViewerContextType } from "../types";
+import type { ViewerContextType } from "@mprest/map";
 
 export function useViewer(): ViewerContextType {
   const context = useContext(ViewerContext);

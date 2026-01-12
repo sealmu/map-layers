@@ -1,5 +1,5 @@
 import { Color, Entity } from "cesium";
-import type { LayerData } from "../../../types";
+import type { LayerData } from "@mprest/map";
 
 export function createPointEntity(item: LayerData): Entity.ConstructorOptions {
   return {

@@ -1,7 +1,5 @@
 import { useMemo, useEffect, useCallback } from "react";
-import { DataManager } from "../../helpers/data/DataManager";
-import { useViewer } from "../../hooks/useViewer";
-import type { ViewerWithConfigs, DataConnectorProps } from "../../types";
+import { DataManager, useViewer, type ViewerWithConfigs, type DataConnectorProps } from "@mprest/map";
 
 export function DataConnector({ dataSource, config }: DataConnectorProps) {
   const { viewer } = useViewer();
