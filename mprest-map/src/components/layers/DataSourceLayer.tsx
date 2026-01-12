@@ -116,10 +116,10 @@ const DataSourceLayer = <R extends RendererRegistry>({
           const entity = dataSourceInstance.entities.add(entityOptions);
 
           // Apply current filter state to the new entity
-          if (entity && viewer.filters?.getFilters) {
+          if (entity && viewer.filters) {
             const rendererType = entity.properties?.rendererType?.getValue();
             if (rendererType) {
-              entity.show = viewer.filters.getFilters()(rendererType, id);
+              entity.show = viewer.filters.filterData[id]?.types[rendererType] ?? true;
             }
           }
         }

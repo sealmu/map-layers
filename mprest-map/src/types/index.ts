@@ -173,7 +173,6 @@ export interface FiltersPanelApi {
   ) => void;
   openFilterModal: () => void;
   closeFilterModal: () => void;
-  getFilters: () => (renderType: string, layerName: string) => boolean;
 }
 
 export interface SearchPanelApi {
@@ -187,6 +186,7 @@ export interface SearchPanelApi {
         id: string;
         name: string;
         layerId: string;
+        renderType?: string;
       }>;
       displayName: string;
     }
@@ -196,6 +196,7 @@ export interface SearchPanelApi {
     id: string;
     name: string;
     layerId: string;
+    renderType?: string;
   }>;
   searchQuery: string;
   collectSearchData: (
@@ -274,9 +275,7 @@ export interface ViewerWithConfigs<
   renderers: {
     getRenderers: () => R;
   };
-  filters: {
-    getFilters: () => (renderType: string, layerName: string) => boolean;
-  };
+  filters: FiltersPanelApi;
   mapref: {
     onEntityCreating?: (options: Entity.ConstructorOptions) => void;
     onEntityCreate?: (

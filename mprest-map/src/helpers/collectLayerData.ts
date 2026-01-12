@@ -8,6 +8,7 @@ export interface LayerData {
         id: string;
         name: string;
         layerId: string;
+        renderType?: string;
     }>;
     types: Set<string>;
 }
@@ -39,7 +40,7 @@ export const collectLayerData = (
     allLayers.forEach((layer) => {
         // Collect unique renderTypes from actual entities in the viewer
         const types = new Set<string>();
-        const entities: Array<{ id: string; name: string; layerId: string }> = [];
+        const entities: Array<{ id: string; name: string; layerId: string; renderType?: string }> = [];
         let hasDataSource = false;
         const isVisible = layer.isVisible !== false; // Default to true if not specified
 
@@ -65,6 +66,7 @@ export const collectLayerData = (
                         id: entity.id,
                         name: entity.name || entity.id,
                         layerId: layer.id,
+                        renderType: rendererType,
                     });
                 });
                 break;

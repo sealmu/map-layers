@@ -49,10 +49,7 @@ export class DataManager {
 
     // Apply current filter state to the new entity
     if (entity) {
-      entity.show = this.viewer.filters.getFilters()(
-        finalRenderType,
-        layerName,
-      );
+      entity.show = this.viewer.filters.filterData[layerName]?.types[finalRenderType] ?? true;
     }
 
     return entity;

@@ -13,6 +13,7 @@ interface SearchModalProps {
                 id: string;
                 name: string;
                 layerId: string;
+                renderType?: string;
             }>;
             displayName: string;
         }
@@ -21,6 +22,7 @@ interface SearchModalProps {
         id: string;
         name: string;
         layerId: string;
+        renderType?: string;
     }>;
     searchQuery: string;
     onLayerToggle: (layerName: string, enabled: boolean) => void;

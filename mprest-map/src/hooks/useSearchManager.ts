@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { collectLayerData, type LayerData } from "../helpers/collectLayerData";
 import type { LayerConfig, ViewerWithConfigs } from "../types";
+import type { FilterData } from "./useFilterManager";
 
 export type SearchData = Record<string, LayerData & { enabled: boolean }>;
 
@@ -8,9 +9,10 @@ export type SearchResult = {
     id: string;
     name: string;
     layerId: string;
+    renderType?: string;
 };
 
-export const useSearchManager = () => {
+export const useSearchManager = (filterData?: FilterData) => {
     const [searchData, setSearchData] = useState<SearchData>({});
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -24,16 +26,21 @@ export const useSearchManager = () => {
 
             const newSearchData: SearchData = {};
             Object.entries(layerData).forEach(([layerId, data]) => {
+                // Check if any types are enabled in the filter
+                const hasEnabledTypes = Array.from(data.types).some((type: string) =>
+                    !filterData || (filterData[layerId]?.types[type] ?? true)
+                );
+
                 newSearchData[layerId] = {
                     ...data,
-                    enabled: data.hasDataSource && data.isVisible,
+                    enabled: data.hasDataSource && data.isVisible && hasEnabledTypes,
                 };
             });
 
             setSearchData(newSearchData);
             setIsSearchModalOpen(true);
         },
-        [],
+        [filterData],
     );
 
     const handleLayerToggle = useCallback((layerName: string, enabled: boolean) => {
@@ -58,9 +65,13 @@ export const useSearchManager = () => {
             Object.entries(searchData).forEach(([, layerData]) => {
                 if (layerData.enabled) {
                     layerData.entities.forEach((entity) => {
-                        if (
-                            entity.name.toLowerCase().includes(query.toLowerCase()) ||
-                            entity.id.toLowerCase().includes(query.toLowerCase())
+                        // Check if this entity's type is enabled in the filter
+                        const entityType = entity.renderType;
+                        const isTypeEnabled = !filterData || !entityType || (filterData[entity.layerId]?.types[entityType] ?? true);
+
+                        if (isTypeEnabled &&
+                            (entity.name.toLowerCase().includes(query.toLowerCase()) ||
+                                entity.id.toLowerCase().includes(query.toLowerCase()))
                         ) {
                             results.push(entity);
                         }
@@ -69,7 +80,7 @@ export const useSearchManager = () => {
             });
             setSearchResults(results);
         },
-        [searchData],
+        [searchData, filterData],
     );
 
     const openSearchModal = useCallback(() => {

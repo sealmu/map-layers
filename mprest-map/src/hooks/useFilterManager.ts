@@ -131,12 +131,6 @@ export const useFilterManager = () => {
     setIsFilterModalOpen(false);
   }, []);
 
-  const getFilters = useCallback(() => {
-    return (renderType: string, layerName: string): boolean => {
-      return filterData[layerName]?.types[renderType] ?? true;
-    };
-  }, [filterData]);
-
   const filtersPanelApi = useMemo(
     () => ({
       filterData,
@@ -145,7 +139,6 @@ export const useFilterManager = () => {
       handleFilterChange,
       openFilterModal,
       closeFilterModal,
-      getFilters,
     }),
     [
       filterData,
@@ -154,7 +147,6 @@ export const useFilterManager = () => {
       handleFilterChange,
       openFilterModal,
       closeFilterModal,
-      getFilters,
     ],
   );
 
