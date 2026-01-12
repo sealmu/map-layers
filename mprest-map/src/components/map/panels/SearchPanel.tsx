@@ -10,7 +10,7 @@ const SearchPanel = ({ api }: SearchPanelProps) => {
         handleLayerToggle,
         performSearch,
         closeSearchModal,
-    } = api;
+    } = api.searchPanel;
 
     return (
         <>
@@ -22,6 +22,7 @@ const SearchPanel = ({ api }: SearchPanelProps) => {
                 searchQuery={searchQuery}
                 onLayerToggle={handleLayerToggle}
                 onSearch={performSearch}
+                onSelectEntity={api.entities.selectEntity}
             />
         </>
     );

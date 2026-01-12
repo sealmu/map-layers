@@ -26,6 +26,7 @@ import { useViewer } from "../../hooks/useViewer";
 import { useLayerManager } from "../../hooks/useLayerManager";
 import { useFilterManager } from "../../hooks/useFilterManager";
 import { useSearchManager } from "../../hooks/useSearchManager";
+import { useEntitiesManager } from "../../hooks/useEntitiesManager";
 
 const CesiumMap = <R extends RendererRegistry>({
   children,
@@ -73,6 +74,7 @@ const CesiumMap = <R extends RendererRegistry>({
   const layersPanelApi = useLayerManager(layers);
   const filtersPanelApi = useFilterManager();
   const searchPanelApi = useSearchManager();
+  const entitiesApi = useEntitiesManager();
 
   // Initialize Cesium Viewer
   useEffect(() => {
@@ -147,7 +149,6 @@ const CesiumMap = <R extends RendererRegistry>({
         getFilters: filtersPanelApi.getFilters,
       };
 
-
     }
   }, [viewer, layers, renderers, filtersPanelApi]);
 
@@ -160,15 +161,16 @@ const CesiumMap = <R extends RendererRegistry>({
   }, [layersPanelApi.layerStates]);
 
   const api = useMemo<CesiumMapApi | null>(() => {
-    if (!layersPanelApi || !filtersPanelApi || !searchPanelApi) return null;
+    if (!layersPanelApi || !filtersPanelApi || !searchPanelApi || !entitiesApi) return null;
     return {
       api: {
         layersPanel: layersPanelApi,
         filtersPanel: filtersPanelApi,
         searchPanel: searchPanelApi,
+        entities: entitiesApi,
       },
     };
-  }, [layersPanelApi, filtersPanelApi, searchPanelApi]);
+  }, [layersPanelApi, filtersPanelApi, searchPanelApi, entitiesApi]);
 
   const prevApiRef = useRef<CesiumMapApi | null>(null);
 

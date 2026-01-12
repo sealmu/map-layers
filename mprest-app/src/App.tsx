@@ -269,7 +269,7 @@ function AppContent({
 
       {mapApi && <FiltersPanel api={mapApi.api.filtersPanel} />}
 
-      {mapApi && <SearchPanel api={mapApi.api.searchPanel} />}
+      {mapApi && <SearchPanel api={mapApi.api} />}
 
       <div className="dynamic-panels-container">
         <DynamicPanel renderers={renderers} />

@@ -25,6 +25,7 @@ interface SearchModalProps {
     searchQuery: string;
     onLayerToggle: (layerName: string, enabled: boolean) => void;
     onSearch: (query: string) => void;
+    onSelectEntity?: (entityId: string, layerId: string, flyTo?: boolean | number) => void;
 }
 
 const SearchModal = ({
@@ -35,6 +36,7 @@ const SearchModal = ({
     searchQuery,
     onLayerToggle,
     onSearch,
+    onSelectEntity,
 }: SearchModalProps) => {
     // Re-run search when layer toggles change
     useEffect(() => {
@@ -207,6 +209,13 @@ const SearchModal = ({
                                                 padding: '10px 12px',
                                                 borderBottom: '1px solid #f1f3f4',
                                                 background: '#ffffff',
+                                                cursor: 'pointer',
+                                            }}
+                                            onClick={(e) => {
+                                                // Prevent row click if eye icon was clicked
+                                                if ((e.target as HTMLElement).closest('.eye-icon')) return;
+                                                onSelectEntity?.(result.id, result.layerId, false);
+                                                onClose();
                                             }}
                                         >
                                             <div style={{ flex: 1 }}>
@@ -235,12 +244,35 @@ const SearchModal = ({
                                                 }}>
                                                     {result.layerId}
                                                 </span>
-                                                <div style={{
+                                                <button
+                                                    className="eye-icon"
+                                                    style={{
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        padding: '4px',
+                                                        borderRadius: '3px',
+                                                        color: '#666',
+                                                        fontSize: '20px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                    }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onSelectEntity?.(result.id, result.layerId, 1000000);
+                                                        onClose();
+                                                    }}
+                                                    title="Select and fly to entity"
+                                                >
+                                                    👁️
+                                                </button>
+                                                {/* <div style={{
                                                     width: '8px',
                                                     height: '8px',
                                                     borderRadius: '50%',
                                                     background: '#2196f3', // Bullet color, could be based on layer
-                                                }} />
+                                                }} /> */}
                                             </div>
                                         </div>
                                     ))}

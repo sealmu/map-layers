@@ -10,6 +10,7 @@ import type {
 
 const DataSourceLayer = <R extends RendererRegistry>({
   viewer,
+  id,
   name,
   type,
   data,
@@ -97,7 +98,7 @@ const DataSourceLayer = <R extends RendererRegistry>({
             type,
             itemWithRenderer,
             renderers,
-            name.toLocaleLowerCase(),
+            id,
           );
         }
 
@@ -107,7 +108,7 @@ const DataSourceLayer = <R extends RendererRegistry>({
             type,
             itemWithRenderer,
             renderers,
-            name.toLocaleLowerCase(),
+            id,
             viewer.mapref.onEntityCreating,
           );
         }
@@ -118,13 +119,13 @@ const DataSourceLayer = <R extends RendererRegistry>({
           if (entity && viewer.filters?.getFilters) {
             const rendererType = entity.properties?.rendererType?.getValue();
             if (rendererType) {
-              entity.show = viewer.filters.getFilters()(rendererType, name.toLowerCase());
+              entity.show = viewer.filters.getFilters()(rendererType, id);
             }
           }
         }
       });
     }
-  }, [data, type, customRenderer, renderers, getDataSourceInstance, viewer, name]);
+  }, [data, type, customRenderer, renderers, getDataSourceInstance, viewer, id]);
 
   // Update enabled(active) by removing/adding dataSource from viewer
   useEffect(() => {

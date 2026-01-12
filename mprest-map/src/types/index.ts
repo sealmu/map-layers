@@ -213,6 +213,10 @@ export interface CesiumMapApi {
     layersPanel: LayersPanelApi;
     filtersPanel: FiltersPanelApi;
     searchPanel: SearchPanelApi;
+    entities: {
+      findEntity: (entityId: string, layerId?: string) => Entity | null;
+      selectEntity: (entityId: string, layerId?: string, flyTo?: boolean | number) => boolean;
+    };
   };
 }
 
@@ -227,7 +231,13 @@ export interface FiltersPanelProps {
 }
 
 export interface SearchPanelProps {
-  api: SearchPanelApi;
+  api: {
+    searchPanel: SearchPanelApi;
+    entities: {
+      findEntity: (entityId: string, layerId?: string) => Entity | null;
+      selectEntity: (entityId: string, layerId?: string, flyTo?: boolean | number) => boolean;
+    };
+  };
 }
 
 // DroneAnimation Hook
