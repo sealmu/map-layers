@@ -1,5 +1,11 @@
 import type { ReactNode, RefObject } from "react";
-import { Cartesian3, Color, Entity, Viewer as CesiumViewer, CustomDataSource } from "cesium";
+import {
+  Cartesian3,
+  Color,
+  Entity,
+  Viewer as CesiumViewer,
+  CustomDataSource,
+} from "cesium";
 
 // Type for entity renderer functions
 export type EntityRenderer = (item: LayerData) => Entity.ConstructorOptions;
@@ -183,7 +189,10 @@ export type FilterData = Record<
   }
 >;
 
-export type SearchData = Record<string, CollectedLayerData & { enabled: boolean }>;
+export type SearchData = Record<
+  string,
+  CollectedLayerData & { enabled: boolean; enabledTypesCount: number }
+>;
 
 export type SearchResult = {
   id: string;
@@ -215,21 +224,8 @@ export interface FiltersPanelApi {
 }
 
 export interface SearchPanelApi {
-  searchData: Record<
-    string,
-    {
-      enabled: boolean;
-      hasDataSource?: boolean;
-      isVisible?: boolean;
-      entities: Array<{
-        id: string;
-        name: string;
-        layerId: string;
-        renderType?: string;
-      }>;
-      displayName: string;
-    }
-  >;
+  searchData: SearchData;
+  searchFilterData: Record<string, { types: Record<string, boolean> }>;
   isSearchModalOpen: boolean;
   searchResults: Array<{
     id: string;
@@ -239,6 +235,7 @@ export interface SearchPanelApi {
   }>;
   searchQuery: string;
   handleLayerToggle: (layerName: string, enabled: boolean) => void;
+  handleTypeToggle: (layerId: string, type: string, enabled: boolean) => void;
   performSearch: (query: string) => void;
   openSearchModal: () => void;
   closeSearchModal: () => void;
@@ -251,7 +248,11 @@ export interface CesiumMapApi {
     searchPanel: SearchPanelApi;
     entities: {
       findEntity: (entityId: string, layerId?: string) => Entity | null;
-      selectEntity: (entityId: string, layerId?: string, flyTo?: boolean | number) => boolean;
+      selectEntity: (
+        entityId: string,
+        layerId?: string,
+        flyTo?: boolean | number,
+      ) => boolean;
     };
   };
 }
@@ -269,9 +270,14 @@ export interface FiltersPanelProps {
 export interface SearchPanelProps {
   api: {
     searchPanel: SearchPanelApi;
+    filtersPanel: FiltersPanelApi;
     entities: {
       findEntity: (entityId: string, layerId?: string) => Entity | null;
-      selectEntity: (entityId: string, layerId?: string, flyTo?: boolean | number) => boolean;
+      selectEntity: (
+        entityId: string,
+        layerId?: string,
+        flyTo?: boolean | number,
+      ) => boolean;
     };
   };
 }
