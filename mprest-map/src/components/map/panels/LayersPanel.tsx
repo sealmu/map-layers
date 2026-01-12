@@ -2,7 +2,7 @@ import type { LayersPanelProps } from "../../../types";
 import { useState } from "react";
 import LayerCard from "../../layers/LayerCard";
 
-const LayersPanel = ({ api }: LayersPanelProps) => {
+const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
   const {
     layers,
     layerStates,
@@ -49,18 +49,33 @@ const LayersPanel = ({ api }: LayersPanelProps) => {
                     onToggleVisible={() => toggleLayerVisible(layer.id)}
                     onToggleDocked={() => toggleLayerDocked(layer.id)}
                     isHovered={false} // Docked items don't hover
-                    onMouseEnter={() => {}}
-                    onMouseLeave={() => {}}
+                    onMouseEnter={() => { }}
+                    onMouseLeave={() => { }}
                   />
                 ))}
             </div>
           )}
         </div>
         <div className="bulk-controls">
+          {onFilter && (
+            <button
+              className="bulk-button"
+              onClick={onFilter}
+            >
+              Filter
+            </button>
+          )}
+          {onSearch && (
+            <button
+              className="bulk-button"
+              onClick={onSearch}
+            >
+              Search
+            </button>
+          )}
           <button
-            className={`bulk-button${
-              allActive ? " checked" : someActive ? " partial" : ""
-            }`}
+            className={`bulk-button${allActive ? " checked" : someActive ? " partial" : ""
+              }`}
             onClick={toggleActiveAll}
             aria-checked={allActive}
           >

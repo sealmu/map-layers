@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+// import { useCallback } from "react";
 
 import { Cartesian2, Color, Entity, Cartesian3 } from "cesium";
 
@@ -14,6 +15,8 @@ import {
   createPolylineEntity,
   applyExtractor,
   LayersPanel,
+  FiltersPanel,
+  SearchPanel,
   DataConnector,
 } from "@mprest/map";
 
@@ -27,6 +30,7 @@ import type {
   LayeredDataWithPayload,
   CesiumMapApi,
   ViewerWithConfigs,
+  // RenderTypeFromRegistry,
 } from "@mprest/map";
 
 import { dataSource } from "./data/dataSource";
@@ -146,6 +150,31 @@ function AppContent({
   const layersConfig = useMemo(() => getLayersConfig(), []);
   const [mapApi, setMapApi] = useState<CesiumMapApi | null>(null);
 
+  // const enrichEntity = useCallback((entity: Entity.ConstructorOptions) => {
+  //   console.log('Entity is being created', entity);
+  //   void entity; // Return null to use default createEntityFromData
+  // }, []);
+
+  // const onEntityCreate = useCallback((
+  //   type: RenderTypeFromRegistry<RendererRegistry>,
+  //   item: LayerData,
+  //   _renderers: RendererRegistry,
+  //   layerId?: string
+  // ) => {
+  //   console.log('Entity creation requested:', { type, item, layerId });
+  //   return null; // Return null to use default createEntityFromData
+  // }, []);
+
+  const handleFilter = () => {
+    if (!mapApi || !viewer) return;
+    mapApi.api.filtersPanel.collectFilterData(mapApi.api.layersPanel.layers, viewer as ViewerWithConfigs);
+  };
+
+  const handleSearch = () => {
+    if (!mapApi || !viewer) return;
+    mapApi.api.searchPanel.collectSearchData(mapApi.api.layersPanel.layers, viewer as ViewerWithConfigs);
+  };
+
   useDroneAnimation(viewer as ViewerWithConfigs, {
     droneId: "drone2",
     centerLon: -104.99,
@@ -160,6 +189,8 @@ function AppContent({
   return (
     <>
       <CesiumMap
+        // onEntityCreating={enrichEntity}
+        // onEntityCreate={onEntityCreate}
         renderers={renderers}
         animateActivation={true}
         animateVisibility={true}
@@ -203,11 +234,11 @@ function AppContent({
         <Layer
           id="mixed"
           name="Mixed"
-          isDocked={true}
+          isDocked={false}
           type={RenderTypes.CUSTOM}
           data={extractMixed(data)}
-          isActive={false}
-          isVisible={true}
+          isActive={true}
+          isVisible={false}
           description="Mixed types and custom renderers"
         />
         <Layer
@@ -223,7 +254,7 @@ function AppContent({
         <Layer
           id="dynamic-raw"
           name="dynamic-raw"
-          isDocked={false}
+          isDocked={true}
           type={RenderTypes.CUSTOM}
           data={[]}
           isActive={true}
@@ -234,7 +265,11 @@ function AppContent({
 
       <DataConnector dataSource={dataSourceDynamic} config={DataConnectorConfig} />
 
-      {mapApi && <LayersPanel api={mapApi.api.layersPanel} />}
+      {mapApi && <LayersPanel api={mapApi.api.layersPanel} onFilter={handleFilter} onSearch={handleSearch} />}
+
+      {mapApi && <FiltersPanel api={mapApi.api.filtersPanel} />}
+
+      {mapApi && <SearchPanel api={mapApi.api} />}
 
       <div className="dynamic-panels-container">
         <DynamicPanel renderers={renderers} />

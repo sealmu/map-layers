@@ -97,7 +97,7 @@ export interface AppContentProps<
 export interface DataSourceLayerProps<
   R extends RendererRegistry = RendererRegistry,
 > {
-  viewer: CesiumViewer;
+  viewer: ViewerWithConfigs<R>;
   id: string;
   name: string;
   type: RenderTypeFromRegistry<R>;
@@ -118,6 +118,13 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
   animateActivation?: boolean;
   animateVisibility?: boolean;
   onApiReady?: (api: CesiumMapApi) => void;
+  onEntityCreating?: (options: Entity.ConstructorOptions) => void;
+  onEntityCreate?: (
+    type: RenderTypeFromRegistry<RendererRegistry>,
+    item: LayerData,
+    renderers: RendererRegistry,
+    layerId?: string,
+  ) => Entity.ConstructorOptions | null;
 }
 
 export interface LayersPanelApi {
@@ -142,14 +149,95 @@ export interface LayersPanelApi {
   layers: LayerConfig[];
 }
 
+export interface FiltersPanelApi {
+  filterData: Record<
+    string,
+    {
+      types: Record<string, boolean>;
+      layerType?: string;
+      hasDataSource?: boolean;
+      isVisible?: boolean;
+      displayName: string;
+    }
+  >;
+  isFilterModalOpen: boolean;
+  collectFilterData: (
+    layers: LayerConfig[],
+    viewer: ViewerWithConfigs | null,
+  ) => void;
+  handleFilterChange: (
+    layerName: string,
+    displayName: string,
+    type: string,
+    visible: boolean,
+  ) => void;
+  openFilterModal: () => void;
+  closeFilterModal: () => void;
+  getFilters: () => (renderType: string, layerName: string) => boolean;
+}
+
+export interface SearchPanelApi {
+  searchData: Record<
+    string,
+    {
+      enabled: boolean;
+      hasDataSource?: boolean;
+      isVisible?: boolean;
+      entities: Array<{
+        id: string;
+        name: string;
+        layerId: string;
+      }>;
+      displayName: string;
+    }
+  >;
+  isSearchModalOpen: boolean;
+  searchResults: Array<{
+    id: string;
+    name: string;
+    layerId: string;
+  }>;
+  searchQuery: string;
+  collectSearchData: (
+    layers: LayerConfig[],
+    viewer: ViewerWithConfigs | null,
+  ) => void;
+  handleLayerToggle: (layerName: string, enabled: boolean) => void;
+  performSearch: (query: string) => void;
+  openSearchModal: () => void;
+  closeSearchModal: () => void;
+}
+
 export interface CesiumMapApi {
   api: {
     layersPanel: LayersPanelApi;
+    filtersPanel: FiltersPanelApi;
+    searchPanel: SearchPanelApi;
+    entities: {
+      findEntity: (entityId: string, layerId?: string) => Entity | null;
+      selectEntity: (entityId: string, layerId?: string, flyTo?: boolean | number) => boolean;
+    };
   };
 }
 
 export interface LayersPanelProps {
   api: LayersPanelApi;
+  onFilter?: () => void;
+  onSearch?: () => void;
+}
+
+export interface FiltersPanelProps {
+  api: FiltersPanelApi;
+}
+
+export interface SearchPanelProps {
+  api: {
+    searchPanel: SearchPanelApi;
+    entities: {
+      findEntity: (entityId: string, layerId?: string) => Entity | null;
+      selectEntity: (entityId: string, layerId?: string, flyTo?: boolean | number) => boolean;
+    };
+  };
 }
 
 // DroneAnimation Hook
@@ -176,15 +264,27 @@ export interface ViewerProviderProps {
 }
 
 // Enhanced Viewer with layers and renderers properties
-export interface ViewerWithConfigs extends CesiumViewer {
+export interface ViewerWithConfigs<
+  R extends RendererRegistry = RendererRegistry,
+> extends CesiumViewer {
   layers: {
-    getLayerConfig: (
-      layerId: string,
-    ) => LayerProps<LayerData, RendererRegistry> | undefined;
-    getAllLayerConfigs: () => LayerProps<LayerData, RendererRegistry>[];
+    getLayerConfig: (layerId: string) => LayerProps<LayerData, R> | undefined;
+    getAllLayerConfigs: () => LayerProps<LayerData, R>[];
   };
   renderers: {
-    getRenderers: () => RendererRegistry;
+    getRenderers: () => R;
+  };
+  filters: {
+    getFilters: () => (renderType: string, layerName: string) => boolean;
+  };
+  mapref: {
+    onEntityCreating?: (options: Entity.ConstructorOptions) => void;
+    onEntityCreate?: (
+      type: RenderTypeFromRegistry<RendererRegistry>,
+      item: LayerData,
+      renderers: RendererRegistry,
+      layerId?: string,
+    ) => Entity.ConstructorOptions | null;
   };
 }
 

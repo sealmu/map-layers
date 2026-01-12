@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
-import { CustomDataSource as CesiumCustomDataSource } from "cesium";
+import { CustomDataSource as CesiumCustomDataSource, Entity } from "cesium";
 import { createEntityFromData } from "./renderers";
 import { useLayerAnimations } from "./hooks/useLayerAnimations";
 import type {
@@ -10,6 +10,7 @@ import type {
 
 const DataSourceLayer = <R extends RendererRegistry>({
   viewer,
+  id,
   name,
   type,
   data,
@@ -90,17 +91,41 @@ const DataSourceLayer = <R extends RendererRegistry>({
           ? { ...item, customRenderer }
           : item;
 
-        const entityOptions = createEntityFromData(
-          type,
-          itemWithRenderer,
-          renderers,
-        );
+        // Check if onEntityCreate callback is provided
+        let entityOptions: Entity.ConstructorOptions | null = null;
+        if (viewer.mapref.onEntityCreate) {
+          entityOptions = viewer.mapref.onEntityCreate(
+            type,
+            itemWithRenderer,
+            renderers,
+            id,
+          );
+        }
+
+        // If callback didn't provide options, use createEntityFromData
+        if (!entityOptions) {
+          entityOptions = createEntityFromData(
+            type,
+            itemWithRenderer,
+            renderers,
+            id,
+            viewer.mapref.onEntityCreating,
+          );
+        }
         if (entityOptions) {
-          dataSourceInstance.entities.add(entityOptions);
+          const entity = dataSourceInstance.entities.add(entityOptions);
+
+          // Apply current filter state to the new entity
+          if (entity && viewer.filters?.getFilters) {
+            const rendererType = entity.properties?.rendererType?.getValue();
+            if (rendererType) {
+              entity.show = viewer.filters.getFilters()(rendererType, id);
+            }
+          }
         }
       });
     }
-  }, [data, type, customRenderer, renderers, getDataSourceInstance, viewer]);
+  }, [data, type, customRenderer, renderers, getDataSourceInstance, viewer, id]);
 
   // Update enabled(active) by removing/adding dataSource from viewer
   useEffect(() => {

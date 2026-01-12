@@ -31,7 +31,7 @@ const DynamicRawDataPanel = () => {
     if (!dataManager) return false;
     try {
       const entities = dataManager.getLayerItems("dynamic-raw");
-      return entities.length > 0;
+      return entities && entities.length > 0;
     } catch {
       return false;
     }
@@ -58,6 +58,8 @@ const DynamicRawDataPanel = () => {
 
       const entities = dataManager.getLayerItems("dynamic-raw");
       const elapsed = time - startTime;
+
+      if (!entities) return;
 
       entities.forEach((entity) => {
         if (!entity.position && !entity.polygon) return;
@@ -239,6 +241,8 @@ const DynamicRawDataPanel = () => {
     // Use DataManager's addDataItem for automatic renderer resolution
     const entity = dataManager.addDataItem(layerData, "dynamic-raw");
 
+    if (!entity) return;
+
     // Make points bigger after creation, rockets even bigger
     if (currentType === "points" && entity.point) {
       entity.point.pixelSize = new ConstantProperty(25);
@@ -264,17 +268,15 @@ const DynamicRawDataPanel = () => {
       <div className="button-group">
         <div className="type-buttons-container">
           <button
-            className={`type-button ${
-              currentType === "points" ? "active" : ""
-            }`}
+            className={`type-button ${currentType === "points" ? "active" : ""
+              }`}
             onClick={() => setCurrentType("points")}
           >
             Points
           </button>
           <button
-            className={`type-button ${
-              currentType === "rockets" ? "active" : ""
-            }`}
+            className={`type-button ${currentType === "rockets" ? "active" : ""
+              }`}
             onClick={() => setCurrentType("rockets")}
           >
             Rockets

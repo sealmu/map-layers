@@ -24,6 +24,9 @@ import type {
 } from "../../types";
 import { useViewer } from "../../hooks/useViewer";
 import { useLayerManager } from "../../hooks/useLayerManager";
+import { useFilterManager } from "../../hooks/useFilterManager";
+import { useSearchManager } from "../../hooks/useSearchManager";
+import { useEntitiesManager } from "../../hooks/useEntitiesManager";
 
 const CesiumMap = <R extends RendererRegistry>({
   children,
@@ -32,10 +35,12 @@ const CesiumMap = <R extends RendererRegistry>({
   animateActivation = false,
   animateVisibility = false,
   onApiReady,
+  onEntityCreating,
+  onEntityCreate,
 }: CesiumMapProps<R> & { onApiReady?: (api: CesiumMapApi) => void }) => {
   const { setViewer: setContextViewer } = useViewer();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [viewer, setViewer] = useState<CesiumViewer | null>(null);
+  const [viewer, setViewer] = useState<ViewerWithConfigs<R> | null>(null);
   const imageryLayerRef = useRef<ImageryLayer | null>(null);
 
   // Extract layer props from children
@@ -67,6 +72,9 @@ const CesiumMap = <R extends RendererRegistry>({
   }, [children]);
 
   const layersPanelApi = useLayerManager(layers);
+  const filtersPanelApi = useFilterManager();
+  const searchPanelApi = useSearchManager();
+  const entitiesApi = useEntitiesManager();
 
   // Initialize Cesium Viewer
   useEffect(() => {
@@ -89,10 +97,13 @@ const CesiumMap = <R extends RendererRegistry>({
       fullscreenButton: false,
     });
 
-    setViewer(newViewer as ViewerWithConfigs);
+    setViewer(newViewer as ViewerWithConfigs<R>);
 
     // Update context viewer
     setContextViewer(newViewer);
+
+    // Set mapref
+    (newViewer as ViewerWithConfigs<R>).mapref = { onEntityCreating, onEntityCreate };
 
     // Add OpenStreetMap imagery layer
     const imageryProvider = new OpenStreetMapImageryProvider({
@@ -120,19 +131,26 @@ const CesiumMap = <R extends RendererRegistry>({
   // Update layers and renderers properties on viewer when layers or renderers change
   useEffect(() => {
     if (viewer) {
-      (viewer as ViewerWithConfigs).layers = {
+
+      (viewer as ViewerWithConfigs<R>).layers = {
         getLayerConfig: (layerId: string) =>
           layers.find((layer) => layer.id === layerId) as
-            | LayerProps<LayerData, RendererRegistry>
-            | undefined,
+          | LayerProps<LayerData, R>
+          | undefined,
         getAllLayerConfigs: () =>
-          layers as LayerProps<LayerData, RendererRegistry>[],
+          layers as LayerProps<LayerData, R>[],
       };
-      (viewer as ViewerWithConfigs).renderers = {
+
+      (viewer as ViewerWithConfigs<R>).renderers = {
         getRenderers: () => renderers,
       };
+
+      (viewer as ViewerWithConfigs<R>).filters = {
+        getFilters: filtersPanelApi.getFilters,
+      };
+
     }
-  }, [viewer, layers, renderers]);
+  }, [viewer, layers, renderers, filtersPanelApi]);
 
   // Handle street map visibility
   useEffect(() => {
@@ -143,13 +161,16 @@ const CesiumMap = <R extends RendererRegistry>({
   }, [layersPanelApi.layerStates]);
 
   const api = useMemo<CesiumMapApi | null>(() => {
-    if (!layersPanelApi) return null;
+    if (!layersPanelApi || !filtersPanelApi || !searchPanelApi || !entitiesApi) return null;
     return {
       api: {
         layersPanel: layersPanelApi,
+        filtersPanel: filtersPanelApi,
+        searchPanel: searchPanelApi,
+        entities: entitiesApi,
       },
     };
-  }, [layersPanelApi]);
+  }, [layersPanelApi, filtersPanelApi, searchPanelApi, entitiesApi]);
 
   const prevApiRef = useRef<CesiumMapApi | null>(null);
 
