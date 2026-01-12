@@ -112,7 +112,15 @@ const DataSourceLayer = <R extends RendererRegistry>({
           );
         }
         if (entityOptions) {
-          dataSourceInstance.entities.add(entityOptions);
+          const entity = dataSourceInstance.entities.add(entityOptions);
+
+          // Apply current filter state to the new entity
+          if (entity && viewer.filters?.getFilters) {
+            const rendererType = entity.properties?.rendererType?.getValue();
+            if (rendererType) {
+              entity.show = viewer.filters.getFilters()(rendererType, name.toLowerCase());
+            }
+          }
         }
       });
     }
