@@ -80,6 +80,9 @@ export interface LayerConfig {
   isVisible?: boolean;
   description?: string;
   isDocked?: boolean;
+  group?: string;
+  groupName?: string;
+  groupIsDocked?: boolean;
 }
 
 export type ExtractorSpec =
@@ -104,6 +107,9 @@ export interface LayerProps<
   description?: string;
   customRenderer?: EntityRenderer;
   isDocked?: boolean;
+  group?: string;
+  groupName?: string;
+  groupIsDocked?: boolean;
 }
 
 export interface LayerDefinition<T = LayerData> {
@@ -128,7 +134,6 @@ export interface DataSourceLayerProps<
 > {
   viewer: ViewerWithConfigs<R>;
   id: string;
-  name: string;
   type: RenderTypeFromRegistry<R>;
   data: LayerData[];
   isActive?: boolean;
@@ -175,6 +180,9 @@ export interface LayersPanelApi {
   toggleVisibleAll: () => void;
   dockedLayers: Set<string>;
   toggleLayerDocked: (layerId: string) => void;
+  toggleGroupActive: (group: string) => void;
+  toggleGroupVisible: (group: string) => void;
+  toggleGroupDocked: (group: string) => void;
   layers: LayerConfig[];
 }
 

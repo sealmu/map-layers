@@ -207,6 +207,9 @@ function AppContent({
           isActive={true}
           isVisible={false}
           description="Point markers on the map"
+          group="basic-shape"
+          groupName="Basic Shapes"
+          groupIsDocked={false}
         />
         <Layer
           id="polygons"
@@ -253,16 +256,22 @@ function AppContent({
           isActive={false}
           isVisible={true}
           description="Dynamic layer updated externally"
+          group="dynamic"
+          groupName="Dynamic"
+          groupIsDocked={false}
         />
         <Layer
           id="dynamic-raw"
-          name="dynamic-raw"
+          name="Dynamic Raw"
           isDocked={true}
           type={RenderTypes.CUSTOM}
           data={[]}
           isActive={true}
           isVisible={true}
           description="Dynamic raw data layer updated externally"
+          group="dynamic"
+          groupName="Dynamic"
+          groupIsDocked={false}
         />
       </CesiumMap>
 

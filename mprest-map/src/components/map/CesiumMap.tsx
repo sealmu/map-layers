@@ -212,7 +212,6 @@ const CesiumMap = <R extends RendererRegistry>({
             key={layer.id}
             viewer={viewer}
             id={layer.id}
-            name={layer.name}
             type={layer.type}
             isActive={layersPanelApi.layerStates[layer.id]?.isActive ?? true}
             isVisible={layersPanelApi.layerStates[layer.id]?.isVisible ?? true}

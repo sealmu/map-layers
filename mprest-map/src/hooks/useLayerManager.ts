@@ -99,6 +99,66 @@ export const useLayerManager = <R extends RendererRegistry>(
     }));
   }, []);
 
+  const toggleGroupActive = useCallback(
+    (group: string) => {
+      setLayerStates((prev) => {
+        const groupLayers = layers.filter((layer) => layer.group === group);
+        const someActive = groupLayers.some(
+          (layer) => prev[layer.id]?.isActive ?? false,
+        );
+        const newStates = { ...prev };
+        groupLayers.forEach((layer) => {
+          newStates[layer.id] = {
+            ...newStates[layer.id],
+            isActive: !someActive,
+          };
+        });
+        return newStates;
+      });
+    },
+    [layers],
+  );
+
+  const toggleGroupVisible = useCallback(
+    (group: string) => {
+      setLayerStates((prev) => {
+        const groupLayers = layers.filter((layer) => layer.group === group);
+        const allVisible = groupLayers.every(
+          (layer) => prev[layer.id]?.isVisible ?? false,
+        );
+        const newStates = { ...prev };
+        groupLayers.forEach((layer) => {
+          newStates[layer.id] = {
+            ...newStates[layer.id],
+            isVisible: !allVisible,
+          };
+        });
+        return newStates;
+      });
+    },
+    [layers],
+  );
+
+  const toggleGroupDocked = useCallback(
+    (group: string) => {
+      setLayerStates((prev) => {
+        const groupLayers = layers.filter((layer) => layer.group === group);
+        const someDocked = groupLayers.some(
+          (layer) => prev[layer.id]?.isDocked ?? false,
+        );
+        const newStates = { ...prev };
+        groupLayers.forEach((layer) => {
+          newStates[layer.id] = {
+            ...newStates[layer.id],
+            isDocked: !someDocked,
+          };
+        });
+        return newStates;
+      });
+    },
+    [layers],
+  );
+
   const layerConfigs = useMemo(
     () => [
       {
@@ -115,6 +175,9 @@ export const useLayerManager = <R extends RendererRegistry>(
         isVisible: layerStates[layer.id]?.isVisible ?? true,
         description: layer.description,
         isDocked: layerStates[layer.id]?.isDocked ?? layer.isDocked ?? false,
+        group: layer.group,
+        groupName: layer.groupName,
+        groupIsDocked: layer.groupIsDocked,
       })),
     ],
     [layerStates, layers],
@@ -130,6 +193,9 @@ export const useLayerManager = <R extends RendererRegistry>(
       toggleVisibleAll,
       dockedLayers,
       toggleLayerDocked,
+      toggleGroupActive,
+      toggleGroupVisible,
+      toggleGroupDocked,
       layers: layerConfigs,
     }),
     [
@@ -141,6 +207,9 @@ export const useLayerManager = <R extends RendererRegistry>(
       toggleVisibleAll,
       dockedLayers,
       toggleLayerDocked,
+      toggleGroupActive,
+      toggleGroupVisible,
+      toggleGroupDocked,
       layerConfigs,
     ],
   );

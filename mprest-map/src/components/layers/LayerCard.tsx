@@ -11,6 +11,7 @@ interface LayerCardProps {
   isHovered: boolean;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
+  hidePin?: boolean;
 }
 
 const LayerCard = ({
@@ -24,6 +25,7 @@ const LayerCard = ({
   isHovered,
   onMouseEnter,
   onMouseLeave,
+  hidePin = false,
 }: LayerCardProps) => {
   if (isDocked) {
     return (
@@ -49,7 +51,7 @@ const LayerCard = ({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      {layer.id !== "street-map" && (
+      {layer.id !== "street-map" && !hidePin && (
         <button
           className="dock-handle"
           onClick={onToggleDocked}

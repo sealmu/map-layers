@@ -19,6 +19,9 @@ const config = [
     isActive: false,
     isVisible: false,
     description: "City labels with markers",
+    group: "basic-shape",
+    groupName: "Basic Shapes",
+    groupIsDocked: false,
   },
 ];
 

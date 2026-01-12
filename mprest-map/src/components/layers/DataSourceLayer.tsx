@@ -11,7 +11,7 @@ import type {
 const DataSourceLayer = <R extends RendererRegistry>({
   viewer,
   id,
-  name,
+
   type,
   data,
   isActive,
@@ -65,8 +65,8 @@ const DataSourceLayer = <R extends RendererRegistry>({
     const dataSourceInstance = getDataSourceInstance();
     if (!dataSourceInstance) return;
 
-    dataSourceInstance.name = name;
-  }, [name, getDataSourceInstance]);
+    dataSourceInstance.name = id;
+  }, [id, getDataSourceInstance]);
 
   // Update show flag without adding/removing the data source
   useEffect(() => {

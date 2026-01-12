@@ -86,6 +86,29 @@
   flex: 1;
 }
 
+.grouped-toggle-button {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.grouped-toggle-button:hover {
+  background: #f8f9fa;
+  border-color: #999;
+}
+
+.grouped-toggle-button.active {
+  background: #2196f3;
+  color: white;
+  border-color: #2196f3;
+}
+
 .layer-control h3 {
   margin: 0;
   font-size: 16px;
@@ -319,4 +342,72 @@
 
 .add-dynamic-button:hover {
   background: #1976d2;
+}
+
+/* Group Styles */
+.layer-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: #f0f2f5;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  position: relative;
+}
+
+.group-dock-handle {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: white;
+  border: 2px solid #b0b8c1;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  opacity: 1;
+  z-index: 10;
+}
+
+.group-dock-handle:hover {
+  background: #f8f9fa;
+  border-color: #6c757d;
+  transform: scale(1.1);
+}
+
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: #e8f4fd;
+  border-radius: 6px;
+  border: 1px solid #b3d9ff;
+}
+
+.group-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e40af;
+  flex: 1;
+}
+
+.group-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.group-layers {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
