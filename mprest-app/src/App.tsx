@@ -22,6 +22,7 @@ import {
 
 import DynamicPanel from "./components/DynamicPanel";
 import DynamicRawDataPanel from "./components/DynamicRawDataPanel";
+import { Expander } from "./components";
 
 import type {
   AppContentProps,
@@ -149,6 +150,8 @@ function AppContent({
   const { viewer } = useViewer();
   const layersConfig = useMemo(() => getLayersConfig(), []);
   const [mapApi, setMapApi] = useState<CesiumMapApi | null>(null);
+  const [layersPanelDocked, setLayersPanelDocked] = useState(true);
+  const [dynamicPanelsDocked, setDynamicPanelsDocked] = useState(true);
 
   // const enrichEntity = useCallback((entity: Entity.ConstructorOptions) => {
   //   console.log('Entity is being created', entity);
@@ -265,16 +268,38 @@ function AppContent({
 
       <DataConnector dataSource={dataSourceDynamic} config={DataConnectorConfig} />
 
-      {mapApi && <LayersPanel api={mapApi.api.layersPanel} onFilter={handleFilter} onSearch={handleSearch} />}
+
 
       {mapApi && <FiltersPanel api={mapApi.api.filtersPanel} />}
 
       {mapApi && <SearchPanel api={mapApi.api} />}
 
-      <div className="dynamic-panels-container">
-        <DynamicPanel renderers={renderers} />
-        <DynamicRawDataPanel />
-      </div>
+      <Expander
+        title="Simulations"
+        position="right"
+        size="content"
+        isDocked={dynamicPanelsDocked}
+        onToggle={setDynamicPanelsDocked}
+      >
+        <div className="dynamic-panels-container">
+          <DynamicPanel renderers={renderers} />
+          <DynamicRawDataPanel />
+        </div>
+      </Expander>
+
+      {mapApi && (
+        <Expander
+          title="Layers"
+          position="bottom"
+          size="full"
+          isDocked={layersPanelDocked}
+          onToggle={setLayersPanelDocked}
+        >
+          <div style={{ marginTop: "8px", marginBottom: "15px", marginLeft: "12px", marginRight: "12px" }}>
+            <LayersPanel api={mapApi.api.layersPanel} onFilter={handleFilter} onSearch={handleSearch} />
+          </div>
+        </Expander>
+      )}
     </>
   );
 }

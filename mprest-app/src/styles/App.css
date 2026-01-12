@@ -257,13 +257,9 @@ body {
 
 /* Dynamic Panels Container */
 .dynamic-panels-container {
-  position: absolute;
-  top: 50%;
-  right: 20px;
-  transform: translateY(-50%);
   display: flex;
   flex-direction: column;
   gap: 15px;
-  z-index: 1000;
-  max-width: 280px;
+  width: 100%;
+  height: auto;
 }
