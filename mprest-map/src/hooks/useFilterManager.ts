@@ -1,18 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { collectLayerData } from "../helpers/collectLayerData";
 import { useViewer } from "./useViewer";
-import type { LayerConfig } from "../types";
-
-export type FilterData = Record<
-  string,
-  {
-    types: Record<string, boolean>;
-    layerType?: string;
-    hasDataSource?: boolean;
-    isVisible?: boolean;
-    displayName: string;
-  }
->;
+import type { LayerConfig, FilterData } from "../types";
 
 export const useFilterManager = (layers?: LayerConfig[]) => {
   const [filterData, setFilterData] = useState<FilterData>({});

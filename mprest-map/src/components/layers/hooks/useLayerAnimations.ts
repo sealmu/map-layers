@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import type { RefObject } from "react";
 import {
   Cartesian3,
   CallbackProperty,
@@ -7,16 +6,7 @@ import {
   ReferenceFrame,
   PositionProperty,
 } from "cesium";
-import type { CustomDataSource as CesiumCustomDataSource } from "cesium";
-
-export type LayerAnimationOptions = {
-  dataSourceRef: RefObject<CesiumCustomDataSource | null>;
-  isActive?: boolean;
-  isVisible?: boolean;
-  durationMs?: number;
-  staggerMs?: number;
-  heightOffset?: number;
-};
+import type { LayerAnimationOptions } from "../../../types";
 
 export function useLayerAnimations({
   dataSourceRef,
@@ -75,8 +65,8 @@ export function useLayerAnimations({
             _referenceFrame: ReferenceFrame,
             result?: Cartesian3,
           ) {
-            return this.getValue(time, result);
-          };
+              return this.getValue(time, result);
+            };
 
           entity.position = callbackProperty as unknown as PositionProperty;
         }

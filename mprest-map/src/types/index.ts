@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { Cartesian3, Color, Entity, Viewer as CesiumViewer } from "cesium";
+import type { ReactNode, RefObject } from "react";
+import { Cartesian3, Color, Entity, Viewer as CesiumViewer, CustomDataSource } from "cesium";
 
 // Type for entity renderer functions
 export type EntityRenderer = (item: LayerData) => Entity.ConstructorOptions;
@@ -38,6 +38,29 @@ export interface LayerData {
 // App-specific helper to supply a stricter shape for the optional data field
 export type LayeredDataWithPayload<TData> = Omit<LayerData, "data"> & {
   data?: TData;
+};
+
+// Collected layer data from collectLayerData function
+export interface CollectedLayerData {
+  hasDataSource: boolean;
+  isVisible: boolean;
+  displayName: string;
+  entities: Array<{
+    id: string;
+    name: string;
+    layerId: string;
+    renderType?: string;
+  }>;
+  types: Set<string>;
+}
+
+export type LayerAnimationOptions = {
+  dataSourceRef: RefObject<CustomDataSource | null>;
+  isActive?: boolean;
+  isVisible?: boolean;
+  durationMs?: number;
+  staggerMs?: number;
+  heightOffset?: number;
 };
 
 // Convenience type for data objects carrying raw coordinates and a shape marker
@@ -148,6 +171,26 @@ export interface LayersPanelApi {
   toggleLayerDocked: (layerId: string) => void;
   layers: LayerConfig[];
 }
+
+export type FilterData = Record<
+  string,
+  {
+    types: Record<string, boolean>;
+    layerType?: string;
+    hasDataSource?: boolean;
+    isVisible?: boolean;
+    displayName: string;
+  }
+>;
+
+export type SearchData = Record<string, CollectedLayerData & { enabled: boolean }>;
+
+export type SearchResult = {
+  id: string;
+  name: string;
+  layerId: string;
+  renderType?: string;
+};
 
 export interface FiltersPanelApi {
   filterData: Record<

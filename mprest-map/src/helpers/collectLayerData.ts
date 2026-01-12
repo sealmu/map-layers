@@ -1,26 +1,13 @@
-import type { LayerConfig } from "../types";
+import type { LayerConfig, CollectedLayerData } from "../types";
 import { Viewer as CesiumViewer } from "cesium";
-
-export interface LayerData {
-    hasDataSource: boolean;
-    isVisible: boolean;
-    displayName: string;
-    entities: Array<{
-        id: string;
-        name: string;
-        layerId: string;
-        renderType?: string;
-    }>;
-    types: Set<string>;
-}
 
 export const collectLayerData = (
     layers: LayerConfig[],
     viewer: CesiumViewer | null,
-): Record<string, LayerData> => {
+): Record<string, CollectedLayerData> => {
     if (!viewer) return {};
 
-    const layerData: Record<string, LayerData> = {};
+    const layerData: Record<string, CollectedLayerData> = {};
 
     // Get all layers from the map API, excluding base/imagery layers
     const allLayers = layers.filter((layer: LayerConfig) => {

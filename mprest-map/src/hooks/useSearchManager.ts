@@ -1,17 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
-import { collectLayerData, type LayerData } from "../helpers/collectLayerData";
+import { collectLayerData } from "../helpers/collectLayerData";
 import { useViewer } from "./useViewer";
-import type { LayerConfig } from "../types";
-import type { FilterData } from "./useFilterManager";
-
-export type SearchData = Record<string, LayerData & { enabled: boolean }>;
-
-export type SearchResult = {
-    id: string;
-    name: string;
-    layerId: string;
-    renderType?: string;
-};
+import type { LayerConfig, FilterData, SearchData, SearchResult } from "../types";
 
 export const useSearchManager = (filterData?: FilterData, layers?: LayerConfig[]) => {
     const [searchData, setSearchData] = useState<SearchData>({});
