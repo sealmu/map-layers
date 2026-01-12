@@ -97,7 +97,7 @@ export interface AppContentProps<
 export interface DataSourceLayerProps<
   R extends RendererRegistry = RendererRegistry,
 > {
-  viewer: CesiumViewer;
+  viewer: ViewerWithConfigs<R>;
   id: string;
   name: string;
   type: RenderTypeFromRegistry<R>;
@@ -118,6 +118,13 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
   animateActivation?: boolean;
   animateVisibility?: boolean;
   onApiReady?: (api: CesiumMapApi) => void;
+  onEntityCreating?: (options: Entity.ConstructorOptions) => void;
+  onEntityCreate?: (
+    type: RenderTypeFromRegistry<RendererRegistry>,
+    item: LayerData,
+    renderers: RendererRegistry,
+    layerId?: string,
+  ) => Entity.ConstructorOptions | null;
 }
 
 export interface LayersPanelApi {
@@ -142,15 +149,45 @@ export interface LayersPanelApi {
   layers: LayerConfig[];
 }
 
+export interface FiltersPanelApi {
+  filterData: Record<
+    string,
+    {
+      types: Record<string, boolean>;
+      layerType?: string;
+      hasDataSource?: boolean;
+      isVisible?: boolean;
+    }
+  >;
+  isFilterModalOpen: boolean;
+  collectFilterData: (
+    layers: LayerConfig[],
+    viewer: ViewerWithConfigs | null,
+  ) => void;
+  handleFilterChange: (
+    layerName: string,
+    type: string,
+    visible: boolean,
+  ) => void;
+  openFilterModal: () => void;
+  closeFilterModal: () => void;
+  getFilters: () => (renderType: string, layerName: string) => boolean;
+}
+
 export interface CesiumMapApi {
   api: {
     layersPanel: LayersPanelApi;
+    filtersPanel: FiltersPanelApi;
   };
 }
 
 export interface LayersPanelProps {
   api: LayersPanelApi;
   onFilter?: () => void;
+}
+
+export interface FiltersPanelProps {
+  api: FiltersPanelApi;
 }
 
 // DroneAnimation Hook
@@ -177,15 +214,27 @@ export interface ViewerProviderProps {
 }
 
 // Enhanced Viewer with layers and renderers properties
-export interface ViewerWithConfigs extends CesiumViewer {
+export interface ViewerWithConfigs<
+  R extends RendererRegistry = RendererRegistry,
+> extends CesiumViewer {
   layers: {
-    getLayerConfig: (
-      layerId: string,
-    ) => LayerProps<LayerData, RendererRegistry> | undefined;
-    getAllLayerConfigs: () => LayerProps<LayerData, RendererRegistry>[];
+    getLayerConfig: (layerId: string) => LayerProps<LayerData, R> | undefined;
+    getAllLayerConfigs: () => LayerProps<LayerData, R>[];
   };
   renderers: {
-    getRenderers: () => RendererRegistry;
+    getRenderers: () => R;
+  };
+  filters: {
+    getFilters: () => (renderType: string, layerName: string) => boolean;
+  };
+  mapref: {
+    onEntityCreating?: (options: Entity.ConstructorOptions) => void;
+    onEntityCreate?: (
+      type: RenderTypeFromRegistry<RendererRegistry>,
+      item: LayerData,
+      renderers: RendererRegistry,
+      layerId?: string,
+    ) => Entity.ConstructorOptions | null;
   };
 }
 

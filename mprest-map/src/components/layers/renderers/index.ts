@@ -32,14 +32,14 @@ export function enrichEntity(
   if (!options.properties) {
     options.properties = new PropertyBag({
       rendererType,
-      ...(layerId && { layerId })
+      ...(layerId && { layerId }),
     });
   } else {
-    if (!options.properties.hasProperty('rendererType')) {
-      options.properties.addProperty('rendererType', rendererType);
+    if (!options.properties.hasProperty("rendererType")) {
+      options.properties.addProperty("rendererType", rendererType);
     }
-    if (layerId && !options.properties.hasProperty('layerId')) {
-      options.properties.addProperty('layerId', layerId);
+    if (layerId && !options.properties.hasProperty("layerId")) {
+      options.properties.addProperty("layerId", layerId);
     }
   }
 }
@@ -50,6 +50,7 @@ export function createEntityFromData<R extends RendererRegistry>(
   item: LayerData,
   renderers: R,
   layerId?: string,
+  onEntityCreating?: (options: Entity.ConstructorOptions) => void,
 ): Entity.ConstructorOptions | null {
   const registry = renderers;
 
@@ -60,6 +61,8 @@ export function createEntityFromData<R extends RendererRegistry>(
       const options = item.customRenderer(item);
       if (options) {
         enrichEntity(options, "custom", layerId);
+        onEntityCreating?.(options);
+
         return options;
       }
     }
@@ -69,6 +72,8 @@ export function createEntityFromData<R extends RendererRegistry>(
       const options = renderer ? renderer(item) : null;
       if (options) {
         enrichEntity(options, item.renderType, layerId);
+        onEntityCreating?.(options);
+
         return options;
       }
     }
@@ -80,6 +85,8 @@ export function createEntityFromData<R extends RendererRegistry>(
   const options = renderer ? renderer(item) : null;
   if (options) {
     enrichEntity(options, type, layerId);
+    onEntityCreating?.(options);
+
     return options;
   }
   return null;

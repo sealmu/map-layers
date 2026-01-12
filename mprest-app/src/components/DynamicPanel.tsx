@@ -181,7 +181,7 @@ const DynamicPanel = ({ renderers }: DynamicPanelProps) => {
     //   pixelOffset: new Cartesian2(0, -30), // Higher offset for larger point
     // };
 
-    dataManager.addItem(entityOptions, "dynamic");
+    dataManager.addItem(entityOptions, "dynamic", layerData.renderType);
   };
 
   return (

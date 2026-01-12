@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
-import { CustomDataSource as CesiumCustomDataSource } from "cesium";
+import { CustomDataSource as CesiumCustomDataSource, Entity } from "cesium";
 import { createEntityFromData } from "./renderers";
 import { useLayerAnimations } from "./hooks/useLayerAnimations";
 import type {
@@ -90,18 +90,33 @@ const DataSourceLayer = <R extends RendererRegistry>({
           ? { ...item, customRenderer }
           : item;
 
-        const entityOptions = createEntityFromData(
-          type,
-          itemWithRenderer,
-          renderers,
-          name.toLocaleLowerCase(),
-        );
+        // Check if onEntityCreate callback is provided
+        let entityOptions: Entity.ConstructorOptions | null = null;
+        if (viewer.mapref.onEntityCreate) {
+          entityOptions = viewer.mapref.onEntityCreate(
+            type,
+            itemWithRenderer,
+            renderers,
+            name.toLocaleLowerCase(),
+          );
+        }
+
+        // If callback didn't provide options, use createEntityFromData
+        if (!entityOptions) {
+          entityOptions = createEntityFromData(
+            type,
+            itemWithRenderer,
+            renderers,
+            name.toLocaleLowerCase(),
+            viewer.mapref.onEntityCreating,
+          );
+        }
         if (entityOptions) {
           dataSourceInstance.entities.add(entityOptions);
         }
       });
     }
-  }, [data, type, customRenderer, renderers, getDataSourceInstance, viewer]);
+  }, [data, type, customRenderer, renderers, getDataSourceInstance, viewer, name]);
 
   // Update enabled(active) by removing/adding dataSource from viewer
   useEffect(() => {

@@ -11,9 +11,14 @@ import {
   CallbackPositionProperty,
   Cartesian3,
 } from "cesium";
-import type { ViewerWithConfigs, LayerData, RenderTypeFromRegistry } from "@mprest/map";
+import type {
+  ViewerWithConfigs,
+  LayerData,
+  RenderTypeFromRegistry,
+} from "@mprest/map";
 import { createRenderTypes } from "@mprest/map";
 import { createEntityFromData } from "@mprest/map";
+import { enrichEntity } from "@mprest/map";
 
 export class DataManager {
   private viewer: ViewerWithConfigs;
@@ -25,13 +30,32 @@ export class DataManager {
   /**
    * Add a single item to a specific layer
    */
-  addItem(item: Entity.ConstructorOptions, layerName: string): Entity | null {
+  addItem(
+    item: Entity.ConstructorOptions,
+    layerName: string,
+    renderType?: string,
+  ): Entity | null {
     const dataSource = this.getDataSourceByName(layerName);
     if (!dataSource) {
       console.warn(`Data source with name "${layerName}" not found.`);
       return null;
     }
-    return dataSource.entities.add(item);
+
+    // Enrich the entity with metadata properties
+    const finalRenderType = renderType || "custom";
+    enrichEntity(item, finalRenderType, layerName);
+
+    const entity = dataSource.entities.add(item);
+
+    // Apply current filter state to the new entity
+    if (entity) {
+      entity.show = this.viewer.filters.getFilters()(
+        finalRenderType,
+        layerName,
+      );
+    }
+
+    return entity;
   }
 
   /**
@@ -95,16 +119,32 @@ export class DataManager {
       type = rendererType;
     }
 
-    // Use createEntityFromData to create and enrich the entity options
-    const entityOptions = createEntityFromData(
-      type as RenderTypeFromRegistry<typeof renderers>,
-      itemToUse,
-      renderers,
-      layerId
-    );
+    // Check if onEntityCreate callback is provided
+    let entityOptions: Entity.ConstructorOptions | null = null;
+    if (this.viewer.mapref.onEntityCreate) {
+      entityOptions = this.viewer.mapref.onEntityCreate(
+        type as RenderTypeFromRegistry<typeof renderers>,
+        itemToUse,
+        renderers,
+        layerId,
+      );
+    }
+
+    // If callback didn't provide options, use createEntityFromData
+    if (!entityOptions) {
+      entityOptions = createEntityFromData(
+        type as RenderTypeFromRegistry<typeof renderers>,
+        itemToUse,
+        renderers,
+        layerId,
+        this.viewer.mapref.onEntityCreating,
+      );
+    }
 
     if (!entityOptions) {
-      console.warn(`Failed to create entity options for data item ${data.id} in layer ${layerId}`);
+      console.warn(
+        `Failed to create entity options for data item ${data.id} in layer ${layerId}`,
+      );
       return null;
     }
 
@@ -117,13 +157,15 @@ export class DataManager {
   addDataItem(data: LayerData, layerId: string): Entity | null {
     const resolved = this.resolveRenderer(data, layerId);
     if (!resolved) {
-      console.warn(`Failed to resolve renderer for data item ${data.id} in layer ${layerId}`);
+      console.warn(
+        `Failed to resolve renderer for data item ${data.id} in layer ${layerId}`,
+      );
       return null;
     }
-    const { entityOptions } = resolved!;
+    const { entityOptions, rendererType } = resolved!;
 
     // Add the item using the existing addItem method
-    return this.addItem(entityOptions, layerId);
+    return this.addItem(entityOptions, layerId, rendererType);
   }
 
   /**
@@ -139,7 +181,9 @@ export class DataManager {
     // Resolve renderer to get updated entity options
     const resolved = this.resolveRenderer(data, layerId);
     if (!resolved) {
-      console.warn(`Failed to resolve renderer for updating data item ${data.id} in layer ${layerId}`);
+      console.warn(
+        `Failed to resolve renderer for updating data item ${data.id} in layer ${layerId}`,
+      );
       return false;
     }
     const { entityOptions } = resolved!;
@@ -197,7 +241,10 @@ export class DataManager {
   /**
    * Add multiple items to a specific layer
    */
-  addItems(items: Entity.ConstructorOptions[], layerName: string): (Entity | null)[] {
+  addItems(
+    items: Entity.ConstructorOptions[],
+    layerName: string,
+  ): (Entity | null)[] {
     return items.map((item) => this.addItem(item, layerName));
   }
 

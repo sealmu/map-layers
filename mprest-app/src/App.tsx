@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+// import { useCallback } from "react";
 
 import { Cartesian2, Color, Entity, Cartesian3 } from "cesium";
 
@@ -14,13 +15,12 @@ import {
   createPolylineEntity,
   applyExtractor,
   LayersPanel,
+  FiltersPanel,
   DataConnector,
 } from "@mprest/map";
-import type { LayerConfig } from "@mprest/map";
 
 import DynamicPanel from "./components/DynamicPanel";
 import DynamicRawDataPanel from "./components/DynamicRawDataPanel";
-import FilterModal from "./components/FilterModal";
 
 import type {
   AppContentProps,
@@ -29,6 +29,7 @@ import type {
   LayeredDataWithPayload,
   CesiumMapApi,
   ViewerWithConfigs,
+  // RenderTypeFromRegistry,
 } from "@mprest/map";
 
 import { dataSource } from "./data/dataSource";
@@ -147,82 +148,25 @@ function AppContent({
   const { viewer } = useViewer();
   const layersConfig = useMemo(() => getLayersConfig(), []);
   const [mapApi, setMapApi] = useState<CesiumMapApi | null>(null);
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const [filterData, setFilterData] = useState<Record<string, { types: Record<string, boolean>; layerType?: string }>>({});
+
+  // const enrichEntity = useCallback((entity: Entity.ConstructorOptions) => {
+  //   console.log('Entity is being created', entity);
+  //   void entity; // Return null to use default createEntityFromData
+  // }, []);
+
+  // const onEntityCreate = useCallback((
+  //   type: RenderTypeFromRegistry<RendererRegistry>,
+  //   item: LayerData,
+  //   _renderers: RendererRegistry,
+  //   layerId?: string
+  // ) => {
+  //   console.log('Entity creation requested:', { type, item, layerId });
+  //   return null; // Return null to use default createEntityFromData
+  // }, []);
 
   const handleFilter = () => {
     if (!mapApi || !viewer) return;
-
-    // Collect filter data from all actual layers being rendered
-    const newFilterData: Record<string, { types: Record<string, boolean>; layerType?: string }> = {};
-
-    // Get all layers from the map API, excluding base/imagery layers
-    const allLayers = mapApi.api.layersPanel.layers.filter((layer: LayerConfig) => {
-      // Exclude base map layers and imagery layers
-      const excludeIds = ['street-map', 'openstreetmap', 'base-layer', 'imagery'];
-      return !excludeIds.includes(layer.id.toLowerCase()) &&
-        !layer.id.includes('imagery') &&
-        !layer.id.includes('base');
-    });
-
-    allLayers.forEach(layer => {
-      // Collect unique renderTypes from actual entities in the viewer
-      const types = new Set<string>();
-
-      // Find the data source for this layer and collect entity types
-      const dataSources = (viewer as ViewerWithConfigs).dataSources;
-      for (let i = 0; i < dataSources.length; i++) {
-
-        const dataSource = dataSources.get(i);
-        // Match data source name/id to layer id
-        const dsName = dataSource.name?.toLowerCase();
-        const layerId = layer.id.toLowerCase();
-        if (dsName === layerId || dsName?.includes(layerId)) {
-          // Extract entity types from this data source using stored properties
-          const entities = dataSource.entities.values;
-          entities.forEach(entity => {
-            // Get rendererType from entity properties
-            const rendererType = entity.properties?.rendererType?.getValue();
-            if (rendererType) {
-              types.add(rendererType);
-            }
-          });
-          break;
-        }
-      }
-
-      // If no types found, use "custom" as fallback
-      if (types.size === 0) {
-        types.add("custom");
-      }
-
-      newFilterData[layer.id] = {
-        types: {},
-        layerType: "custom",
-      };
-
-      types.forEach(type => {
-        newFilterData[layer.id].types[type] = true; // Default to visible
-      });
-    });
-
-    setFilterData(newFilterData);
-    setIsFilterModalOpen(true);
-  };
-
-  const handleFilterChange = (layerName: string, type: string, visible: boolean) => {
-    setFilterData(prev => ({
-      ...prev,
-      [layerName]: {
-        ...prev[layerName],
-        types: {
-          ...prev[layerName]?.types,
-          [type]: visible,
-        },
-      },
-    }));
-    // TODO: Apply the filter to actually hide/show entities based on type
-    console.log(`Layer ${layerName}, type ${type}: ${visible ? 'visible' : 'hidden'}`);
+    mapApi.api.filtersPanel.collectFilterData(mapApi.api.layersPanel.layers, viewer as ViewerWithConfigs);
   };
 
   useDroneAnimation(viewer as ViewerWithConfigs, {
@@ -239,6 +183,8 @@ function AppContent({
   return (
     <>
       <CesiumMap
+        // onEntityCreating={enrichEntity}
+        // onEntityCreate={onEntityCreate}
         renderers={renderers}
         animateActivation={true}
         animateVisibility={true}
@@ -305,7 +251,7 @@ function AppContent({
           isDocked={true}
           type={RenderTypes.CUSTOM}
           data={[]}
-          isActive={false}
+          isActive={true}
           isVisible={true}
           description="Dynamic raw data layer updated externally"
         />
@@ -315,12 +261,7 @@ function AppContent({
 
       {mapApi && <LayersPanel api={mapApi.api.layersPanel} onFilter={handleFilter} />}
 
-      <FilterModal
-        isOpen={isFilterModalOpen}
-        onClose={() => setIsFilterModalOpen(false)}
-        filterData={filterData}
-        onFilterChange={handleFilterChange}
-      />
+      {mapApi && <FiltersPanel api={mapApi.api.filtersPanel} />}
 
       <div className="dynamic-panels-container">
         <DynamicPanel renderers={renderers} />
