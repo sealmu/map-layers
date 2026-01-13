@@ -3,7 +3,7 @@
 interface FilterModalProps {
   isOpen: boolean;
   onClose: () => void;
-  filterData: Record<string, { types: Record<string, boolean>; layerType?: string; hasDataSource?: boolean; isVisible?: boolean; displayName: string }>;
+  filterData: Record<string, { types: Record<string, boolean>; layerType?: string; hasDataSource?: boolean; isVisible?: boolean; isActive?: boolean; displayName: string }>;
   onFilterChange: (layerName: string, displayName: string, type: string, visible: boolean) => void;
 }
 
@@ -53,16 +53,16 @@ const FilterModal = ({ isOpen, onClose, filterData, onFilterChange }: FilterModa
             {Object.entries(filterData)
               .filter(() => true)
               .sort(([, a], [, b]) => {
-                const aEnabled = (a.hasDataSource !== false) && (a.isVisible !== false) && Object.keys(a.types).length > 0;
-                const bEnabled = (b.hasDataSource !== false) && (b.isVisible !== false) && Object.keys(b.types).length > 0;
+                const aEnabled = (a.isVisible !== false) && (a.isActive !== false) && Object.keys(a.types).length > 0;
+                const bEnabled = (b.isVisible !== false) && (b.isActive !== false) && Object.keys(b.types).length > 0;
                 // Enabled layers first (true comes before false in sort)
                 return Number(bEnabled) - Number(aEnabled);
               })
               .map(([layerName, layerData]) => {
-                const { types, hasDataSource = true, isVisible = true, displayName } = layerData;
+                const { types, isVisible = true, isActive = true, displayName } = layerData;
                 const allTypes = Object.keys(types);
                 const allVisible = allTypes.every(type => types[type]);
-                const isDisabled = !hasDataSource || !isVisible || Object.keys(types).length === 0;
+                const isDisabled = !isVisible || !isActive || Object.keys(types).length === 0;
 
                 return (
                   <div

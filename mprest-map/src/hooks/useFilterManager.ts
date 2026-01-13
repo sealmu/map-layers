@@ -9,7 +9,12 @@ export const useFilterManager = (layers?: LayerConfig[]) => {
   const { viewer } = useViewer();
 
   const handleFilterChange = useCallback(
-    (layerName: string, displayName: string, type: string, visible: boolean) => {
+    (
+      layerName: string,
+      displayName: string,
+      type: string,
+      visible: boolean,
+    ) => {
       setFilterData((prev) => ({
         ...prev,
         [layerName]: {
@@ -62,6 +67,7 @@ export const useFilterManager = (layers?: LayerConfig[]) => {
         types: {},
         hasDataSource: data.hasDataSource,
         isVisible: data.isVisible,
+        isActive: data.isActive,
         displayName: data.displayName,
       };
 

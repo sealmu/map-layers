@@ -50,6 +50,7 @@ export type LayeredDataWithPayload<TData> = Omit<LayerData, "data"> & {
 export interface CollectedLayerData {
   hasDataSource: boolean;
   isVisible: boolean;
+  isActive: boolean;
   displayName: string;
   entities: Array<{
     id: string;
@@ -193,6 +194,7 @@ export type FilterData = Record<
     layerType?: string;
     hasDataSource?: boolean;
     isVisible?: boolean;
+    isActive?: boolean;
     displayName: string;
   }
 >;
