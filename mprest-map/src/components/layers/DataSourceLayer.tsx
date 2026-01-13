@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { CustomDataSource as CesiumCustomDataSource, Entity } from "cesium";
-import { createEntityFromData } from "./renderers";
+import { createEntityFromData } from "../../helpers/pipeline";
 import { useLayerAnimations } from "./hooks/useLayerAnimations";
 import type {
   DataSourceLayerProps,

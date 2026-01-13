@@ -13,6 +13,6 @@ export { DataManager } from "./helpers/data/DataManager";
 export {
   createEntityFromData,
   enrichEntity,
-} from "./components/layers/renderers";
+} from "./helpers/pipeline";
 export * from "./components/layers/renderers";
 export * from "./types";
