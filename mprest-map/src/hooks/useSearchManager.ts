@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { collectLayerData } from "../helpers/collectLayerData";
 import { useViewer } from "./useViewer";
 import type {
@@ -71,9 +71,8 @@ export const useSearchManager = (
     [],
   );
 
-  const performSearch = useCallback(
+  const updateSearchResults = useCallback(
     (query: string) => {
-      setSearchQuery(query);
       if (!query.trim()) {
         setSearchResults([]);
         return;
@@ -105,6 +104,22 @@ export const useSearchManager = (
     },
     [searchData, searchFilterData, filterData],
   );
+
+  const performSearch = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+      updateSearchResults(query);
+    },
+    [updateSearchResults],
+  );
+
+  // Re-run search when filter data changes and there's an active query
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      updateSearchResults(searchQuery);
+    }
+  }, [searchFilterData, updateSearchResults, searchQuery]);
 
   const openSearchModal = useCallback(() => {
     if (!layers) return;

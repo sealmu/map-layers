@@ -56,7 +56,7 @@ const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
             className={`grouped-toggle-button${isGrouped ? " active" : ""}`}
             onClick={() => setIsGrouped(!isGrouped)}
           >
-            Grouped
+            {isGrouped ? "Grouped" : "Ungrouped"}
           </button>
           <h3>Layers</h3>
           {/* Docked Layers Bar */}
