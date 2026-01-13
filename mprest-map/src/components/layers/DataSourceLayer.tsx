@@ -31,6 +31,10 @@ const DataSourceLayer = <R extends RendererRegistry>({
     dataSourceRef.current = dataSource;
   };
 
+  const clearDataSourceInstance = useCallback(() => {
+    dataSourceRef.current = null;
+  }, []);
+
   useLayerAnimations({
     dataSourceRef,
     isActive: animateActivation ? isActive : false,
@@ -73,8 +77,18 @@ const DataSourceLayer = <R extends RendererRegistry>({
     const dataSourceInstance = getDataSourceInstance();
     if (!dataSourceInstance) return;
 
-    dataSourceInstance.show = isVisible ?? true;
-  }, [isVisible, getDataSourceInstance]);
+    dataSourceInstance.show = (isVisible && isActive) ?? true;
+  }, [isVisible, isActive, getDataSourceInstance]);
+
+  // Clear entities when layer is deactivated
+  // useEffect(() => {
+  //   const dataSourceInstance = getDataSourceInstance();
+  //   if (!dataSourceInstance) return;
+
+  //   if (!isActive) {
+  //     dataSourceInstance.entities.removeAll();
+  //   }
+  // }, [isActive, getDataSourceInstance]);
 
   // Update entities when data or type changes
   useEffect(() => {
@@ -138,9 +152,18 @@ const DataSourceLayer = <R extends RendererRegistry>({
 
     const updateActivation = async () => {
       if (shouldShow) {
-        if (!viewer.dataSources.contains(dataSourceInstance)) {
+        // Recreate data source if it was destroyed
+        let currentDataSource = getDataSourceInstance();
+        if (!currentDataSource || (currentDataSource as any).isDestroyed) {
+          const newDataSource = new CesiumCustomDataSource("");
+          newDataSource.name = id;
+          setDataSourceInstance(newDataSource);
+          currentDataSource = newDataSource;
+        }
+
+        if (!viewer.dataSources.contains(currentDataSource)) {
           try {
-            await viewer.dataSources.add(dataSourceInstance);
+            await viewer.dataSources.add(currentDataSource);
           } catch (error) {
             if (!cancelled) {
               console.error("Failed to add dataSource:", error);
@@ -148,8 +171,10 @@ const DataSourceLayer = <R extends RendererRegistry>({
           }
         }
       } else {
-        if (viewer.dataSources.contains(dataSourceInstance)) {
-          viewer.dataSources.remove(dataSourceInstance, false);
+        const currentDataSource = getDataSourceInstance();
+        if (currentDataSource && viewer.dataSources.contains(currentDataSource)) {
+          viewer.dataSources.remove(currentDataSource, true); // Destroy the data source
+          clearDataSourceInstance();
         }
       }
     };
@@ -160,17 +185,19 @@ const DataSourceLayer = <R extends RendererRegistry>({
       cancelled = true;
       if (addPromise && shouldShow) {
         addPromise.then(() => {
+          const currentDs = getDataSourceInstance();
           if (
-            dataSourceInstance &&
+            currentDs &&
             !viewer.isDestroyed() &&
-            viewer.dataSources.contains(dataSourceInstance)
+            viewer.dataSources.contains(currentDs) &&
+            !(currentDs as any).isDestroyed
           ) {
-            viewer.dataSources.remove(dataSourceInstance, false);
+            viewer.dataSources.remove(currentDs, false);
           }
         });
       }
     };
-  }, [isActive, viewer, getDataSourceInstance]);
+  }, [isActive, viewer, getDataSourceInstance, clearDataSourceInstance, id]);
 
   return null;
 };
