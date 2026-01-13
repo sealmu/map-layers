@@ -11,7 +11,6 @@ import type {
 const DataSourceLayer = <R extends RendererRegistry>({
   viewer,
   id,
-
   type,
   data,
   isActive,
@@ -30,10 +29,6 @@ const DataSourceLayer = <R extends RendererRegistry>({
   const setDataSourceInstance = (dataSource: CesiumCustomDataSource | null) => {
     dataSourceRef.current = dataSource;
   };
-
-  const clearDataSourceInstance = useCallback(() => {
-    dataSourceRef.current = null;
-  }, []);
 
   useLayerAnimations({
     dataSourceRef,
@@ -70,25 +65,15 @@ const DataSourceLayer = <R extends RendererRegistry>({
     if (!dataSourceInstance) return;
 
     dataSourceInstance.name = id;
-  }, [id, getDataSourceInstance]);
+  }, [name, getDataSourceInstance]);
 
   // Update show flag without adding/removing the data source
   useEffect(() => {
     const dataSourceInstance = getDataSourceInstance();
     if (!dataSourceInstance) return;
 
-    dataSourceInstance.show = (isVisible && isActive) ?? true;
-  }, [isVisible, isActive, getDataSourceInstance]);
-
-  // Clear entities when layer is deactivated
-  // useEffect(() => {
-  //   const dataSourceInstance = getDataSourceInstance();
-  //   if (!dataSourceInstance) return;
-
-  //   if (!isActive) {
-  //     dataSourceInstance.entities.removeAll();
-  //   }
-  // }, [isActive, getDataSourceInstance]);
+    dataSourceInstance.show = isVisible ?? true;
+  }, [isVisible, getDataSourceInstance]);
 
   // Update entities when data or type changes
   useEffect(() => {
@@ -139,7 +124,7 @@ const DataSourceLayer = <R extends RendererRegistry>({
         }
       });
     }
-  }, [data, type, customRenderer, renderers, getDataSourceInstance, viewer, id]);
+  }, [data, type, customRenderer, renderers, getDataSourceInstance, viewer, name]);
 
   // Update enabled(active) by removing/adding dataSource from viewer
   useEffect(() => {
@@ -152,18 +137,9 @@ const DataSourceLayer = <R extends RendererRegistry>({
 
     const updateActivation = async () => {
       if (shouldShow) {
-        // Recreate data source if it was destroyed
-        let currentDataSource = getDataSourceInstance();
-        if (!currentDataSource || (currentDataSource as any).isDestroyed) {
-          const newDataSource = new CesiumCustomDataSource("");
-          newDataSource.name = id;
-          setDataSourceInstance(newDataSource);
-          currentDataSource = newDataSource;
-        }
-
-        if (!viewer.dataSources.contains(currentDataSource)) {
+        if (!viewer.dataSources.contains(dataSourceInstance)) {
           try {
-            await viewer.dataSources.add(currentDataSource);
+            await viewer.dataSources.add(dataSourceInstance);
           } catch (error) {
             if (!cancelled) {
               console.error("Failed to add dataSource:", error);
@@ -171,10 +147,8 @@ const DataSourceLayer = <R extends RendererRegistry>({
           }
         }
       } else {
-        const currentDataSource = getDataSourceInstance();
-        if (currentDataSource && viewer.dataSources.contains(currentDataSource)) {
-          viewer.dataSources.remove(currentDataSource, true); // Destroy the data source
-          clearDataSourceInstance();
+        if (viewer.dataSources.contains(dataSourceInstance)) {
+          viewer.dataSources.remove(dataSourceInstance, false);
         }
       }
     };
@@ -185,19 +159,17 @@ const DataSourceLayer = <R extends RendererRegistry>({
       cancelled = true;
       if (addPromise && shouldShow) {
         addPromise.then(() => {
-          const currentDs = getDataSourceInstance();
           if (
-            currentDs &&
+            dataSourceInstance &&
             !viewer.isDestroyed() &&
-            viewer.dataSources.contains(currentDs) &&
-            !(currentDs as any).isDestroyed
+            viewer.dataSources.contains(dataSourceInstance)
           ) {
-            viewer.dataSources.remove(currentDs, false);
+            viewer.dataSources.remove(dataSourceInstance, false);
           }
         });
       }
     };
-  }, [isActive, viewer, getDataSourceInstance, clearDataSourceInstance, id]);
+  }, [isActive, viewer, getDataSourceInstance]);
 
   return null;
 };
