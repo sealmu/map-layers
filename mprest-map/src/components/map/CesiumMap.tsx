@@ -72,8 +72,8 @@ const CesiumMap = <R extends RendererRegistry>({
   }, [children]);
 
   const layersPanelApi = useLayerManager(layers);
-  const filtersPanelApi = useFilterManager(layersPanelApi.layers);
-  const searchPanelApi = useSearchManager(filtersPanelApi.filterData, layersPanelApi.layers);
+  const filtersPanelApi = useFilterManager(layers, layersPanelApi.layerStates);
+  const searchPanelApi = useSearchManager(filtersPanelApi.filterData, layers);
   const entitiesApi = useEntitiesManager();
 
   // Initialize Cesium Viewer

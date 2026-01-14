@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { FilterModal, type FiltersPanelProps } from "@mprest/map";
 
 const FiltersPanel = ({ api }: FiltersPanelProps) => {
@@ -8,9 +9,16 @@ const FiltersPanel = ({ api }: FiltersPanelProps) => {
     closeFilterModal,
   } = api;
 
+  const [modalKey, setModalKey] = useState(0);
+
+  useEffect(() => {
+    setModalKey(k => k + 1);
+  }, [filterData]);
+
   return (
     <>
       <FilterModal
+        key={modalKey}
         isOpen={isFilterModalOpen}
         onClose={closeFilterModal}
         filterData={filterData}

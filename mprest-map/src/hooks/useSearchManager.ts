@@ -2,15 +2,17 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { collectLayerData } from "../helpers/collectLayerData";
 import { useViewer } from "./useViewer";
 import type {
-  LayerConfig,
+  LayerProps,
+  LayerData,
+  RendererRegistry,
   FilterData,
   SearchData,
   SearchResult,
 } from "../types";
 
-export const useSearchManager = (
+export const useSearchManager = <R extends RendererRegistry>(
   filterData?: FilterData,
-  layers?: LayerConfig[],
+  layers?: LayerProps<LayerData, R>[],
 ) => {
   const [searchData, setSearchData] = useState<SearchData>({});
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
@@ -22,7 +24,7 @@ export const useSearchManager = (
   const { viewer } = useViewer();
 
   const collectSearchData = useCallback(
-    (layers: LayerConfig[]) => {
+    (layers: LayerProps<LayerData, R>[]) => {
       if (!viewer) return {};
 
       const layerData = collectLayerData(layers, viewer);

@@ -1,9 +1,9 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useLayoutEffect } from "react";
 import { collectLayerData } from "../helpers/collectLayerData";
 import { useViewer } from "./useViewer";
-import type { LayerConfig, FilterData } from "../types";
+import type { LayerProps, LayerData, RendererRegistry, FilterData } from "../types";
 
-export const useFilterManager = (layers?: LayerConfig[]) => {
+export const useFilterManager = <R extends RendererRegistry>(layers?: LayerProps<LayerData, R>[], layerStates?: Record<string, { isActive: boolean; isVisible: boolean; isDocked: boolean }>) => {
   const [filterData, setFilterData] = useState<FilterData>({});
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const { viewer } = useViewer();
@@ -33,7 +33,7 @@ export const useFilterManager = (layers?: LayerConfig[]) => {
           const dataSource = dataSources.get(i);
           // Match data source name/id to layer id
           const dsName = dataSource.name?.toLowerCase();
-          if (dsName === (displayName || layerName).toLowerCase()) {
+          if (dsName === layerName.toLowerCase() || dsName === displayName?.toLowerCase()) {
             // Update entity visibility based on type
             const entities = dataSource.entities.values;
             entities.forEach((entity) => {
@@ -66,8 +66,8 @@ export const useFilterManager = (layers?: LayerConfig[]) => {
       newFilterData[layerId] = {
         types: {},
         hasDataSource: data.hasDataSource,
-        isVisible: data.isVisible,
-        isActive: data.isActive,
+        isVisible: layerStates?.[layerId]?.isVisible ?? data.isVisible,
+        isActive: layerStates?.[layerId]?.isActive ?? data.isActive,
         displayName: data.displayName,
       };
 
@@ -104,7 +104,7 @@ export const useFilterManager = (layers?: LayerConfig[]) => {
     });
 
     return newFilterData;
-  }, [layers, viewer]);
+  }, [layers, viewer, layerStates]);
 
   const openFilterModal = useCallback(() => {
     const newFilterData = collectFilterData();

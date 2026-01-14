@@ -1,8 +1,8 @@
-import type { LayerConfig, CollectedLayerData } from "@mprest/map";
+import type { LayerProps, LayerData, RendererRegistry, CollectedLayerData } from "@mprest/map";
 import { Viewer as CesiumViewer } from "cesium";
 
-export const collectLayerData = (
-  layers: LayerConfig[],
+export const collectLayerData = <R extends RendererRegistry>(
+  layers: LayerProps<LayerData, R>[],
   viewer: CesiumViewer | null,
 ): Record<string, CollectedLayerData> => {
   if (!viewer) return {};
@@ -10,7 +10,7 @@ export const collectLayerData = (
   const layerData: Record<string, CollectedLayerData> = {};
 
   // Get all layers from the map API, excluding base/imagery layers
-  const allLayers = layers.filter((layer: LayerConfig) => {
+  const allLayers = layers.filter((layer: LayerProps<LayerData, R>) => {
     // Exclude base map layers and imagery layers
     const excludeIds = ["street-map", "openstreetmap", "base-layer", "imagery"];
     return (
@@ -39,8 +39,9 @@ export const collectLayerData = (
       const dataSource = dataSources.get(i);
       // Match data source name/id to layer id or name
       const dsName = dataSource.name?.toLowerCase();
-      const layerNameId = layer.name?.toLowerCase() || layer.id.toLowerCase();
-      if (dsName === layerNameId) {
+      const layerIdLower = layer.id.toLowerCase();
+      const layerNameLower = layer.name?.toLowerCase();
+      if (dsName === layerIdLower || dsName === layerNameLower) {
         hasDataSource = true;
         // Extract entity types from this data source using stored properties
         const ents = dataSource.entities.values;
@@ -48,7 +49,7 @@ export const collectLayerData = (
           // Get rendererType from entity properties
           const rendererType = entity.properties?.rendererType?.getValue();
           if (rendererType) {
-            if (rendererType !== layerNameId) types.add(rendererType);
+            types.add(rendererType);
           }
           // Collect entity for search
           entities.push({
@@ -62,10 +63,18 @@ export const collectLayerData = (
       }
     }
 
-    // If no types found, use "custom" as fallback
-    if (types.size === 0) {
-      types.add(layer.id.toLowerCase());
+    // Also collect types from layer data if available
+    if (layer.data && layer.data.length > 0) {
+      layer.data.forEach((item) => {
+        if (item.renderType) {
+          types.add(item.renderType);
+        } else if (layer.type && layer.type !== 'custom') {
+          types.add(layer.type);
+        }
+      });
     }
+
+    // No fallback
 
     layerData[layer.id] = {
       hasDataSource,
