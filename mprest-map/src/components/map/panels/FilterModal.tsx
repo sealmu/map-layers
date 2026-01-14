@@ -53,16 +53,27 @@ const FilterModal = ({ isOpen, onClose, filterData, onFilterChange }: FilterModa
             {Object.entries(filterData)
               .filter(() => true)
               .sort(([, a], [, b]) => {
-                const aEnabled = (a.isVisible !== false) && (a.isActive !== false) && Object.keys(a.types).length > 0;
-                const bEnabled = (b.isVisible !== false) && (b.isActive !== false) && Object.keys(b.types).length > 0;
-                // Enabled layers first (true comes before false in sort)
-                return Number(bEnabled) - Number(aEnabled);
+                const aEnabled = (a.isVisible !== false) && (a.isActive !== false);
+                const bEnabled = (b.isVisible !== false) && (b.isActive !== false);
+                const aHasData = Object.keys(a.types).length > 0;
+                const bHasData = Object.keys(b.types).length > 0;
+
+                // Priority: enabled with data > enabled without data > disabled
+                const getPriority = (enabled: boolean, hasData: boolean) => {
+                  if (!enabled) return 0;
+                  return hasData ? 2 : 1;
+                };
+
+                const aPriority = getPriority(aEnabled, aHasData);
+                const bPriority = getPriority(bEnabled, bHasData);
+
+                return bPriority - aPriority;
               })
               .map(([layerName, layerData]) => {
                 const { types, isVisible = true, isActive = true, displayName } = layerData;
                 const allTypes = Object.keys(types);
                 const allVisible = allTypes.every(type => types[type]);
-                const isDisabled = !isVisible || !isActive || Object.keys(types).length === 0;
+                const isDisabled = !isVisible || !isActive;
 
                 return (
                   <div
@@ -136,7 +147,7 @@ const FilterModal = ({ isOpen, onClose, filterData, onFilterChange }: FilterModa
                             fontSize: '12px',
                             fontStyle: 'italic',
                           }}>
-                            Disabled
+                            {isVisible && isActive ? 'No data yet' : 'Disabled'}
                           </div>
                         ) : (
                           <>
