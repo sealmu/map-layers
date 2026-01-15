@@ -71,19 +71,12 @@ const SearchModal = ({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ padding: '20px', paddingBottom: '0' }}>
+        {/* Fixed Header: Title, Search Box, and Layer Toggles */}
+        <div style={{ padding: '20px', paddingBottom: '0', flexShrink: 0 }}>
           <h3 style={{ marginTop: 0, marginBottom: '20px' }}>Search Entities</h3>
-        </div>
 
-        <div style={{
-          flex: 1,
-          overflow: 'auto',
-          overflowX: 'hidden',
-          minHeight: 0,
-          padding: '0 20px 0 20px',
-        }}>
           {/* Search Box */}
-          <div style={{ marginBottom: '20px', paddingTop: '20px' }}>
+          <div style={{ marginBottom: '20px' }}>
             <input
               type="text"
               placeholder="Search by name or ID..."
@@ -235,112 +228,113 @@ const SearchModal = ({
               })}
             </div>
           </div>
+        </div>
 
-          {/* Search Results */}
-          {searchQuery.trim() && (
-            <div>
-              <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#666' }}>
-                Results ({searchResults.length}):
-              </h4>
-              {searchResults.length > 0 ? (
-                <div style={{
-                  maxHeight: '300px',
-                  overflow: 'auto',
-                  border: '1px solid #e9ecef',
-                  borderRadius: '6px',
-                  marginBottom: '10px',
-                }}>
-                  {searchResults.map((result) => (
-                    <div
-                      key={`${result.layerId}-${result.id}`}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '10px 12px',
-                        borderBottom: '1px solid #f1f3f4',
-                        background: '#ffffff',
-                        cursor: 'pointer',
-                      }}
-                      onClick={(e) => {
-                        // Prevent row click if eye icon was clicked
-                        if ((e.target as HTMLElement).closest('.eye-icon')) return;
-                        onSelectEntity?.(result.id, result.layerId, false);
-                        onClose();
-                      }}
-                    >
-                      <div style={{ flex: 1 }}>
-                        <div style={{
-                          fontSize: '14px',
-                          fontWeight: '500',
-                          color: '#2c3e50',
-                        }}>
-                          {result.name}
-                        </div>
-                        <div style={{
-                          fontSize: '12px',
-                          color: '#666',
-                        }}>
-                          ID: {result.id}
-                        </div>
+        {/* Scrollable Results Area */}
+        {searchQuery.trim() && (
+          <div style={{
+            flex: 1,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+            padding: '0 20px',
+          }}>
+            <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#666', flexShrink: 0 }}>
+              Results ({searchResults.length}):
+            </h4>
+            {searchResults.length > 0 ? (
+              <div style={{
+                flex: 1,
+                overflow: 'auto',
+                border: '1px solid #e9ecef',
+                borderRadius: '6px',
+                marginBottom: '10px',
+              }}>
+                {searchResults.map((result) => (
+                  <div
+                    key={`${result.layerId}-${result.id}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 12px',
+                      borderBottom: '1px solid #f1f3f4',
+                      background: '#ffffff',
+                      cursor: 'pointer',
+                    }}
+                    onClick={(e) => {
+                      // Prevent row click if eye icon was clicked
+                      if ((e.target as HTMLElement).closest('.eye-icon')) return;
+                      onSelectEntity?.(result.id, result.layerId, false);
+                      onClose();
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <div style={{
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#2c3e50',
+                      }}>
+                        {result.name}
                       </div>
                       <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
+                        fontSize: '12px',
+                        color: '#666',
                       }}>
-                        <span style={{
-                          fontSize: '12px',
-                          color: '#666',
-                        }}>
-                          {result.layerId}
-                        </span>
-                        <button
-                          className="eye-icon"
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            padding: '4px',
-                            borderRadius: '3px',
-                            color: '#666',
-                            fontSize: '20px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelectEntity?.(result.id, result.layerId, 1000000);
-                            onClose();
-                          }}
-                          title="Select and fly to entity"
-                        >
-                          👁️
-                        </button>
-                        {/* <div style={{
-                                                    width: '8px',
-                                                    height: '8px',
-                                                    borderRadius: '50%',
-                                                    background: '#2196f3', // Bullet color, could be based on layer
-                                                }} /> */}
+                        ID: {result.id}
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{
-                  padding: '20px',
-                  textAlign: 'center',
-                  color: '#666',
-                  fontStyle: 'italic',
-                }}>
-                  No entities found
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}>
+                      <span style={{
+                        fontSize: '12px',
+                        color: '#666',
+                      }}>
+                        {result.layerId}
+                      </span>
+                      <button
+                        className="eye-icon"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: '4px',
+                          borderRadius: '3px',
+                          color: '#666',
+                          fontSize: '20px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectEntity?.(result.id, result.layerId, 1000000);
+                          onClose();
+                        }}
+                        title="Select and fly to entity"
+                      >
+                        👁️
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{
+                padding: '20px',
+                textAlign: 'center',
+                color: '#666',
+                fontStyle: 'italic',
+              }}>
+                No entities found
+              </div>
+            )}
+          </div>
+        )}
 
         <div style={{
           padding: '20px',
