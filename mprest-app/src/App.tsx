@@ -236,12 +236,12 @@ function AppContent({
     }
   }, []);
 
-  const handleSelecting = useCallback((entity: Entity) => {  // entity: Entity, _location: MapClickLocation
+  const handleSelecting = useCallback((entity: Entity, location: MapClickLocation) => {
     // Cancel selection for polyline entities
     if (entity.polyline) {
-      return true; // false;
+      return false; // Cancel selection for polylines
     }
-    return true;
+    return true; // Allow selection for other entities
   }, []);
 
   useDroneAnimation(viewer as ViewerWithConfigs, {

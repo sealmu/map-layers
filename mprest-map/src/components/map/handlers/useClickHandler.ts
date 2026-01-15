@@ -76,7 +76,7 @@ export function useClickHandler<R extends RendererRegistry = RendererRegistry>({
               const screenPosition = viewer.scene.cartesianToCanvasCoordinates(position);
               // Only call onClick if the entity is visible on screen
               if (screenPosition && screenPosition.x >= 0 && screenPosition.x <= viewer.canvas.clientWidth &&
-                  screenPosition.y >= 0 && screenPosition.y <= viewer.canvas.clientHeight) {
+                screenPosition.y >= 0 && screenPosition.y <= viewer.canvas.clientHeight) {
                 onClick(selectedEntity, location, screenPosition);
               }
             }
