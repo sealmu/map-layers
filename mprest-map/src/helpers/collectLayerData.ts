@@ -30,10 +30,11 @@ export const collectLayerData = <R extends RendererRegistry>(
       renderType?: string;
     }> = [];
     let hasDataSource = false;
-    const isVisible = layer.isVisible !== false; // Default to true if not specified
-    const isActive = layer.isActive !== false; // Default to true if not specified
+    let isVisible = true;
+    let isActive = false;
 
     // Find the data source for this layer and collect entity types
+    // Read actual runtime state from Cesium (source of truth)
     const dataSources = viewer.dataSources;
     for (let i = 0; i < dataSources.length; i++) {
       const dataSource = dataSources.get(i);
@@ -43,6 +44,10 @@ export const collectLayerData = <R extends RendererRegistry>(
       const layerNameLower = layer.name?.toLowerCase();
       if (dsName === layerIdLower || dsName === layerNameLower) {
         hasDataSource = true;
+        // Read visibility from actual dataSource state
+        isVisible = dataSource.show;
+        // If dataSource is in viewer.dataSources, it's active
+        isActive = true;
         // Extract entity types from this data source using stored properties
         const ents = dataSource.entities.values;
         ents.forEach((entity) => {
