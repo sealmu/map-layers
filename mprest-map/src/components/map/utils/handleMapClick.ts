@@ -12,7 +12,7 @@ export interface HandleMapClickOptions<R extends RendererRegistry = RendererRegi
   viewer: ViewerWithConfigs<R>;
   position: Cartesian2;
   onSelecting?: (entity: Entity, location: MapClickLocation) => boolean;
-  onClick?: (entity: Entity | null, location: MapClickLocation) => void;
+  onClick?: (entity: Entity | null, location: MapClickLocation, screenPosition?: Cartesian2) => void;
 }
 
 /**
@@ -74,6 +74,7 @@ export function handleMapClick<R extends RendererRegistry = RendererRegistry>({
 
   // Call onClick callback if provided - only pass approved entity
   if (onClick && location) {
-    onClick(approvedEntity, location);
+    const screenPosition = viewer.scene.cartesianToCanvasCoordinates(location.cartesian);
+    onClick(approvedEntity, location, screenPosition);
   }
 }

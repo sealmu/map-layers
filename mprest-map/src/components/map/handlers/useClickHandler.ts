@@ -10,7 +10,7 @@ import { handleMapClick } from "../utils";
 
 export interface UseClickHandlerOptions<R extends RendererRegistry = RendererRegistry> {
   viewer: ViewerWithConfigs<R> | null;
-  onClick?: (entity: Entity | null, location: MapClickLocation) => void;
+  onClick?: (entity: Entity | null, location: MapClickLocation, screenPosition?: Cartesian2) => void;
   onSelecting?: (entity: Entity, location: MapClickLocation) => boolean;
 }
 

@@ -1,5 +1,6 @@
 import type { ReactNode, RefObject } from "react";
 import {
+  Cartesian2,
   Cartesian3,
   Cartographic,
   Color,
@@ -170,7 +171,7 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
     renderers: RendererRegistry,
     layerId?: string,
   ) => Entity.ConstructorOptions | null;
-  onClick?: (entity: Entity | null, location: MapClickLocation) => void;
+  onClick?: (entity: Entity | null, location: MapClickLocation, screenPosition?: Cartesian2) => void;
   onSelecting?: (entity: Entity, location: MapClickLocation) => boolean;
 }
 

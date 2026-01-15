@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 
 import { Cartesian2, Color, Entity, Cartesian3 } from "cesium";
 
@@ -145,6 +145,7 @@ function App() {
 interface EntityPopupInfo {
   entity: Entity;
   location: MapClickLocation;
+  screenPosition: Cartesian2;
 }
 
 function AppContent({
@@ -157,6 +158,50 @@ function AppContent({
   const [layersPanelDocked, setLayersPanelDocked] = useState(true);
   const [dynamicPanelsDocked, setDynamicPanelsDocked] = useState(true);
   const [popupInfo, setPopupInfo] = useState<EntityPopupInfo | null>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const [popupDimensions, setPopupDimensions] = useState({ width: 350, height: 250 });
+
+  // Calculate popup position to stay within viewport bounds
+  const popupPosition = useMemo(() => {
+    if (!popupInfo) return null;
+
+    const offset = 10;
+    let left = popupInfo.screenPosition.x + offset;
+    let top = popupInfo.screenPosition.y + offset;
+
+    const popupWidth = popupDimensions.width;
+    const popupHeight = popupDimensions.height;
+
+    // Check if positioning to the right would go off-screen
+    const wouldOverflowRight = left + popupWidth > window.innerWidth;
+    const wouldOverflowBottom = top + popupHeight > window.innerHeight;
+
+    // Adjust position based on available space
+    if (wouldOverflowRight) {
+      left = popupInfo.screenPosition.x - popupWidth - offset;
+    }
+
+    if (wouldOverflowBottom) {
+      top = popupInfo.screenPosition.y - popupHeight - offset;
+    }
+
+    // Ensure popup stays within viewport bounds
+    left = Math.max(0, Math.min(left, window.innerWidth - popupWidth));
+    top = Math.max(0, Math.min(top, window.innerHeight - popupHeight));
+
+    return { left, top };
+  }, [popupInfo, popupDimensions]);
+
+  // Measure popup dimensions after it's rendered
+  useEffect(() => {
+    if (popupInfo && popupRef.current) {
+      const rect = popupRef.current.getBoundingClientRect();
+      setPopupDimensions({
+        width: rect.width,
+        height: rect.height
+      });
+    }
+  }, [popupInfo]);
 
   // const enrichEntity = useCallback((entity: Entity.ConstructorOptions) => {
   //   console.log('Entity is being created', entity);
@@ -183,9 +228,9 @@ function AppContent({
     mapApi.api.searchPanel.openSearchModal();
   };
 
-  const handleMapClick = useCallback((entity: Entity | null, location: MapClickLocation) => {
-    if (entity) {
-      setPopupInfo({ entity, location });
+  const handleMapClick = useCallback((entity: Entity | null, location: MapClickLocation, screenPosition?: Cartesian2) => {
+    if (entity && screenPosition) {
+      setPopupInfo({ entity, location, screenPosition });
     } else {
       setPopupInfo(null);
     }
@@ -298,13 +343,14 @@ function AppContent({
         />
       </CesiumMap>
 
-      {popupInfo && (
+      {popupInfo && popupPosition && (
         <div
+          ref={popupRef}
           className="entity-popup"
           style={{
             position: "absolute",
-            top: "80px",
-            right: "20px",
+            top: `${popupPosition.top}px`,
+            left: `${popupPosition.left}px`,
             backgroundColor: "rgba(0, 0, 0, 0.85)",
             color: "white",
             padding: "16px",
@@ -312,7 +358,8 @@ function AppContent({
             minWidth: "250px",
             maxWidth: "350px",
             boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
-            zIndex: 1000,
+            zIndex: 3000,
+            pointerEvents: "auto",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
