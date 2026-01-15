@@ -191,7 +191,7 @@ function AppContent({
     }
   }, []);
 
-  const handleSelecting = useCallback((entity: Entity, _location: MapClickLocation) => {
+  const handleSelecting = useCallback((entity: Entity) => {  // entity: Entity, _location: MapClickLocation
     // Cancel selection for polyline entities
     if (entity.polyline) {
       return true; // false;
