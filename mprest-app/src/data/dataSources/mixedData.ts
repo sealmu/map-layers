@@ -103,7 +103,7 @@ function createDiamondMarker(item: LayerData): Entity.ConstructorOptions {
       outlineWidth: 2,
     },
     label: {
-      text: "❄️",
+      text: "✹",
       font: "48px sans-serif",
       fillColor: item.color,
       outlineColor: Color.BLACK,
