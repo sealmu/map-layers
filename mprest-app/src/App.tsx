@@ -1,5 +1,4 @@
-import { useMemo, useState } from "react";
-// import { useCallback } from "react";
+import { useMemo, useState, useCallback } from "react";
 
 import { Cartesian2, Color, Entity, Cartesian3 } from "cesium";
 
@@ -31,7 +30,7 @@ import type {
   LayeredDataWithPayload,
   CesiumMapApi,
   ViewerWithConfigs,
-  // RenderTypeFromRegistry,
+  MapClickLocation,
 } from "@mprest/map";
 
 import { dataSource } from "./data/dataSource";
@@ -143,6 +142,11 @@ function App() {
 }
 
 
+interface EntityPopupInfo {
+  entity: Entity;
+  location: MapClickLocation;
+}
+
 function AppContent({
   data,
   renderers,
@@ -152,6 +156,7 @@ function AppContent({
   const [mapApi, setMapApi] = useState<CesiumMapApi | null>(null);
   const [layersPanelDocked, setLayersPanelDocked] = useState(true);
   const [dynamicPanelsDocked, setDynamicPanelsDocked] = useState(true);
+  const [popupInfo, setPopupInfo] = useState<EntityPopupInfo | null>(null);
 
   // const enrichEntity = useCallback((entity: Entity.ConstructorOptions) => {
   //   console.log('Entity is being created', entity);
@@ -178,6 +183,22 @@ function AppContent({
     mapApi.api.searchPanel.openSearchModal();
   };
 
+  const handleMapClick = useCallback((entity: Entity | null, location: MapClickLocation) => {
+    if (entity) {
+      setPopupInfo({ entity, location });
+    } else {
+      setPopupInfo(null);
+    }
+  }, []);
+
+  const handleSelecting = useCallback((entity: Entity, _location: MapClickLocation) => {
+    // Cancel selection for polyline entities
+    if (entity.polyline) {
+      return true; // false;
+    }
+    return true;
+  }, []);
+
   useDroneAnimation(viewer as ViewerWithConfigs, {
     droneId: "drone2",
     centerLon: -104.99,
@@ -198,6 +219,8 @@ function AppContent({
         animateActivation={true}
         animateVisibility={true}
         onApiReady={setMapApi}
+        onClick={handleMapClick}
+        onSelecting={handleSelecting}
       >
         <Layer
           id="points"
@@ -274,6 +297,54 @@ function AppContent({
           groupIsDocked={false}
         />
       </CesiumMap>
+
+      {popupInfo && (
+        <div
+          className="entity-popup"
+          style={{
+            position: "absolute",
+            top: "80px",
+            right: "20px",
+            backgroundColor: "rgba(0, 0, 0, 0.85)",
+            color: "white",
+            padding: "16px",
+            borderRadius: "8px",
+            minWidth: "250px",
+            maxWidth: "350px",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+            zIndex: 1000,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+            <h3 style={{ margin: 0, fontSize: "16px" }}>Entity Info</h3>
+            <button
+              onClick={() => setPopupInfo(null)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "white",
+                fontSize: "18px",
+                cursor: "pointer",
+                padding: "0 4px",
+              }}
+            >
+              ×
+            </button>
+          </div>
+          <div style={{ fontSize: "14px", lineHeight: "1.6" }}>
+            <div><strong>ID:</strong> {popupInfo.entity.id}</div>
+            <div><strong>Name:</strong> {popupInfo.entity.name || "N/A"}</div>
+            <div style={{ marginTop: "8px", borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: "8px" }}>
+              <strong>Location:</strong>
+              <div style={{ marginLeft: "8px", fontSize: "13px" }}>
+                <div>Lat: {popupInfo.location.latitude.toFixed(6)}°</div>
+                <div>Lon: {popupInfo.location.longitude.toFixed(6)}°</div>
+                <div>Height: {popupInfo.location.height.toFixed(2)}m</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <DataConnector dataSource={dataSourceDynamic} config={DataConnectorConfig} />
 

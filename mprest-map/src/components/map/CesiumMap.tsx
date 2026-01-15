@@ -3,15 +3,15 @@ import {
   useEffect,
   useMemo,
   useRef,
-  Children,
-  isValidElement,
+  // Children,
+  // isValidElement,
 } from "react";
 import {
-  Viewer as CesiumViewer,
   Ion,
   OpenStreetMapImageryProvider,
   Cartesian3,
   ImageryLayer,
+  Viewer as CesiumViewer,
 } from "cesium";
 import DataSourceLayer from "../layers/DataSourceLayer";
 import type {
@@ -27,6 +27,8 @@ import { useLayerManager } from "../../hooks/useLayerManager";
 import { useFilterManager } from "../../hooks/useFilterManager";
 import { useSearchManager } from "../../hooks/useSearchManager";
 import { useEntitiesManager } from "../../hooks/useEntitiesManager";
+import { useClickHandler } from "./handlers";
+import { extractLayersFromChildren, hasLayersChanged } from "./utils";
 
 const CesiumMap = <R extends RendererRegistry>({
   children,
@@ -37,6 +39,8 @@ const CesiumMap = <R extends RendererRegistry>({
   onApiReady,
   onEntityCreating,
   onEntityCreate,
+  onClick,
+  onSelecting,
 }: CesiumMapProps<R> & { onApiReady?: (api: CesiumMapApi) => void }) => {
   const { setViewer: setContextViewer } = useViewer();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,26 +50,8 @@ const CesiumMap = <R extends RendererRegistry>({
   // Extract layer props from children
   const layersRef = useRef<LayerProps<LayerData, R>[]>([]);
   const layers = useMemo(() => {
-    const layerArray: LayerProps<LayerData, R>[] = [];
-    Children.toArray(children).forEach((child) => {
-      if (isValidElement(child) && child.props) {
-        layerArray.push(child.props as LayerProps<LayerData, R>);
-      }
-    });
-    // Only update if the layers actually changed (deep compare)
-    const hasChanged =
-      layerArray.length !== layersRef.current.length ||
-      layerArray.some((layer, i) => {
-        if (i >= layersRef.current.length) return true;
-        const prev = layersRef.current[i];
-        return (
-          layer.id !== prev.id ||
-          layer.name !== prev.name ||
-          layer.type !== prev.type ||
-          layer.isDocked !== prev.isDocked
-        );
-      });
-    if (hasChanged) {
+    const layerArray = extractLayersFromChildren<R>(children);
+    if (hasLayersChanged(layerArray, layersRef.current)) {
       layersRef.current = layerArray;
     }
     return layersRef.current;
@@ -157,6 +143,9 @@ const CesiumMap = <R extends RendererRegistry>({
         layersPanelApi.layerStates["street-map"]?.isVisible ?? true;
     }
   }, [layersPanelApi.layerStates]);
+
+  // Handle onClick and onSelecting callbacks
+  useClickHandler({ viewer, onClick, onSelecting });
 
   const api = useMemo<CesiumMapApi | null>(() => {
     if (!layersPanelApi || !filtersPanelApi || !searchPanelApi || !entitiesApi) return null;

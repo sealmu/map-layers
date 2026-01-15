@@ -1,11 +1,21 @@
 import type { ReactNode, RefObject } from "react";
 import {
   Cartesian3,
+  Cartographic,
   Color,
   Entity,
   Viewer as CesiumViewer,
   CustomDataSource,
 } from "cesium";
+
+// Location returned by map click/selection callbacks
+export interface MapClickLocation {
+  cartesian: Cartesian3;
+  cartographic: Cartographic;
+  longitude: number;
+  latitude: number;
+  height: number;
+}
 
 // Type for entity renderer functions
 export type EntityRenderer = (item: LayerData) => Entity.ConstructorOptions;
@@ -160,6 +170,8 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
     renderers: RendererRegistry,
     layerId?: string,
   ) => Entity.ConstructorOptions | null;
+  onClick?: (entity: Entity | null, location: MapClickLocation) => void;
+  onSelecting?: (entity: Entity, location: MapClickLocation) => boolean;
 }
 
 export interface LayersPanelApi {
