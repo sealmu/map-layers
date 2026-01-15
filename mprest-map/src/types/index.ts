@@ -163,7 +163,7 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
   animateActivation?: boolean;
   animateVisibility?: boolean;
   onApiReady?: (api: CesiumMapApi) => void;
-  onEntityCreating?: (options: Entity.ConstructorOptions) => void;
+  onEntityCreating?: (options: Entity.ConstructorOptions, item: LayerData) => void;
   onEntityCreate?: (
     type: RenderTypeFromRegistry<RendererRegistry>,
     item: LayerData,
@@ -340,7 +340,7 @@ export interface ViewerWithConfigs<
   };
   filters: FiltersPanelApi;
   mapref: {
-    onEntityCreating?: (options: Entity.ConstructorOptions) => void;
+    onEntityCreating?: (options: Entity.ConstructorOptions, item: LayerData) => void;
     onEntityCreate?: (
       type: RenderTypeFromRegistry<RendererRegistry>,
       item: LayerData,
