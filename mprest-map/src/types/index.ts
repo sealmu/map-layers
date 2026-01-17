@@ -365,17 +365,23 @@ export interface ViewerWithConfigs<
   };
   filters: FiltersPanelApi;
   handlers: {
-    onClick: EventHandler<(
-      entity: Entity | null,
-      location: MapClickLocation,
-      screenPosition?: Cartesian2,
-    ) => void>;
-    onClickPrevented: EventHandler<(entity: Entity, location: MapClickLocation) => void>;
-    onSelected: EventHandler<(
-      entity: Entity | null,
-      location?: MapClickLocation,
-      screenPosition?: Cartesian2,
-    ) => void>;
+    onClick: EventHandler<
+      (
+        entity: Entity | null,
+        location: MapClickLocation,
+        screenPosition?: Cartesian2,
+      ) => void
+    >;
+    onClickPrevented: EventHandler<
+      (entity: Entity, location: MapClickLocation) => void
+    >;
+    onSelected: EventHandler<
+      (
+        entity: Entity | null,
+        location?: MapClickLocation,
+        screenPosition?: Cartesian2,
+      ) => void
+    >;
     onChangePosition: EventHandler<(location: MapClickLocation | null) => void>;
   };
   mapref: {

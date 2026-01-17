@@ -28,5 +28,7 @@ export function callAllSubscribers<T>(
   handler: EventHandler<T>,
   ...args: T extends (...args: infer P) => unknown ? P : never
 ) {
-  handler.subscribers.forEach(sub => (sub as (...args: unknown[]) => unknown)(...args));
+  handler.subscribers.forEach((sub) =>
+    (sub as (...args: unknown[]) => unknown)(...args),
+  );
 }
