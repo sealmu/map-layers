@@ -2,7 +2,7 @@ import { useMemo, useState, useCallback, useEffect } from "react";
 
 import { Cartesian2, Color, Entity, Cartesian3 } from "cesium";
 
-import { useDroneAnimation } from "./hooks/useDroneAnimation";
+import { useDroneAnimation, useDroneAnimation2 } from "./hooks/useDroneAnimation";
 
 import {
   CesiumMap,
@@ -252,6 +252,10 @@ function AppContent({
     return true; // Allow selection for other entities
   }, []);
 
+  // const handleEntityChange = useCallback((entity: Entity, status: EntityChangeStatus, collectionName: string) => {
+  //   console.log('Entity changed:', { entityId: entity.id, status, collectionName });
+  // }, []);
+
   const handleChangePosition = useCallback((location: MapClickLocation | null) => {
     setCurrentPosition(location);
   }, []);
@@ -266,6 +270,8 @@ function AppContent({
     segments: 64,
     orbitDurationMs: 20000,
   });
+
+  useDroneAnimation2(viewer as ViewerWithConfigs);
 
   // Subscribe to onSelected event from viewer
   useEffect(() => {
@@ -282,6 +288,21 @@ function AppContent({
     return unsubscribe;
   }, [viewer]);
 
+  // Subscribe to onEntityChange event from viewer
+  // useEffect(() => {
+  //   if (!viewer) return;
+
+  //   const unsubscribe = viewer.handlers.onEntityChange.subscribe((entity, status, collectionName) => {
+  //     console.log('Entity onEntityChange(viewer):', {
+  //       entityId: entity.id,
+  //       status,
+  //       collectionName,
+  //     });
+  //   });
+
+  //   return unsubscribe;
+  // }, [viewer]);
+
   return (
     <>
       <CesiumMap
@@ -291,6 +312,7 @@ function AppContent({
         animateActivation={true}
         animateVisibility={true}
         onApiReady={setMapApi}
+        // onEntityChange={handleEntityChange}
         onClick={handleMapClick}
         onSelecting={handleSelecting}
         onClickPrevented={handleClickPrevented}
@@ -331,7 +353,7 @@ function AppContent({
           type={RenderTypes.CUSTOM}
           data={extractDrones(data)}
           isActive={true}
-          isVisible={false}
+          isVisible={true}
           description="Drone positions with custom renderer"
           customRenderer={droneRenderer}
         />

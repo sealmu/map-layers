@@ -1,11 +1,12 @@
 import { useEffect, useRef, useCallback } from "react";
-import { CustomDataSource as CesiumCustomDataSource, Entity } from "cesium";
+import { CustomDataSource as CesiumCustomDataSource, Entity, EntityCollection } from "cesium";
 import { createEntityFromData } from "../../helpers/pipeline";
 import { useLayerAnimations } from "./hooks/useLayerAnimations";
 import type {
   DataSourceLayerProps,
   RendererRegistry,
   LayerData,
+  EntityChangeStatus,
 } from "../../types";
 
 const DataSourceLayer = <R extends RendererRegistry>({
@@ -19,6 +20,7 @@ const DataSourceLayer = <R extends RendererRegistry>({
   renderers,
   animateActivation = false,
   animateVisibility = false,
+  onEntityChange,
 }: DataSourceLayerProps<R>) => {
   const dataSourceRef = useRef<CesiumCustomDataSource | null>(null);
 
@@ -46,10 +48,20 @@ const DataSourceLayer = <R extends RendererRegistry>({
     const dataSource = new CesiumCustomDataSource("");
     setDataSourceInstance(dataSource);
 
+    // Add event listener for entity changes
+    const onEntityChangeCallback = (_collection: EntityCollection, _added: Entity[], _removed: Entity[], _changed: Entity[]) => {
+      _added.forEach(entity => onEntityChange?.(entity, 'added' as EntityChangeStatus, id));
+      _removed.forEach(entity => onEntityChange?.(entity, 'removed' as EntityChangeStatus, id));
+      _changed.forEach(entity => onEntityChange?.(entity, 'changed' as EntityChangeStatus, id));
+    };
+    dataSource.entities.collectionChanged.addEventListener(onEntityChangeCallback);
+
     // Cleanup only on unmount
     return () => {
       const dataSourceInstance = getDataSourceInstance();
       if (dataSourceInstance && !viewer.isDestroyed()) {
+        // Remove event listener
+        dataSource.entities.collectionChanged.removeEventListener(onEntityChangeCallback);
         // Remove from viewer if it's there
         if (viewer.dataSources.contains(dataSourceInstance)) {
           viewer.dataSources.remove(dataSourceInstance, true);
@@ -57,7 +69,7 @@ const DataSourceLayer = <R extends RendererRegistry>({
         setDataSourceInstance(null);
       }
     };
-  }, [viewer, getDataSourceInstance]);
+  }, [viewer, getDataSourceInstance, onEntityChange, id]);
 
   // Update name when it changes
   useEffect(() => {
@@ -65,7 +77,7 @@ const DataSourceLayer = <R extends RendererRegistry>({
     if (!dataSourceInstance) return;
 
     dataSourceInstance.name = id;
-  }, [name, getDataSourceInstance]);
+  }, [id, getDataSourceInstance]);
 
   // Update show flag without adding/removing the data source
   useEffect(() => {
@@ -124,7 +136,7 @@ const DataSourceLayer = <R extends RendererRegistry>({
         }
       });
     }
-  }, [data, type, customRenderer, renderers, getDataSourceInstance, viewer, name]);
+  }, [data, type, customRenderer, renderers, getDataSourceInstance, viewer, id]);
 
   // Update enabled(active) by removing/adding dataSource from viewer
   useEffect(() => {

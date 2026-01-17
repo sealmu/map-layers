@@ -40,6 +40,7 @@ const CesiumMap = <R extends RendererRegistry>({
   onApiReady,
   onEntityCreating,
   onEntityCreate,
+  onEntityChange,
   onClick,
   onSelecting,
   onClickPrevented,
@@ -101,6 +102,7 @@ const CesiumMap = <R extends RendererRegistry>({
       onClickPrevented: createEventHandler(),
       onSelected: createEventHandler(),
       onChangePosition: createEventHandler(),
+      onEntityChange: createEventHandler(),
     };
 
     // Add OpenStreetMap imagery layer
@@ -157,13 +159,14 @@ const CesiumMap = <R extends RendererRegistry>({
   }, [layersPanelApi.layerStates]);
 
   // Handle onClick and onSelecting callbacks
-  useBindHandlers({
+  const { processEntityChange } = useBindHandlers({
     viewer,
     onClick,
     onSelecting,
     onClickPrevented,
     onSelected,
     onChangePosition,
+    onEntityChange,
   });
 
   const api = useMemo<CesiumMapApi | null>(() => {
@@ -228,6 +231,7 @@ const CesiumMap = <R extends RendererRegistry>({
             renderers={renderers}
             animateActivation={animateActivation}
             animateVisibility={animateVisibility}
+            onEntityChange={processEntityChange}
           />
         ))}
     </div>

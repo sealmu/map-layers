@@ -18,6 +18,9 @@ export interface MapClickLocation {
   height: number;
 }
 
+// Entity change status type
+export type EntityChangeStatus = "added" | "removed" | "changed";
+
 // Event handler interface for subscribing to map events
 export interface EventHandler<T> {
   subscribe: (callback: T) => () => void; // returns unsubscribe function
@@ -164,6 +167,11 @@ export interface DataSourceLayerProps<
   renderers: R;
   animateActivation?: boolean;
   animateVisibility?: boolean;
+  onEntityChange?: (
+    entity: Entity,
+    status: EntityChangeStatus,
+    collectionName: string,
+  ) => void;
 }
 
 // CesiumMap Component
@@ -184,6 +192,11 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
     renderers: RendererRegistry,
     layerId?: string,
   ) => Entity.ConstructorOptions | null;
+  onEntityChange?: (
+    entity: Entity,
+    status: EntityChangeStatus,
+    collectionName: string,
+  ) => void;
   onClick?: (
     entity: Entity | null,
     location: MapClickLocation,
@@ -383,6 +396,13 @@ export interface ViewerWithConfigs<
       ) => void
     >;
     onChangePosition: EventHandler<(location: MapClickLocation | null) => void>;
+    onEntityChange: EventHandler<
+      (
+        entity: Entity,
+        status: EntityChangeStatus,
+        collectionName: string,
+      ) => void
+    >;
   };
   mapref: {
     onEntityCreating?: (

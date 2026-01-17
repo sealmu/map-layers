@@ -1,7 +1,11 @@
-import { useEffect } from "react";
-import { Cartesian3 } from "cesium";
+import { useEffect, useCallback, useMemo } from "react";
+import { Cartesian3, Cartographic, Entity } from "cesium";
 import { DataManager } from "@mprest/map";
-import type { DroneAnimationConfig, ViewerWithConfigs } from "@mprest/map";
+import type {
+  DroneAnimationConfig,
+  ViewerWithConfigs,
+  EntityChangeStatus,
+} from "@mprest/map";
 
 export function useDroneAnimation(
   viewer: ViewerWithConfigs | null,
@@ -83,4 +87,89 @@ export function useDroneAnimation(
     radius,
     segments,
   ]);
+}
+
+export function useDroneAnimation2(viewer: ViewerWithConfigs | null) {
+  const dataManager = useMemo(() => {
+    if (!viewer) return null;
+    return new DataManager(viewer as ViewerWithConfigs);
+  }, [viewer]);
+
+  const handleEntityChange = useCallback(
+    (
+      entity: Entity,
+      status: EntityChangeStatus,
+      //_collectionName: string
+    ) => {
+      if (!dataManager) return;
+
+      // Only react to changes in drone2
+      if (entity.id !== "drone2" || status !== "changed") return;
+
+      // Get current positions of both drones
+      const drone1Entity = dataManager.getItem("drone1");
+      const drone2Entity = dataManager.getItem("drone2");
+
+      if (!drone1Entity || !drone2Entity) return;
+
+      // Get current positions
+      const drone1Position = drone1Entity.position?.getValue();
+      const drone2Position = drone2Entity.position?.getValue();
+
+      if (!drone1Position || !drone2Position) return;
+
+      // Convert to cartographic for easier calculations
+      const drone1Cartographic = Cartographic.fromCartesian(drone1Position);
+      const drone2Cartographic = Cartographic.fromCartesian(drone2Position);
+
+      // Calculate the difference
+      const lonDiff =
+        drone2Cartographic.longitude - drone1Cartographic.longitude;
+      const latDiff = drone2Cartographic.latitude - drone1Cartographic.latitude;
+      const altDiff = drone2Cartographic.height - drone1Cartographic.height;
+
+      // Calculate distance
+      const distance = Math.sqrt(
+        lonDiff * lonDiff + latDiff * latDiff + altDiff * altDiff,
+      );
+
+      // If too close, remove drone2 (drone1 has caught up)
+      if (distance < 0.1) {
+        // About 10 km - they've interlapsed
+        dataManager.removeItem("drone2");
+        return; // Stop processing this update
+      }
+
+      // Move drone1 toward drone2 at 10x the orbital speed
+      // Drone2 moves ~0.47 degrees/second in its orbit, so drone1 should move ~4.7 degrees/second
+      // Per update (assuming ~60fps), move ~0.078 degrees toward drone2
+      const maxMoveDistance = 0.078; // degrees per update (10x drone2 speed)
+      const moveDistance = Math.min(maxMoveDistance, distance);
+
+      // Normalize direction vector
+      const directionLon = lonDiff / distance;
+      const directionLat = latDiff / distance;
+      const directionAlt = altDiff / distance;
+
+      const newLon = drone1Cartographic.longitude + directionLon * moveDistance;
+      const newLat = drone1Cartographic.latitude + directionLat * moveDistance;
+      const newAlt = drone1Cartographic.height + directionAlt * moveDistance;
+
+      // Update drone1 position
+      dataManager.updateItem(drone1Entity, {
+        position: Cartesian3.fromRadians(newLon, newLat, newAlt),
+      });
+    },
+    [dataManager],
+  );
+
+  useEffect(() => {
+    if (!viewer) return;
+
+    // Subscribe to entity changes
+    const unsubscribe =
+      viewer.handlers.onEntityChange.subscribe(handleEntityChange);
+
+    return unsubscribe;
+  }, [viewer, handleEntityChange]);
 }

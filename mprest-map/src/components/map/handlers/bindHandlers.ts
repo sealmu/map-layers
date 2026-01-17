@@ -1,9 +1,11 @@
+import { useCallback } from "react";
 import { useClickHandler } from "./useClickHandler";
 import { usePositionHandler } from "./usePositionHandler";
 import type {
   ViewerWithConfigs,
   RendererRegistry,
   MapClickLocation,
+  EntityChangeStatus,
 } from "../../../types";
 import { Entity, Cartesian2 } from "cesium";
 import { callAllSubscribers } from "../utils/EventHandler";
@@ -25,11 +27,17 @@ export interface BindHandlersOptions<
     screenPosition?: Cartesian2,
   ) => void;
   onChangePosition?: (location: MapClickLocation | null) => void;
+  onEntityChange?: (
+    entity: Entity,
+    status: EntityChangeStatus,
+    collectionName: string,
+  ) => void;
 }
 
 /**
  * Hook that binds all event handlers to the Cesium viewer
  * Sets up click handling, selection interception, and position tracking
+ * Returns handlers object with processEntityChange function
  */
 export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
   viewer,
@@ -38,7 +46,16 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
   onClickPrevented,
   onSelected,
   onChangePosition,
-}: BindHandlersOptions<R>): void {
+  onEntityChange,
+}: BindHandlersOptions<R>): {
+  processEntityChange:
+    | ((
+        entity: Entity,
+        status: EntityChangeStatus,
+        collectionName: string,
+      ) => void)
+    | undefined;
+} {
   useClickHandler({
     viewer,
     onClick: viewer
@@ -97,4 +114,24 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
         }
       : onChangePosition,
   });
+
+  // Create processEntityChange function
+  const processEntityChange = useCallback(
+    (entity: Entity, status: EntityChangeStatus, collectionName: string) => {
+      if (viewer) {
+        onEntityChange?.(entity, status, collectionName);
+        callAllSubscribers(
+          viewer.handlers.onEntityChange,
+          entity,
+          status,
+          collectionName,
+        );
+      } else {
+        onEntityChange?.(entity, status, collectionName);
+      }
+    },
+    [viewer, onEntityChange],
+  );
+
+  return { processEntityChange };
 }
