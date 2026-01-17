@@ -44,6 +44,7 @@ import {
   extractDrones,
   extractMixed,
   extractCones,
+  extractDomes,
 } from "./helpers/extractors/dataExtractors";
 
 import { getLayersConfig } from "./config/layersConfig";
@@ -413,6 +414,19 @@ function AppContent({
           isActive={false}
           isVisible={true}
           description="Radar cones"
+        />
+        <Layer
+          id="domes"
+          name="Domes"
+          type={RenderTypes.DOMES}
+          data={extractDomes(data)}
+          isDocked={true}
+          isActive={true}
+          isVisible={false}
+          description="Circular dome areas"
+          group="basic-shape"
+          groupName="Basic Shapes"
+          groupIsDocked={false}
         />
       </CesiumMap>
 

@@ -6,6 +6,7 @@ import { polygonsData } from "./dataSources/polygonsData";
 import { polylinesData } from "./dataSources/polylinesData";
 import { dronesData } from "./dataSources/dronesData";
 import { mixedData } from "./dataSources/mixedData";
+import { domesData } from "./dataSources/domesData";
 
 export const dataSource: LayerData[] = [
   ...pointsData,
@@ -14,6 +15,7 @@ export const dataSource: LayerData[] = [
   ...polylinesData,
   ...dronesData,
   ...mixedData,
+  ...domesData,
   // Radar data
   {
     id: "radar1",
