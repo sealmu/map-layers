@@ -135,15 +135,16 @@ export function useDroneAnimation2(viewer: ViewerWithConfigs | null) {
 
       // If too close, remove drone2 (drone1 has caught up)
       if (distance < 0.1) {
-        // About 10 km - they've interlapsed
+        // About 637 km - they've interlapsed
         dataManager.removeItem("drone2");
         return; // Stop processing this update
       }
 
-      // Move drone1 toward drone2 at 10x the orbital speed
-      // Drone2 moves ~0.47 degrees/second in its orbit, so drone1 should move ~4.7 degrees/second
-      // Per update (assuming ~60fps), move ~0.078 degrees toward drone2
-      const maxMoveDistance = 0.078; // degrees per update (10x drone2 speed)
+      // Dynamic speed: 10x when far, 5x when close
+      const closeDistanceThreshold = 1; // radians
+      const speedMultiplier = distance > closeDistanceThreshold ? 10 : 5;
+      const baseSpeed = 0.47 / 60; // drone2 speed per frame (0.47 degrees/sec / 60 fps)
+      const maxMoveDistance = baseSpeed * speedMultiplier;
       const moveDistance = Math.min(maxMoveDistance, distance);
 
       // Normalize direction vector
