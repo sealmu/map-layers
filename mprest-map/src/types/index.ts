@@ -189,6 +189,7 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
     location?: MapClickLocation,
     screenPosition?: Cartesian2,
   ) => void;
+  onChangePosition?: (location: MapClickLocation | null) => void;
 }
 
 export interface LayersPanelApi {

@@ -28,6 +28,7 @@ import { useFilterManager } from "../../hooks/useFilterManager";
 import { useSearchManager } from "../../hooks/useSearchManager";
 import { useEntitiesManager } from "../../hooks/useEntitiesManager";
 import { useClickHandler } from "./handlers";
+import { usePositionHandler } from "./handlers/usePositionHandler";
 import { extractLayersFromChildren, hasLayersChanged } from "./utils";
 
 const CesiumMap = <R extends RendererRegistry>({
@@ -43,6 +44,7 @@ const CesiumMap = <R extends RendererRegistry>({
   onSelecting,
   onClickPrevented,
   onSelected,
+  onChangePosition,
 }: CesiumMapProps<R> & { onApiReady?: (api: CesiumMapApi) => void }) => {
   const { setViewer: setContextViewer } = useViewer();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -148,6 +150,9 @@ const CesiumMap = <R extends RendererRegistry>({
 
   // Handle onClick and onSelecting callbacks
   useClickHandler({ viewer, onClick, onSelecting, onClickPrevented, onSelected });
+
+  // Handle position tracking
+  usePositionHandler({ viewer, onChangePosition });
 
   const api = useMemo<CesiumMapApi | null>(() => {
     if (!layersPanelApi || !filtersPanelApi || !searchPanelApi || !entitiesApi) return null;

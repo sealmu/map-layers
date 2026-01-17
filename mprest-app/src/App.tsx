@@ -23,6 +23,7 @@ import DynamicPanel from "./components/DynamicPanel";
 import DynamicRawDataPanel from "./components/DynamicRawDataPanel";
 import { Expander } from "./components";
 import { EntityPopup, type EntityPopupInfo } from "./components/EntityPopup";
+import { PositionInfoBar } from "./components/PositionInfoBar";
 
 import type {
   AppContentProps,
@@ -154,6 +155,7 @@ function AppContent({
   const [dynamicPanelsDocked, setDynamicPanelsDocked] = useState(true);
   const [popupInfo, setPopupInfo] = useState<EntityPopupInfo | null>(null);
   const [popupDimensions] = useState({ width: 350, height: 250 });
+  const [currentPosition, setCurrentPosition] = useState<MapClickLocation | null>(null);
 
   // Calculate popup position to stay within viewport bounds
   const popupPosition = useMemo(() => {
@@ -246,6 +248,10 @@ function AppContent({
     return true; // Allow selection for other entities
   }, []);
 
+  const handleChangePosition = useCallback((location: MapClickLocation | null) => {
+    setCurrentPosition(location);
+  }, []);
+
   useDroneAnimation(viewer as ViewerWithConfigs, {
     droneId: "drone2",
     centerLon: -104.99,
@@ -270,6 +276,7 @@ function AppContent({
         onSelecting={handleSelecting}
         onClickPrevented={handleClickPrevented}
         onSelected={handleSelected}
+        onChangePosition={handleChangePosition}
       >
         <Layer
           id="points"
@@ -352,6 +359,8 @@ function AppContent({
         popupPosition={popupPosition}
         onClose={() => setPopupInfo(null)}
       />
+
+      <PositionInfoBar position={currentPosition} />
 
       <DataConnector dataSource={dataSourceDynamic} config={DataConnectorConfig} />
 
