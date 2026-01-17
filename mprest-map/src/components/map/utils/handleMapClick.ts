@@ -5,14 +5,25 @@ import {
   defined,
   Math as CesiumMath,
 } from "cesium";
-import type { MapClickLocation, ViewerWithConfigs, RendererRegistry } from "../../../types";
+import type {
+  MapClickLocation,
+  ViewerWithConfigs,
+  RendererRegistry,
+} from "../../../types";
 import { getLocationFromPosition } from "./getLocationFromPosition";
 
-export interface HandleMapClickOptions<R extends RendererRegistry = RendererRegistry> {
+export interface HandleMapClickOptions<
+  R extends RendererRegistry = RendererRegistry,
+> {
   viewer: ViewerWithConfigs<R>;
   position: Cartesian2;
   onSelecting?: (entity: Entity, location: MapClickLocation) => boolean;
-  onClick?: (entity: Entity | null, location: MapClickLocation, screenPosition?: Cartesian2) => void;
+  onClick?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => void;
+  onClickPrevented?: (entity: Entity, location: MapClickLocation) => void;
 }
 
 /**
@@ -24,19 +35,24 @@ export function handleMapClick<R extends RendererRegistry = RendererRegistry>({
   position,
   onSelecting,
   onClick,
+  onClickPrevented,
 }: HandleMapClickOptions<R>): void {
   const location = getLocationFromPosition(viewer, position);
   const pickedObject = viewer.scene.pick(position);
-  const pickedEntity: Entity | null = defined(pickedObject) && pickedObject.id ? pickedObject.id : null;
+  const pickedEntity: Entity | null =
+    defined(pickedObject) && pickedObject.id ? pickedObject.id : null;
 
   // Track whether the entity was approved for selection
   let approvedEntity: Entity | null = null;
+  let shouldCallOnClick = true;
 
   // Handle selection logic
   if (pickedEntity) {
     if (onSelecting) {
       // Get entity position for the location parameter
-      const entityPosition = pickedEntity.position?.getValue(viewer.clock.currentTime);
+      const entityPosition = pickedEntity.position?.getValue(
+        viewer.clock.currentTime,
+      );
       let entityLocation: MapClickLocation | null = null;
 
       if (entityPosition) {
@@ -59,8 +75,13 @@ export function handleMapClick<R extends RendererRegistry = RendererRegistry>({
           // Selection approved - manually set selected entity
           viewer.selectedEntity = pickedEntity;
           approvedEntity = pickedEntity;
+        } else {
+          // Selection not approved - call onClickPrevented if provided
+          if (onClickPrevented) {
+            onClickPrevented(pickedEntity, entityLocation);
+          }
+          shouldCallOnClick = false;
         }
-        // If shouldSelect is false, do nothing - selection is completely blocked
       }
     } else {
       // No onSelecting callback - allow selection
@@ -73,8 +94,10 @@ export function handleMapClick<R extends RendererRegistry = RendererRegistry>({
   }
 
   // Call onClick callback if provided - only pass approved entity
-  if (onClick && location) {
-    const screenPosition = viewer.scene.cartesianToCanvasCoordinates(location.cartesian);
+  if (onClick && location && shouldCallOnClick) {
+    const screenPosition = viewer.scene.cartesianToCanvasCoordinates(
+      location.cartesian,
+    );
     onClick(approvedEntity, location, screenPosition);
   }
 }

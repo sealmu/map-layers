@@ -31,11 +31,14 @@ export function createRenderTypes<R extends RendererRegistry>(
   renderers: R,
 ): Record<Uppercase<RenderTypeFromRegistry<R>>, RenderTypeFromRegistry<R>> {
   return {
-    ...Object.keys(renderers).reduce((acc, key) => {
-      acc[key.toUpperCase() as Uppercase<keyof R & string>] =
-        key as RenderTypeFromRegistry<R>;
-      return acc;
-    }, {} as Record<Uppercase<keyof R & string>, RenderTypeFromRegistry<R>>),
+    ...Object.keys(renderers).reduce(
+      (acc, key) => {
+        acc[key.toUpperCase() as Uppercase<keyof R & string>] =
+          key as RenderTypeFromRegistry<R>;
+        return acc;
+      },
+      {} as Record<Uppercase<keyof R & string>, RenderTypeFromRegistry<R>>,
+    ),
     CUSTOM: "custom" as const,
   } as Record<Uppercase<RenderTypeFromRegistry<R>>, RenderTypeFromRegistry<R>>;
 }
@@ -164,15 +167,28 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
   animateActivation?: boolean;
   animateVisibility?: boolean;
   onApiReady?: (api: CesiumMapApi) => void;
-  onEntityCreating?: (options: Entity.ConstructorOptions, item: LayerData) => void;
+  onEntityCreating?: (
+    options: Entity.ConstructorOptions,
+    item: LayerData,
+  ) => void;
   onEntityCreate?: (
     type: RenderTypeFromRegistry<RendererRegistry>,
     item: LayerData,
     renderers: RendererRegistry,
     layerId?: string,
   ) => Entity.ConstructorOptions | null;
-  onClick?: (entity: Entity | null, location: MapClickLocation, screenPosition?: Cartesian2) => void;
+  onClick?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => void;
   onSelecting?: (entity: Entity, location: MapClickLocation) => boolean;
+  onClickPrevented?: (entity: Entity, location: MapClickLocation) => void;
+  onSelected?: (
+    entity: Entity | null,
+    location?: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => void;
 }
 
 export interface LayersPanelApi {
@@ -341,7 +357,10 @@ export interface ViewerWithConfigs<
   };
   filters: FiltersPanelApi;
   mapref: {
-    onEntityCreating?: (options: Entity.ConstructorOptions, item: LayerData) => void;
+    onEntityCreating?: (
+      options: Entity.ConstructorOptions,
+      item: LayerData,
+    ) => void;
     onEntityCreate?: (
       type: RenderTypeFromRegistry<RendererRegistry>,
       item: LayerData,

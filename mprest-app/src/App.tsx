@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect, useRef } from "react";
+import { useMemo, useState, useCallback } from "react";
 
 import { Cartesian2, Color, Entity, Cartesian3 } from "cesium";
 
@@ -22,6 +22,7 @@ import {
 import DynamicPanel from "./components/DynamicPanel";
 import DynamicRawDataPanel from "./components/DynamicRawDataPanel";
 import { Expander } from "./components";
+import { EntityPopup, type EntityPopupInfo } from "./components/EntityPopup";
 
 import type {
   AppContentProps,
@@ -142,12 +143,6 @@ function App() {
 }
 
 
-interface EntityPopupInfo {
-  entity: Entity;
-  location: MapClickLocation;
-  screenPosition: Cartesian2;
-}
-
 function AppContent({
   data,
   renderers,
@@ -158,16 +153,15 @@ function AppContent({
   const [layersPanelDocked, setLayersPanelDocked] = useState(true);
   const [dynamicPanelsDocked, setDynamicPanelsDocked] = useState(true);
   const [popupInfo, setPopupInfo] = useState<EntityPopupInfo | null>(null);
-  const popupRef = useRef<HTMLDivElement>(null);
-  const [popupDimensions, setPopupDimensions] = useState({ width: 350, height: 250 });
+  const [popupDimensions] = useState({ width: 350, height: 250 });
 
   // Calculate popup position to stay within viewport bounds
   const popupPosition = useMemo(() => {
-    if (!popupInfo) return null;
+    if (!popupInfo?.location) return null;
 
     const offset = 10;
-    let left = popupInfo.screenPosition.x + offset;
-    let top = popupInfo.screenPosition.y + offset;
+    let left = popupInfo.screenPosition!.x + offset;
+    let top = popupInfo.screenPosition!.y + offset;
 
     const popupWidth = popupDimensions.width;
     const popupHeight = popupDimensions.height;
@@ -178,11 +172,11 @@ function AppContent({
 
     // Adjust position based on available space
     if (wouldOverflowRight) {
-      left = popupInfo.screenPosition.x - popupWidth - offset;
+      left = popupInfo.screenPosition!.x - popupWidth - offset;
     }
 
     if (wouldOverflowBottom) {
-      top = popupInfo.screenPosition.y - popupHeight - offset;
+      top = popupInfo.screenPosition!.y - popupHeight - offset;
     }
 
     // Ensure popup stays within viewport bounds
@@ -191,17 +185,6 @@ function AppContent({
 
     return { left, top };
   }, [popupInfo, popupDimensions]);
-
-  // Measure popup dimensions after it's rendered
-  useEffect(() => {
-    if (popupInfo && popupRef.current) {
-      const rect = popupRef.current.getBoundingClientRect();
-      setPopupDimensions({
-        width: rect.width,
-        height: rect.height
-      });
-    }
-  }, [popupInfo]);
 
   // const enrichEntity = useCallback((entity: Entity.ConstructorOptions) => {
   //   console.log('Entity is being created', entity);
@@ -232,16 +215,35 @@ function AppContent({
     if (entity && screenPosition) {
       setPopupInfo({ entity, location, screenPosition });
     } else {
-      setPopupInfo(null);
+      //setPopupInfo(null);
     }
   }, []);
 
-  const handleSelecting = useCallback((entity: Entity) => {  // entity: Entity, _location: MapClickLocation
+  const handleClickPrevented = useCallback((
+    entity: Entity,
+    //location: MapClickLocation
+  ) => {
+    setPopupInfo({ entity });
+  }, []);
+
+  const handleSelected = useCallback((entity: Entity | null, location?: MapClickLocation, screenPosition?: Cartesian2) => {
+    console.log('Entity selected:', entity ? entity.id : 'none');
+    if (entity) {
+      setPopupInfo({ entity, location, screenPosition });
+    } else {
+      //setPopupInfo(null);
+    }
+  }, []);
+
+  const handleSelecting = useCallback((
+    entity: Entity,
+    //location: MapClickLocation
+  ) => {
     // Cancel selection for polyline entities
     if (entity.polyline) {
-      return true; // false;
+      return false; // Cancel selection for polylines
     }
-    return true;
+    return true; // Allow selection for other entities
   }, []);
 
   useDroneAnimation(viewer as ViewerWithConfigs, {
@@ -266,6 +268,8 @@ function AppContent({
         onApiReady={setMapApi}
         onClick={handleMapClick}
         onSelecting={handleSelecting}
+        onClickPrevented={handleClickPrevented}
+        onSelected={handleSelected}
       >
         <Layer
           id="points"
@@ -343,55 +347,11 @@ function AppContent({
         />
       </CesiumMap>
 
-      {popupInfo && popupPosition && (
-        <div
-          ref={popupRef}
-          className="entity-popup"
-          style={{
-            position: "absolute",
-            top: `${popupPosition.top}px`,
-            left: `${popupPosition.left}px`,
-            backgroundColor: "rgba(0, 0, 0, 0.85)",
-            color: "white",
-            padding: "16px",
-            borderRadius: "8px",
-            minWidth: "250px",
-            maxWidth: "350px",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
-            zIndex: 3000,
-            pointerEvents: "auto",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-            <h3 style={{ margin: 0, fontSize: "16px" }}>Entity Info</h3>
-            <button
-              onClick={() => setPopupInfo(null)}
-              style={{
-                background: "none",
-                border: "none",
-                color: "white",
-                fontSize: "18px",
-                cursor: "pointer",
-                padding: "0 4px",
-              }}
-            >
-              ×
-            </button>
-          </div>
-          <div style={{ fontSize: "14px", lineHeight: "1.6" }}>
-            <div><strong>ID:</strong> {popupInfo.entity.id}</div>
-            <div><strong>Name:</strong> {popupInfo.entity.name || "N/A"}</div>
-            <div style={{ marginTop: "8px", borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: "8px" }}>
-              <strong>Location:</strong>
-              <div style={{ marginLeft: "8px", fontSize: "13px" }}>
-                <div>Lat: {popupInfo.location.latitude.toFixed(6)}°</div>
-                <div>Lon: {popupInfo.location.longitude.toFixed(6)}°</div>
-                <div>Height: {popupInfo.location.height.toFixed(2)}m</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <EntityPopup
+        popupInfo={popupInfo}
+        popupPosition={popupPosition}
+        onClose={() => setPopupInfo(null)}
+      />
 
       <DataConnector dataSource={dataSourceDynamic} config={DataConnectorConfig} />
 

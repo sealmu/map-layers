@@ -41,6 +41,8 @@ const CesiumMap = <R extends RendererRegistry>({
   onEntityCreate,
   onClick,
   onSelecting,
+  onClickPrevented,
+  onSelected,
 }: CesiumMapProps<R> & { onApiReady?: (api: CesiumMapApi) => void }) => {
   const { setViewer: setContextViewer } = useViewer();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -145,7 +147,7 @@ const CesiumMap = <R extends RendererRegistry>({
   }, [layersPanelApi.layerStates]);
 
   // Handle onClick and onSelecting callbacks
-  useClickHandler({ viewer, onClick, onSelecting });
+  useClickHandler({ viewer, onClick, onSelecting, onClickPrevented, onSelected });
 
   const api = useMemo<CesiumMapApi | null>(() => {
     if (!layersPanelApi || !filtersPanelApi || !searchPanelApi || !entitiesApi) return null;
