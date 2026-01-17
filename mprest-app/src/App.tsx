@@ -414,6 +414,9 @@ function AppContent({
           isActive={false}
           isVisible={true}
           description="Radar cones"
+          group="structures"
+          groupName="Structures"
+          groupIsDocked={false}
         />
         <Layer
           id="domes"
@@ -424,8 +427,8 @@ function AppContent({
           isActive={true}
           isVisible={false}
           description="Circular dome areas"
-          group="basic-shape"
-          groupName="Basic Shapes"
+          group="structures"
+          groupName="Structures"
           groupIsDocked={false}
         />
       </CesiumMap>
