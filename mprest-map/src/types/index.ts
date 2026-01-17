@@ -18,6 +18,13 @@ export interface MapClickLocation {
   height: number;
 }
 
+// Event handler interface for subscribing to map events
+export interface EventHandler<T> {
+  subscribe: (callback: T) => () => void; // returns unsubscribe function
+  unsubscribe: (callback: T) => void;
+  subscribers: T[];
+}
+
 // Type for entity renderer functions
 export type EntityRenderer = (item: LayerData) => Entity.ConstructorOptions;
 
@@ -336,8 +343,8 @@ export interface DroneAnimationConfig {
 
 // ViewerContext
 export interface ViewerContextType {
-  viewer: CesiumViewer | null;
-  setViewer: (viewer: CesiumViewer | null) => void;
+  viewer: ViewerWithConfigs | null;
+  setViewer: (viewer: ViewerWithConfigs | null) => void;
 }
 
 // ViewerProvider
@@ -357,6 +364,20 @@ export interface ViewerWithConfigs<
     getRenderers: () => R;
   };
   filters: FiltersPanelApi;
+  handlers: {
+    onClick: EventHandler<(
+      entity: Entity | null,
+      location: MapClickLocation,
+      screenPosition?: Cartesian2,
+    ) => void>;
+    onClickPrevented: EventHandler<(entity: Entity, location: MapClickLocation) => void>;
+    onSelected: EventHandler<(
+      entity: Entity | null,
+      location?: MapClickLocation,
+      screenPosition?: Cartesian2,
+    ) => void>;
+    onChangePosition: EventHandler<(location: MapClickLocation | null) => void>;
+  };
   mapref: {
     onEntityCreating?: (
       options: Entity.ConstructorOptions,

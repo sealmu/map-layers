@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 
 import { Cartesian2, Color, Entity, Cartesian3 } from "cesium";
 
@@ -229,7 +229,11 @@ function AppContent({
   }, []);
 
   const handleSelected = useCallback((entity: Entity | null, location?: MapClickLocation, screenPosition?: Cartesian2) => {
-    console.log('Entity selected:', entity ? entity.id : 'none');
+    console.log('Entity onSelected(on prop):', {
+      entityId: entity?.id ?? 'none',
+      location,
+      screenPosition,
+    });
     if (entity) {
       setPopupInfo({ entity, location, screenPosition });
     } else {
@@ -262,6 +266,21 @@ function AppContent({
     segments: 64,
     orbitDurationMs: 20000,
   });
+
+  // Subscribe to onSelected event from viewer
+  useEffect(() => {
+    if (!viewer) return;
+
+    const unsubscribe = viewer.handlers.onSelected.subscribe((entity, location, screenPosition) => {
+      console.log('Entity onSelected(viewer):', {
+        entityId: entity?.id ?? 'none',
+        location,
+        screenPosition,
+      });
+    });
+
+    return unsubscribe;
+  }, [viewer]);
 
   return (
     <>

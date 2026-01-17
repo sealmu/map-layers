@@ -12,7 +12,7 @@ import type {
   ViewerWithConfigs,
   RendererRegistry,
 } from "../../../types";
-import { handleMapClick } from "../utils";
+import { handleMapClick } from "../utils/handleMapClick";
 
 export interface UseClickHandlerOptions<
   R extends RendererRegistry = RendererRegistry,
@@ -98,7 +98,6 @@ export function useClickHandler<R extends RendererRegistry = RendererRegistry>({
               }
               onSelected(value, location, selectedScreenPosition);
             }
-
             // Note: onClick is not called here for programmatic selections to avoid double calls
           } else {
             // Selection not approved - call onClickPrevented if provided
@@ -112,6 +111,7 @@ export function useClickHandler<R extends RendererRegistry = RendererRegistry>({
           if (onSelected) onSelected(value ?? null, undefined, undefined);
         }
       },
+      configurable: true,
     });
 
     // Disable Cesium's default selection behavior completely

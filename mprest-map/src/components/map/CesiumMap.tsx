@@ -27,9 +27,9 @@ import { useLayerManager } from "../../hooks/useLayerManager";
 import { useFilterManager } from "../../hooks/useFilterManager";
 import { useSearchManager } from "../../hooks/useSearchManager";
 import { useEntitiesManager } from "../../hooks/useEntitiesManager";
-import { useClickHandler } from "./handlers";
-import { usePositionHandler } from "./handlers/usePositionHandler";
 import { extractLayersFromChildren, hasLayersChanged } from "./utils";
+import { createEventHandler } from "./utils/EventHandler";
+import { useBindHandlers } from "./handlers/bindHandlers";
 
 const CesiumMap = <R extends RendererRegistry>({
   children,
@@ -85,15 +85,23 @@ const CesiumMap = <R extends RendererRegistry>({
       sceneModePicker: false,
       navigationHelpButton: false,
       fullscreenButton: false,
-    });
+    }) as ViewerWithConfigs<R>;
 
-    setViewer(newViewer as ViewerWithConfigs<R>);
+    setViewer(newViewer);
 
     // Update context viewer
-    setContextViewer(newViewer);
+    setContextViewer(newViewer as unknown as ViewerWithConfigs);
 
     // Set mapref
-    (newViewer as ViewerWithConfigs<R>).mapref = { onEntityCreating, onEntityCreate };
+    newViewer.mapref = { onEntityCreating, onEntityCreate };
+
+    // Set up handlers
+    newViewer.handlers = {
+      onClick: createEventHandler(),
+      onClickPrevented: createEventHandler(),
+      onSelected: createEventHandler(),
+      onChangePosition: createEventHandler(),
+    };
 
     // Add OpenStreetMap imagery layer
     const imageryProvider = new OpenStreetMapImageryProvider({
@@ -122,7 +130,7 @@ const CesiumMap = <R extends RendererRegistry>({
   useEffect(() => {
     if (viewer) {
 
-      (viewer as ViewerWithConfigs<R>).layers = {
+      viewer.layers = {
         getLayerConfig: (layerId: string) =>
           layers.find((layer) => layer.id === layerId) as
           | LayerProps<LayerData, R>
@@ -131,11 +139,11 @@ const CesiumMap = <R extends RendererRegistry>({
           layers as LayerProps<LayerData, R>[],
       };
 
-      (viewer as ViewerWithConfigs<R>).renderers = {
+      viewer.renderers = {
         getRenderers: () => renderers,
       };
 
-      (viewer as ViewerWithConfigs<R>).filters = filtersPanelApi;
+      viewer.filters = filtersPanelApi;
 
     }
   }, [viewer, layers, renderers, filtersPanelApi]);
@@ -149,10 +157,14 @@ const CesiumMap = <R extends RendererRegistry>({
   }, [layersPanelApi.layerStates]);
 
   // Handle onClick and onSelecting callbacks
-  useClickHandler({ viewer, onClick, onSelecting, onClickPrevented, onSelected });
-
-  // Handle position tracking
-  usePositionHandler({ viewer, onChangePosition });
+  useBindHandlers({
+    viewer,
+    onClick,
+    onSelecting,
+    onClickPrevented,
+    onSelected,
+    onChangePosition,
+  });
 
   const api = useMemo<CesiumMapApi | null>(() => {
     if (!layersPanelApi || !filtersPanelApi || !searchPanelApi || !entitiesApi) return null;
