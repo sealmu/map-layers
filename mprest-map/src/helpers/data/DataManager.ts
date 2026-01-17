@@ -299,10 +299,14 @@ export class DataManager {
     }
 
     // Search all data sources
-    for (let i = 0; i < this.viewer.dataSources.length; i++) {
-      const dataSource = this.viewer.dataSources.get(i);
-      const entity = dataSource.entities.getById(id);
-      if (entity) return entity;
+    try {
+      for (let i = 0; i < this.viewer.dataSources.length; i++) {
+        const dataSource = this.viewer.dataSources.get(i);
+        const entity = dataSource.entities.getById(id);
+        if (entity) return entity;
+      }
+    } catch {
+      //console.error('Error accessing viewer.dataSources in getItem:', e);
     }
     return undefined;
   }
@@ -321,13 +325,17 @@ export class DataManager {
     }
 
     // Search all data sources
-    for (let i = 0; i < this.viewer.dataSources.length; i++) {
-      const dataSource = this.viewer.dataSources.get(i);
-      const entity = dataSource.entities.getById(id);
-      if (entity) {
-        dataSource.entities.remove(entity);
-        return true;
+    try {
+      for (let i = 0; i < this.viewer.dataSources.length; i++) {
+        const dataSource = this.viewer.dataSources.get(i);
+        const entity = dataSource.entities.getById(id);
+        if (entity) {
+          dataSource.entities.remove(entity);
+          return true;
+        }
       }
+    } catch {
+      //console.error("Error accessing viewer.dataSources in removeItem:", e);
     }
     return false;
   }
@@ -385,8 +393,12 @@ export class DataManager {
    */
   getAllLayers(): DataSource[] {
     const layers: DataSource[] = [];
-    for (let i = 0; i < this.viewer.dataSources.length; i++) {
-      layers.push(this.viewer.dataSources.get(i));
+    try {
+      for (let i = 0; i < this.viewer.dataSources.length; i++) {
+        layers.push(this.viewer.dataSources.get(i));
+      }
+    } catch {
+      //console.error("Error accessing viewer.dataSources in getAllLayers:", e);
     }
     return layers;
   }
@@ -467,11 +479,18 @@ export class DataManager {
    * Get data source by name
    */
   private getDataSourceByName(name: string): DataSource | null {
-    for (let i = 0; i < this.viewer.dataSources.length; i++) {
-      const dataSource = this.viewer.dataSources.get(i);
-      if (dataSource.name === name) {
-        return dataSource;
+    try {
+      for (let i = 0; i < this.viewer.dataSources.length; i++) {
+        const dataSource = this.viewer.dataSources.get(i);
+        if (dataSource.name === name) {
+          return dataSource;
+        }
       }
+    } catch (e) {
+      console.error(
+        "Error accessing viewer.dataSources in getDataSourceByName:",
+        e,
+      );
     }
 
     //console.log(`Data source with name "${name}" not found.`);

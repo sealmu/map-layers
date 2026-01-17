@@ -1,16 +1,29 @@
-import { useMemo, useEffect, useCallback } from "react";
+import { useEffect, useMemo } from "react";
 import { DataManager, useViewer, type ViewerWithConfigs, type DataConnectorProps } from "@mprest/map";
 
 export function DataConnector({ dataSource, config }: DataConnectorProps) {
   const { viewer } = useViewer();
-  const dataManager = useMemo(
-    () => (viewer ? new DataManager(viewer as ViewerWithConfigs) : null),
-    [viewer],
-  );
 
-  // Logic encapsulated inside the component, memoized for useEffect
-  const runDataConnectorLogic = useCallback(() => {
-    if (!dataManager) return;
+  const dataManager = useMemo(() => {
+    if (!viewer) return null;
+    try {
+      return new DataManager(viewer as ViewerWithConfigs);
+    } catch (e) {
+      console.error('Error creating DataManager:', e);
+      return null;
+    }
+  }, [viewer]);
+
+  // Run once on mount
+  useEffect(() => {
+    try {
+      if (!dataManager || !viewer?.dataSources) return;
+    } catch {
+      //console.error('Error checking viewer.dataSources:', e);
+      return;
+    }
+
+    console.log('DataConnector creating/updating data');
 
     Object.entries(dataSource).forEach(([layerName, data]) => {
       if (Array.isArray(data)) {
@@ -19,17 +32,16 @@ export function DataConnector({ dataSource, config }: DataConnectorProps) {
         });
       }
     });
-
-  }, [dataManager, dataSource]);
-
-  // Run once on mount
-  useEffect(() => {
-    runDataConnectorLogic();
-  }, [runDataConnectorLogic]);
+  }, [dataSource, dataManager, viewer]); // Re-run when dataSource, dataManager, or viewer changes
 
   // Run on dependency change (interval)
   useEffect(() => {
-    if (!dataManager) return;
+    try {
+      if (!dataManager || !viewer?.dataSources) return;
+    } catch {
+      //console.error('Error checking viewer.dataSources in interval useEffect:', e);
+      return;
+    }
 
     const intervals: number[] = [];
 
@@ -51,7 +63,7 @@ export function DataConnector({ dataSource, config }: DataConnectorProps) {
     return () => {
       intervals.forEach(clearInterval);
     };
-  }, [dataManager, config, dataSource]);
+  }, [dataSource, config, dataManager, viewer]); // Re-run when dataSource, config, dataManager, or viewer changes
 
   return null;
 }

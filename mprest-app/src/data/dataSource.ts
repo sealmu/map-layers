@@ -1,3 +1,4 @@
+import { Cartesian3, Color } from "cesium";
 import type { LayerData } from "@mprest/map";
 import { pointsData } from "./dataSources/pointsData";
 import { labelsData } from "./dataSources/labelsData";
@@ -13,4 +14,22 @@ export const dataSource: LayerData[] = [
   ...polylinesData,
   ...dronesData,
   ...mixedData,
+  // Radar data
+  {
+    id: "radar1",
+    name: "Radar 1",
+    color: Color.YELLOW,
+    positions: [Cartesian3.fromDegrees(-98.5795, 39.8283, 1000)],
+    view: "cones",
+    renderType: "cone",
+    data: {
+      x: -98.5795,
+      y: 39.8283,
+      config: {
+        center: [-98.5795, 39.8283, 1000],
+        radius: 1500000,
+        coneAngle: Math.PI / 12, // 30 degrees semi-angle (60 degrees full)
+      },
+    },
+  },
 ];

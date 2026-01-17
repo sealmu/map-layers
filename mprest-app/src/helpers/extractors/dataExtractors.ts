@@ -18,3 +18,7 @@ export const extractDrones = <T extends LayerData>(data: T[]): T[] =>
   extractByView(data, "drones");
 export const extractMixed = <T extends LayerData>(data: T[]): T[] =>
   extractByView(data, "mixed");
+export const extractCones = <T extends LayerData>(data: T[]): T[] => {
+  const result = extractByView(data, "cones");
+  return result;
+};
