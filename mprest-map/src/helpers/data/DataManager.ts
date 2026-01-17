@@ -37,7 +37,7 @@ export class DataManager {
   ): Entity | null {
     const dataSource = this.getDataSourceByName(layerName);
     if (!dataSource) {
-      console.warn(`Data source with name "${layerName}" not found.`);
+      //console.warn(`Data source with name "${layerName}" not found.`);
       return null;
     }
 
@@ -49,7 +49,9 @@ export class DataManager {
 
     // Apply current filter state to the new entity
     if (entity) {
-      entity.show = this.viewer.filters.filterData[layerName]?.types[finalRenderType] ?? true;
+      entity.show =
+        this.viewer.filters.filterData[layerName]?.types[finalRenderType] ??
+        true;
     }
 
     return entity;
@@ -336,7 +338,7 @@ export class DataManager {
   getLayerItems(layerName: string): Entity[] | null {
     const dataSource = this.getDataSourceByName(layerName);
     if (!dataSource) {
-      console.warn(`Data source with name "${layerName}" not found.`);
+      //console.warn(`Data source with name "${layerName}" not found.`);
       return null;
     }
     return dataSource.entities.values;
@@ -348,7 +350,7 @@ export class DataManager {
   getLeyerItemCount(layerName: string): number | null {
     const dataSource = this.getDataSourceByName(layerName);
     if (!dataSource) {
-      console.warn(`Data source with name "${layerName}" not found.`);
+      //console.warn(`Data source with name "${layerName}" not found.`);
       return null;
     }
     return dataSource.entities.values.length;
@@ -360,7 +362,7 @@ export class DataManager {
   clearLayer(layerName: string): void {
     const dataSource = this.getDataSourceByName(layerName);
     if (!dataSource) {
-      console.warn(`Data source with name "${layerName}" not found.`);
+      //console.warn(`Data source with name "${layerName}" not found.`);
       return;
     }
     dataSource.entities.removeAll();
@@ -471,7 +473,8 @@ export class DataManager {
         return dataSource;
       }
     }
-    console.log(`Data source with name "${name}" not found.`);
+
+    //console.log(`Data source with name "${name}" not found.`);
     return null;
   }
 }

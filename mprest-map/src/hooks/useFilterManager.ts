@@ -1,9 +1,20 @@
-import { useState, useCallback, useMemo, useLayoutEffect } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { collectLayerData } from "../helpers/collectLayerData";
 import { useViewer } from "./useViewer";
-import type { LayerProps, LayerData, RendererRegistry, FilterData } from "../types";
+import type {
+  LayerProps,
+  LayerData,
+  RendererRegistry,
+  FilterData,
+} from "../types";
 
-export const useFilterManager = <R extends RendererRegistry>(layers?: LayerProps<LayerData, R>[], layerStates?: Record<string, { isActive: boolean; isVisible: boolean; isDocked: boolean }>) => {
+export const useFilterManager = <R extends RendererRegistry>(
+  layers?: LayerProps<LayerData, R>[],
+  layerStates?: Record<
+    string,
+    { isActive: boolean; isVisible: boolean; isDocked: boolean }
+  >,
+) => {
   const [filterData, setFilterData] = useState<FilterData>({});
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const { viewer } = useViewer();
@@ -33,7 +44,10 @@ export const useFilterManager = <R extends RendererRegistry>(layers?: LayerProps
           const dataSource = dataSources.get(i);
           // Match data source name/id to layer id
           const dsName = dataSource.name?.toLowerCase();
-          if (dsName === layerName.toLowerCase() || dsName === displayName?.toLowerCase()) {
+          if (
+            dsName === layerName.toLowerCase() ||
+            dsName === displayName?.toLowerCase()
+          ) {
             // Update entity visibility based on type
             const entities = dataSource.entities.values;
             entities.forEach((entity) => {
