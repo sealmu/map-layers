@@ -14,3 +14,4 @@ export { DataManager } from "./helpers/data/DataManager";
 export { createEntityFromData, enrichEntity } from "./helpers/pipeline";
 export * from "./components/layers/renderers";
 export * from "./types";
+export { EntitySelectionPlugin } from "./plugins/EntitySelectionPlugin";

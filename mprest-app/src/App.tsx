@@ -11,6 +11,7 @@ import {
   ViewerProvider,
   useViewer,
   DataConnector,
+  EntitySelectionPlugin,
 } from "@mprest/map";
 
 import { EntityPopup, type EntityPopupInfo, StickyPopups, usePopupPosition } from "./components/popups";
@@ -30,7 +31,6 @@ import type {
 
 import { dataSource } from "./data/dataSource";
 
-import { EntitySelectionPlugin } from "./plugins/EntitySelectionPlugin";
 import { StickyInfoPlugin, type StickyEntityInfo } from "./plugins/StickyInfoPlugin";
 
 type AppRenderers = typeof AppRenderers;

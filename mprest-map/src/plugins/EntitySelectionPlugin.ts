@@ -15,10 +15,15 @@ interface EntitySelectionEvents {
   onEntitySource: EventHandler<(entity: Entity) => boolean>;
   onEntityTarget: EventHandler<(entity: Entity) => boolean>;
   onTargetSet: EventHandler<(source: Entity, target: Entity) => void>;
-  onSelectionChanged: EventHandler<(isActive: boolean, sourceEntity?: Entity) => void>;
+  onSelectionChanged: EventHandler<
+    (isActive: boolean, sourceEntity?: Entity) => void
+  >;
 }
 
-export class EntitySelectionPlugin extends BasePlugin<EntitySelectionActions, EntitySelectionEvents> {
+export class EntitySelectionPlugin extends BasePlugin<
+  EntitySelectionActions,
+  EntitySelectionEvents
+> {
   private selectionMode = false;
   private sourceEntity: Entity | null = null;
 
@@ -40,7 +45,7 @@ export class EntitySelectionPlugin extends BasePlugin<EntitySelectionActions, En
   }
 
   onMessage(message: string) {
-    console.log('EntitySelectionPlugin:', message);
+    console.log("EntitySelectionPlugin:", message);
     // In a real app, this could show a toast or update UI
   }
 
@@ -54,13 +59,13 @@ export class EntitySelectionPlugin extends BasePlugin<EntitySelectionActions, En
   cancelSelection() {
     this.selectionMode = false;
     this.sourceEntity = null;
-    this.onMessage('Selection mode cancelled');
+    this.onMessage("Selection mode cancelled");
     this.emitSelectionChanged();
   }
 
   private emitSelectionChanged() {
-    this.events.onSelectionChanged.subscribers.forEach(callback => 
-      callback(this.selectionMode, this.sourceEntity || undefined)
+    this.events.onSelectionChanged.subscribers.forEach((callback) =>
+      callback(this.selectionMode, this.sourceEntity || undefined),
     );
   }
 
@@ -97,11 +102,15 @@ export class EntitySelectionPlugin extends BasePlugin<EntitySelectionActions, En
     // Handle target selection when in selection mode
     if (this.selectionMode) {
       // Check if entity is a valid target
-      const targetResults = this.events.onEntityTarget.subscribers.map(callback => callback(entity));
-      if (targetResults.some(result => result === true)) {
+      const targetResults = this.events.onEntityTarget.subscribers.map(
+        (callback) => callback(entity),
+      );
+      if (targetResults.some((result) => result === true)) {
         if (this.sourceEntity) {
           // Valid target - finalize selection
-          this.events.onTargetSet.subscribers.forEach(callback => callback(this.sourceEntity!, entity));
+          this.events.onTargetSet.subscribers.forEach((callback) =>
+            callback(this.sourceEntity!, entity),
+          );
           this.onMessage(`Target set: ${this.sourceEntity.id} -> ${entity.id}`);
         }
         this.selectionMode = false;
@@ -109,7 +118,9 @@ export class EntitySelectionPlugin extends BasePlugin<EntitySelectionActions, En
         this.emitSelectionChanged();
       } else {
         // Invalid target - cancel selection
-        this.onMessage(`Target ${entity.id} not acceptable, selection cancelled`);
+        this.onMessage(
+          `Target ${entity.id} not acceptable, selection cancelled`,
+        );
         this.selectionMode = false;
         this.sourceEntity = null;
         this.emitSelectionChanged();
@@ -118,8 +129,10 @@ export class EntitySelectionPlugin extends BasePlugin<EntitySelectionActions, En
     }
 
     // Check if this is a source entity that was prevented
-    const results = this.events.onEntitySource.subscribers.map(callback => callback(entity));
-    if (results.some(result => result === true)) {
+    const results = this.events.onEntitySource.subscribers.map((callback) =>
+      callback(entity),
+    );
+    if (results.some((result) => result === true)) {
       // It's a source entity, don't show popup
       return false;
     }
@@ -137,7 +150,7 @@ export class EntitySelectionPlugin extends BasePlugin<EntitySelectionActions, En
     // Handle empty space click during selection mode
     // (onSelecting is not called for empty space, so we handle it here)
     if (this.selectionMode && !entity) {
-      this.onMessage('Clicked on empty space, cancelling selection');
+      this.onMessage("Clicked on empty space, cancelling selection");
       this.selectionMode = false;
       this.sourceEntity = null;
       this.emitSelectionChanged();
@@ -148,8 +161,10 @@ export class EntitySelectionPlugin extends BasePlugin<EntitySelectionActions, En
     // Note: onClick with entity is only called when onSelecting returns true (not in selection mode)
     if (entity) {
       // Check if entity is a source - start selection mode
-      const results = this.events.onEntitySource.subscribers.map(callback => callback(entity));
-      if (results.some(result => result === true)) {
+      const results = this.events.onEntitySource.subscribers.map((callback) =>
+        callback(entity),
+      );
+      if (results.some((result) => result === true)) {
         this.startSelection(entity);
         return true; // Allow native selection to work
       }
