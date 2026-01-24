@@ -17,7 +17,7 @@ export function DataConnector({ dataSource, config }: DataConnectorProps) {
   // Run once on mount
   useEffect(() => {
     try {
-      if (!dataManager || !viewer?.dataSources) return;
+      if (!dataManager || !viewer?.dataSources || !viewer?.layers) return;
     } catch {
       //console.error('Error checking viewer.dataSources:', e);
       return;
@@ -26,7 +26,7 @@ export function DataConnector({ dataSource, config }: DataConnectorProps) {
     console.log('DataConnector creating/updating data');
 
     Object.entries(dataSource).forEach(([layerName, data]) => {
-      if (Array.isArray(data)) {
+      if (Array.isArray(data) && viewer?.layers?.getLayerConfig(layerName)) {
         data.forEach((item) => {
           dataManager.updateOrInsertDataItem(item, layerName);
         });
@@ -37,7 +37,7 @@ export function DataConnector({ dataSource, config }: DataConnectorProps) {
   // Run on dependency change (interval)
   useEffect(() => {
     try {
-      if (!dataManager || !viewer?.dataSources) return;
+      if (!dataManager || !viewer?.dataSources || !viewer?.layers) return;
     } catch {
       //console.error('Error checking viewer.dataSources in interval useEffect:', e);
       return;
@@ -50,7 +50,7 @@ export function DataConnector({ dataSource, config }: DataConnectorProps) {
       if (intervalMs > 0) {
         const interval = setInterval(() => {
           const data = dataSource[layerName];
-          if (Array.isArray(data)) {
+          if (Array.isArray(data) && viewer?.layers?.getLayerConfig(layerName)) {
             data.forEach((item) => {
               dataManager.updateOrInsertDataItem(item, layerName);
             });
