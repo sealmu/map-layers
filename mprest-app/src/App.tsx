@@ -49,6 +49,8 @@ import {
 
 import { getLayersConfig } from "./config/layersConfig";
 
+import { EntitySelectionPlugin } from "./plugins/EntitySelectionPlugin";
+
 const renderers = {
   ...defaultRenderers,
   polylines: createPolylineEntity,
@@ -165,6 +167,8 @@ function AppContent({
   const [popupInfo, setPopupInfo] = useState<EntityPopupInfo | null>(null);
   const [popupDimensions] = useState({ width: 350, height: 250 });
   const [currentPosition, setCurrentPosition] = useState<MapClickLocation | null>(null);
+  const [selectionModeActive, setSelectionModeActive] = useState(false);
+  const [selectionSourceEntity, setSelectionSourceEntity] = useState<Entity | undefined>(undefined);
 
   const handleApiReady = useCallback((api: CesiumMapApi) => {
     if (mapApi !== api) {
@@ -172,6 +176,49 @@ function AppContent({
       console.log('CesiumMap API is ready:', api);
     }
   }, [mapApi]);
+
+  // Subscribe to plugin events
+  useEffect(() => {
+    if (!viewer || !mapApi) return;
+
+    const plugin = viewer.plugins.instances['entitySelection'] as EntitySelectionPlugin;
+    if (!plugin) return;
+
+    const unsubscribeSource = plugin.events.onEntitySource.subscribe((entity) => {
+      console.log('onEntitySource:', entity.id);
+      // For example, enter selection mode for certain entities
+      if (entity.id?.toString().includes('drone')) {
+        return true; // Enter selection mode
+      }
+      return false;
+    });
+
+    const unsubscribeTarget = plugin.events.onEntityTarget.subscribe((entity) => {
+      console.log('onEntityTarget:', entity.id);
+      // For example, only allow selecting points as targets
+      if (entity.id?.toString().includes('point')) {
+        return true; // Allow this target
+      }
+      return false; // Reject this target
+    });
+
+    const unsubscribeSet = plugin.events.onTargetSet.subscribe((source, target) => {
+      console.log('onTargetSet:', source.id, '->', target.id);
+    });
+
+    const unsubscribeSelectionChanged = plugin.events.onSelectionChanged.subscribe((isActive, sourceEntity) => {
+      console.log('Selection mode changed:', isActive, sourceEntity?.id);
+      setSelectionModeActive(isActive);
+      setSelectionSourceEntity(sourceEntity);
+    });
+
+    return () => {
+      unsubscribeSource();
+      unsubscribeTarget();
+      unsubscribeSet();
+      unsubscribeSelectionChanged();
+    };
+  }, [viewer, mapApi]);
 
   // Calculate popup position to stay within viewport bounds
   const popupPosition = useMemo(() => {
@@ -326,169 +373,206 @@ function AppContent({
 
   return (
     <>
-      <CesiumMap
-        // onEntityCreating={enrichEntity}
-        // onEntityCreate={onEntityCreate}
-        renderers={renderers}
-        animateActivation={true}
-        animateVisibility={true}
-        onApiReady={handleApiReady}
-        // onEntityChange={handleEntityChange}
-        onClick={handleMapClick}
-        onSelecting={handleSelecting}
-        onClickPrevented={handleClickPrevented}
-        onSelected={handleSelected}
-        onChangePosition={handleChangePosition}
-      >
-        <Layer
-          id="points"
-          name="Points"
-          type={RenderTypes.POINTS}
-          data={extractPoints(data)}
-          isActive={true}
-          isVisible={false}
-          description="Point markers on the map"
-          group="basic-shape"
-          groupName="Basic Shapes"
-          groupIsDocked={false}
-        />
-        <Layer
-          id="polygons"
-          name="Polygons"
-          type={RenderTypes.POLYGONS}
-          data={extractPolygons(data)}
-          isActive={false}
-          isVisible={true}
-          description="Polygon areas"
-        />
-        {layersConfig.map((cfg) => (
-          <Layer
-            key={cfg.id}
-            {...cfg}
-            data={applyExtractor(data, cfg.extractor) as AppData[]}
-          />
-        ))}
-        <Layer
-          id="drones"
-          name="Drones"
-          type={RenderTypes.CUSTOM}
-          data={extractDrones(data)}
-          isActive={true}
-          isVisible={true}
-          description="Drone positions with custom renderer"
-          customRenderer={droneRenderer}
-        />
-        <Layer
-          id="mixed"
-          name="Mixed"
-          isDocked={false}
-          type={RenderTypes.CUSTOM}
-          data={extractMixed(data)}
-          isActive={true}
-          isVisible={false}
-          description="Mixed types and custom renderers"
-        />
-        <Layer
-          id="dynamic"
-          name="dynamic"
-          isDocked={true}
-          type={RenderTypes.CUSTOM}
-          data={[]}
-          isActive={false}
-          isVisible={true}
-          description="Dynamic layer updated externally"
-          group="dynamic"
-          groupName="Dynamic"
-          groupIsDocked={false}
-        />
-        <Layer
-          id="dynamic-raw"
-          name="Dynamic Raw"
-          isDocked={true}
-          type={RenderTypes.CUSTOM}
-          data={[]}
-          isActive={true}
-          isVisible={true}
-          description="Dynamic raw data layer updated externally"
-          group="dynamic"
-          groupName="Dynamic"
-          groupIsDocked={false}
-        />
-        <Layer
-          id="radar"
-          name="Radar"
-          type={RenderTypes.CONE}
-          data={extractCones(data)}
-          isDocked={true}
-          isActive={false}
-          isVisible={true}
-          description="Radar cones"
-          group="structures"
-          groupName="Structures"
-          groupIsDocked={false}
-        />
-        <Layer
-          id="domes"
-          name="Domes"
-          type={RenderTypes.DOMES}
-          data={extractDomes(data)}
-          isDocked={true}
-          isActive={true}
-          isVisible={false}
-          description="Circular dome areas"
-          group="structures"
-          groupName="Structures"
-          groupIsDocked={false}
-        />
-      </CesiumMap>
-
-      <EntityPopup
-        popupInfo={popupInfo}
-        popupPosition={popupPosition}
-        onClose={() => setPopupInfo(null)}
-      />
-
-      <PositionInfoBar position={currentPosition} />
-
-      {viewer && <DataConnector dataSource={dataSourceDynamic} config={DataConnectorConfig} />}
-
-
-
-      {mapApi && <FiltersPanel api={mapApi.api.filtersPanel} />}
-
-      {mapApi && <SearchPanel api={mapApi.api} />}
-
-      <Expander
-        title="Simulations"
-        position="right"
-        size="content"
-        isDocked={dynamicPanelsDocked}
-        onToggle={setDynamicPanelsDocked}
-      >
-        <div className="dynamic-panels-container" style={{ marginLeft: "10px", marginTop: "10px" }}>
-          <div style={{ marginRight: "20px" }}>
-            <DynamicPanel renderers={renderers} />
-          </div>
-          <div style={{ marginRight: "20px" }}>
-            <DynamicRawDataPanel />
-          </div>
-
-        </div>
-      </Expander>
-
-      {mapApi && (
-        <Expander
-          title="Layers"
-          position="bottom"
-          size="full"
-          isDocked={layersPanelDocked}
-          onToggle={setLayersPanelDocked}
+      <div style={{ position: 'relative', width: '100%', height: '100vh', cursor: selectionModeActive ? 'crosshair' : 'default' }}>
+        <CesiumMap
+          // onEntityCreating={enrichEntity}
+          // onEntityCreate={onEntityCreate}
+          renderers={renderers}
+          animateActivation={true}
+          animateVisibility={true}
+          onApiReady={handleApiReady}
+          // onEntityChange={handleEntityChange}
+          onClick={handleMapClick}
+          onSelecting={handleSelecting}
+          onClickPrevented={handleClickPrevented}
+          onSelected={handleSelected}
+          onChangePosition={handleChangePosition}
+          plugins={{ entitySelection: EntitySelectionPlugin }}
         >
-          <div style={{ marginTop: "8px", marginBottom: "15px", marginLeft: "12px", marginRight: "12px" }}>
-            <LayersPanel api={mapApi.api.layersPanel} onFilter={handleFilter} onSearch={handleSearch} />
+          <Layer
+            id="points"
+            name="Points"
+            type={RenderTypes.POINTS}
+            data={extractPoints(data)}
+            isActive={true}
+            isVisible={false}
+            description="Point markers on the map"
+            group="basic-shape"
+            groupName="Basic Shapes"
+            groupIsDocked={false}
+          />
+          <Layer
+            id="polygons"
+            name="Polygons"
+            type={RenderTypes.POLYGONS}
+            data={extractPolygons(data)}
+            isActive={false}
+            isVisible={true}
+            description="Polygon areas"
+          />
+          {layersConfig.map((cfg) => (
+            <Layer
+              key={cfg.id}
+              {...cfg}
+              data={applyExtractor(data, cfg.extractor) as AppData[]}
+            />
+          ))}
+          <Layer
+            id="drones"
+            name="Drones"
+            type={RenderTypes.CUSTOM}
+            data={extractDrones(data)}
+            isActive={true}
+            isVisible={true}
+            description="Drone positions with custom renderer"
+            customRenderer={droneRenderer}
+          />
+          <Layer
+            id="mixed"
+            name="Mixed"
+            isDocked={false}
+            type={RenderTypes.CUSTOM}
+            data={extractMixed(data)}
+            isActive={true}
+            isVisible={false}
+            description="Mixed types and custom renderers"
+          />
+          <Layer
+            id="dynamic"
+            name="dynamic"
+            isDocked={true}
+            type={RenderTypes.CUSTOM}
+            data={[]}
+            isActive={false}
+            isVisible={true}
+            description="Dynamic layer updated externally"
+            group="dynamic"
+            groupName="Dynamic"
+            groupIsDocked={false}
+          />
+          <Layer
+            id="dynamic-raw"
+            name="Dynamic Raw"
+            isDocked={true}
+            type={RenderTypes.CUSTOM}
+            data={[]}
+            isActive={true}
+            isVisible={true}
+            description="Dynamic raw data layer updated externally"
+            group="dynamic"
+            groupName="Dynamic"
+            groupIsDocked={false}
+          />
+          <Layer
+            id="radar"
+            name="Radar"
+            type={RenderTypes.CONE}
+            data={extractCones(data)}
+            isDocked={true}
+            isActive={false}
+            isVisible={true}
+            description="Radar cones"
+            group="structures"
+            groupName="Structures"
+            groupIsDocked={false}
+          />
+          <Layer
+            id="domes"
+            name="Domes"
+            type={RenderTypes.DOMES}
+            data={extractDomes(data)}
+            isDocked={true}
+            isActive={true}
+            isVisible={false}
+            description="Circular dome areas"
+            group="structures"
+            groupName="Structures"
+            groupIsDocked={false}
+          />
+        </CesiumMap>
+
+        {selectionModeActive && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '10px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              color: 'white',
+              padding: '10px 20px',
+              borderRadius: '8px',
+              textAlign: 'center',
+              zIndex: 1000,
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              border: '2px solid #007bff',
+            }}
+          >
+            <div style={{ marginBottom: '5px', fontSize: '16px' }}>
+              🎯 Selection Mode Active
+            </div>
+            <div style={{ marginBottom: '5px', fontSize: '12px', fontWeight: 'normal' }}>
+              Source: {selectionSourceEntity?.id || 'Unknown'}
+            </div>
+            <div style={{ fontSize: '12px', fontWeight: 'normal' }}>
+              Click on a target entity to complete selection
+            </div>
+            <div style={{ marginTop: '5px', fontSize: '10px', opacity: 0.8 }}>
+              Click on empty space to cancel
+            </div>
+          </div>
+        )}
+
+        <EntityPopup
+          popupInfo={popupInfo}
+          popupPosition={popupPosition}
+          onClose={() => setPopupInfo(null)}
+        />
+
+        <PositionInfoBar position={currentPosition} />
+
+        {viewer && <DataConnector dataSource={dataSourceDynamic} config={DataConnectorConfig} />}
+
+
+
+        {mapApi && <FiltersPanel api={mapApi.api.filtersPanel} />}
+
+        {mapApi && <SearchPanel api={mapApi.api} />}
+
+        <Expander
+          title="Simulations"
+          position="right"
+          size="content"
+          isDocked={dynamicPanelsDocked}
+          onToggle={setDynamicPanelsDocked}
+        >
+          <div className="dynamic-panels-container" style={{ marginLeft: "10px", marginTop: "10px" }}>
+            <div style={{ marginRight: "20px" }}>
+              <DynamicPanel renderers={renderers} />
+            </div>
+            <div style={{ marginRight: "20px" }}>
+              <DynamicRawDataPanel />
+            </div>
+
           </div>
         </Expander>
-      )}
+
+        {mapApi && (
+          <Expander
+            title="Layers"
+            position="bottom"
+            size="full"
+            isDocked={layersPanelDocked}
+            onToggle={setLayersPanelDocked}
+          >
+            <div style={{ marginTop: "8px", marginBottom: "15px", marginLeft: "12px", marginRight: "12px" }}>
+              <LayersPanel api={mapApi.api.layersPanel} onFilter={handleFilter} onSearch={handleSearch} />
+            </div>
+          </Expander>
+        )}
+      </div>
     </>
   );
 }

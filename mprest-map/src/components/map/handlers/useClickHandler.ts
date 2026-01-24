@@ -6,6 +6,7 @@ import {
   Cartesian3,
   Cartographic,
   Entity,
+  Viewer,
 } from "cesium";
 import type {
   MapClickLocation,
@@ -13,6 +14,27 @@ import type {
   RendererRegistry,
 } from "../../../types";
 import { handleMapClick } from "../utils/handleMapClick";
+
+// Track viewers that should bypass onSelecting check (set by handleMapClick)
+// Stores location and screenPosition to pass through to onSelected
+interface BypassData {
+  location: MapClickLocation;
+  screenPosition?: Cartesian2;
+}
+const bypassSelectingCheck = new WeakMap<Viewer, BypassData | null>();
+
+export function setBypassSelectingCheck(
+  viewer: Viewer,
+  data: BypassData | null,
+): void {
+  bypassSelectingCheck.set(viewer, data);
+}
+
+function getAndResetBypassSelectingCheck(viewer: Viewer): BypassData | null {
+  const value = bypassSelectingCheck.get(viewer) ?? null;
+  bypassSelectingCheck.set(viewer, null);
+  return value;
+}
 
 export interface UseClickHandlerOptions<
   R extends RendererRegistry = RendererRegistry,
@@ -51,6 +73,7 @@ export function useClickHandler<R extends RendererRegistry = RendererRegistry>({
 
     // Override selectedEntity to intercept programmatic selections
     let _selectedEntity = viewer.selectedEntity;
+
     Object.defineProperty(viewer, "selectedEntity", {
       get() {
         return _selectedEntity;
@@ -58,7 +81,10 @@ export function useClickHandler<R extends RendererRegistry = RendererRegistry>({
       set(value: Entity | undefined) {
         if (value === _selectedEntity) return; // No change, don't call onSelected
 
-        if (value && onSelecting) {
+        // Skip onSelecting if called from handleMapClick (already checked there)
+        const bypassData = getAndResetBypassSelectingCheck(viewer);
+
+        if (value && onSelecting && !bypassData) {
           // Get location for the entity
           const position = value.position?.getValue(viewer.clock.currentTime);
           let location: MapClickLocation | undefined;
@@ -111,7 +137,13 @@ export function useClickHandler<R extends RendererRegistry = RendererRegistry>({
         } else {
           _selectedEntity = value;
           viewer.selectedEntityChanged.raiseEvent(value);
-          if (onSelected) onSelected(value ?? null, undefined, undefined);
+          if (onSelected) {
+            onSelected(
+              value ?? null,
+              bypassData?.location,
+              bypassData?.screenPosition,
+            );
+          }
         }
       },
       configurable: true,

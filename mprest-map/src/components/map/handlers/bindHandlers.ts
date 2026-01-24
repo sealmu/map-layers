@@ -6,9 +6,27 @@ import type {
   RendererRegistry,
   MapClickLocation,
   EntityChangeStatus,
+  BasePlugin,
 } from "../../../types";
 import { Entity, Cartesian2 } from "cesium";
 import { callAllSubscribers } from "../utils/EventHandler";
+
+function callPluginMethod(
+  plugins: Record<string, BasePlugin>,
+  methodName: keyof BasePlugin,
+  ...args: any[]
+): boolean {
+  for (const plugin of Object.values(plugins)) {
+    const method = plugin[methodName];
+    if (typeof method === "function") {
+      const result = (method as (...args: any[]) => any).apply(plugin, args);
+      if (result === false) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
 
 export interface BindHandlersOptions<
   R extends RendererRegistry = RendererRegistry,
@@ -66,9 +84,19 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
           entity: Entity | null,
           location: MapClickLocation,
           screenPosition?: Cartesian2,
-        ) => {
+        ): boolean | void => {
+          if (
+            !callPluginMethod(
+              viewer.plugins.instances,
+              "onClick",
+              entity,
+              location,
+              screenPosition,
+            )
+          )
+            return false;
           const result = onClick?.(entity, location, screenPosition);
-          if (result === false) return;
+          if (result === false) return false;
           callAllSubscribers(
             viewer.handlers.onClick,
             entity,
@@ -79,6 +107,15 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
       : onClick,
     onSelecting: viewer
       ? (entity: Entity, location: MapClickLocation) => {
+          if (
+            !callPluginMethod(
+              viewer.plugins.instances,
+              "onSelecting",
+              entity,
+              location,
+            )
+          )
+            return false;
           const result = onSelecting?.(entity, location);
           if (result === false) return false;
           callAllSubscribers(viewer.handlers.onSelecting, entity, location);
@@ -87,6 +124,15 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
       : onSelecting,
     onClickPrevented: viewer
       ? (entity: Entity, location: MapClickLocation) => {
+          if (
+            !callPluginMethod(
+              viewer.plugins.instances,
+              "onClickPrevented",
+              entity,
+              location,
+            )
+          )
+            return;
           const result = onClickPrevented?.(entity, location);
           if (result === false) return;
           callAllSubscribers(
@@ -102,6 +148,16 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
           location?: MapClickLocation,
           screenPosition?: Cartesian2,
         ) => {
+          if (
+            !callPluginMethod(
+              viewer.plugins.instances,
+              "onSelected",
+              entity,
+              location,
+              screenPosition,
+            )
+          )
+            return;
           const result = onSelected?.(entity, location, screenPosition);
           if (result === false) return;
           callAllSubscribers(
@@ -118,6 +174,14 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
     viewer,
     onChangePosition: viewer
       ? (location: MapClickLocation | null) => {
+          if (
+            !callPluginMethod(
+              viewer.plugins.instances,
+              "onChangePosition",
+              location,
+            )
+          )
+            return;
           const result = onChangePosition?.(location);
           if (result === false) return;
           callAllSubscribers(viewer.handlers.onChangePosition, location);
@@ -128,6 +192,17 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
   // Create processEntityChange function
   const processEntityChange = useCallback(
     (entity: Entity, status: EntityChangeStatus, collectionName: string) => {
+      if (
+        viewer &&
+        !callPluginMethod(
+          viewer.plugins.instances,
+          "onEntityChange",
+          entity,
+          status,
+          collectionName,
+        )
+      )
+        return;
       const result = onEntityChange?.(entity, status, collectionName);
       if (result === false) return;
       if (viewer) {

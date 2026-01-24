@@ -21,6 +21,7 @@ import type {
   LayerData,
   CesiumMapApi,
   ViewerWithConfigs,
+  BasePlugin,
 } from "../../types";
 import { useViewer } from "../../hooks/useViewer";
 import { useLayerManager } from "../../hooks/useLayerManager";
@@ -46,6 +47,7 @@ const CesiumMap = <R extends RendererRegistry>({
   onClickPrevented,
   onSelected,
   onChangePosition,
+  plugins = {},
 }: CesiumMapProps<R> & { onApiReady?: (api: CesiumMapApi) => void }) => {
   const { setViewer: setContextViewer } = useViewer();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -104,6 +106,12 @@ const CesiumMap = <R extends RendererRegistry>({
       onSelected: createEventHandler(),
       onChangePosition: createEventHandler(),
       onEntityChange: createEventHandler(),
+    };
+
+    // Set up plugins
+    newViewer.plugins = {
+      instances: {},
+      actions: {},
     };
 
     // Add OpenStreetMap imagery layer
@@ -171,7 +179,7 @@ const CesiumMap = <R extends RendererRegistry>({
   });
 
   const api = useMemo<CesiumMapApi | null>(() => {
-    if (!layersPanelApi || !filtersPanelApi || !searchPanelApi || !entitiesApi) return null;
+    if (!viewer || !layersPanelApi || !filtersPanelApi || !searchPanelApi || !entitiesApi) return null;
     return {
       api: {
         layersPanel: layersPanelApi,
@@ -179,17 +187,30 @@ const CesiumMap = <R extends RendererRegistry>({
         searchPanel: searchPanelApi,
         entities: entitiesApi,
       },
+      viewer,
     };
-  }, [layersPanelApi, filtersPanelApi, searchPanelApi, entitiesApi]);
+  }, [layersPanelApi, filtersPanelApi, searchPanelApi, entitiesApi, viewer]);
 
   const prevApiRef = useRef<CesiumMapApi | null>(null);
 
   useEffect(() => {
     if (typeof onApiReady === "function" && api && api !== prevApiRef.current) {
       prevApiRef.current = api;
+      // Instantiate plugins
+      if (viewer) {
+        const pluginInstances: Record<string, BasePlugin> = {};
+        const actions: Record<string, (...args: any[]) => any> = {};
+        for (const [name, PluginClass] of Object.entries(plugins)) {
+          const instance = new PluginClass(api);
+          pluginInstances[name] = instance;
+          Object.assign(actions, (instance as any).actions);
+        }
+        viewer.plugins.instances = pluginInstances;
+        viewer.plugins.actions = actions;
+      }
       onApiReady(api);
     }
-  }, [api, onApiReady]);
+  }, [api, onApiReady, plugins, viewer]);
 
   return (
     <div className="cesium-map-container">

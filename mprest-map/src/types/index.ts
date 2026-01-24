@@ -28,6 +28,52 @@ export interface EventHandler<T> {
   subscribers: T[];
 }
 
+// Plugin types
+export interface PluginActions {
+  [key: string]: (...args: any[]) => any;
+}
+
+export interface PluginEvents {
+  [key: string]: EventHandler<any>;
+}
+
+export abstract class BasePlugin<
+  A extends PluginActions = PluginActions,
+  E extends PluginEvents = PluginEvents,
+> {
+  protected api: CesiumMapApi;
+  constructor(api: CesiumMapApi) {
+    this.api = api;
+  }
+
+  abstract actions: A;
+  abstract events: E;
+  // Optional handler methods
+  onClick?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
+  onSelecting?: (entity: Entity, location: MapClickLocation) => boolean | void;
+  onClickPrevented?: (
+    entity: Entity,
+    location: MapClickLocation,
+  ) => boolean | void;
+  onSelected?: (
+    entity: Entity | null,
+    location?: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
+  onChangePosition?: (location: MapClickLocation | null) => boolean | void;
+  onEntityChange?: (
+    entity: Entity,
+    status: EntityChangeStatus,
+    collectionName: string,
+  ) => boolean | void;
+}
+
+export type PluginClass = new (api: CesiumMapApi) => BasePlugin;
+
 // Type for entity renderer functions
 export type EntityRenderer = (item: LayerData) => Entity.ConstructorOptions;
 
@@ -213,6 +259,7 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
     screenPosition?: Cartesian2,
   ) => boolean | void;
   onChangePosition?: (location: MapClickLocation | null) => boolean | void;
+  plugins?: Record<string, PluginClass>;
 }
 
 export interface LayersPanelApi {
@@ -318,6 +365,7 @@ export interface CesiumMapApi {
       ) => boolean;
     };
   };
+  viewer: ViewerWithConfigs<any>;
 }
 
 export interface LayersPanelProps {
@@ -409,6 +457,10 @@ export interface ViewerWithConfigs<
         collectionName: string,
       ) => void
     >;
+  };
+  plugins: {
+    instances: Record<string, BasePlugin>;
+    actions: Record<string, (...args: any[]) => any>;
   };
   mapref: {
     onEntityCreating?: (

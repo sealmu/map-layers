@@ -1,5 +1,6 @@
 export { default as CesiumMap } from "./components/map/CesiumMap";
 export { default as Layer } from "./components/layers/Layer";
+export { createEventHandler } from "./components/map/utils/EventHandler";
 export { default as LayersPanel } from "./components/map/panels/LayersPanel";
 export { default as FiltersPanel } from "./components/map/panels/FiltersPanel";
 export { default as SearchPanel } from "./components/map/panels/SearchPanel";
@@ -10,9 +11,6 @@ export { ViewerProvider } from "./context/providers/ViewerProvider";
 export { useViewer } from "./hooks/useViewer";
 export { applyExtractor } from "./helpers/extractors/byPathValue.extractor";
 export { DataManager } from "./helpers/data/DataManager";
-export {
-  createEntityFromData,
-  enrichEntity,
-} from "./helpers/pipeline";
+export { createEntityFromData, enrichEntity } from "./helpers/pipeline";
 export * from "./components/layers/renderers";
 export * from "./types";

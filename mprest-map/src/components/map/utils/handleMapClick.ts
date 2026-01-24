@@ -11,6 +11,7 @@ import type {
   RendererRegistry,
 } from "../../../types";
 import { getLocationFromPosition } from "./getLocationFromPosition";
+import { setBypassSelectingCheck } from "../handlers/useClickHandler";
 
 export interface HandleMapClickOptions<
   R extends RendererRegistry = RendererRegistry,
@@ -51,50 +52,46 @@ export function handleMapClick<R extends RendererRegistry = RendererRegistry>({
     location.cartesian,
   );
 
-  // Check selection permission first before calling onClick
-  if (pickedEntity) {
-    if (onSelecting) {
-      // Get entity position for the location parameter
-      const entityPosition = pickedEntity.position?.getValue(
-        viewer.clock.currentTime,
-      );
-      let entityLocation: MapClickLocation | null = null;
+  // Check selection permission first
+  if (pickedEntity && onSelecting) {
+    // Get entity position for the location parameter
+    const entityPosition = pickedEntity.position?.getValue(
+      viewer.clock.currentTime,
+    );
+    let entityLocation: MapClickLocation = location;
 
-      if (entityPosition) {
-        const cartographic = Cartographic.fromCartesian(entityPosition);
-        entityLocation = {
-          cartesian: entityPosition,
-          cartographic,
-          longitude: CesiumMath.toDegrees(cartographic.longitude),
-          latitude: CesiumMath.toDegrees(cartographic.latitude),
-          height: cartographic.height,
-        };
-      } else {
-        // Fallback to click location if entity has no position
-        entityLocation = location;
-      }
+    if (entityPosition) {
+      const cartographic = Cartographic.fromCartesian(entityPosition);
+      entityLocation = {
+        cartesian: entityPosition,
+        cartographic,
+        longitude: CesiumMath.toDegrees(cartographic.longitude),
+        latitude: CesiumMath.toDegrees(cartographic.latitude),
+        height: cartographic.height,
+      };
+    }
 
-      if (entityLocation) {
-        const shouldSelect =
-          onSelecting(pickedEntity, entityLocation) !== false;
-        if (!shouldSelect) {
-          // Selection not approved - call onClickPrevented and don't call onClick
-          if (onClickPrevented) {
-            onClickPrevented(pickedEntity, entityLocation);
-          }
-          return; // Don't proceed with onClick or selection
-        }
+    const shouldSelect = onSelecting(pickedEntity, entityLocation) !== false;
+    if (!shouldSelect) {
+      // Selection prevented - call onClickPrevented and skip onClick/selection
+      if (onClickPrevented) {
+        onClickPrevented(pickedEntity, entityLocation);
       }
+      return;
     }
   }
 
-  // Call onClick after selection permission is granted
+  // Call onClick only when selection is allowed
   if (onClick) {
     const result = onClick(pickedEntity, location, screenPosition);
-    if (result === false) return;
+    if (result === false) {
+      return;
+    }
   }
 
-  // Proceed with selection
+  // Proceed with selection (bypass setter's onSelecting since we already checked)
+  // Pass location and screenPosition through bypass data for onSelected
+  setBypassSelectingCheck(viewer, { location, screenPosition });
   if (pickedEntity) {
     viewer.selectedEntity = pickedEntity;
   } else {
