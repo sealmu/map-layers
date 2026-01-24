@@ -101,6 +101,7 @@ export class EntitySelectionPlugin extends BasePlugin<EntitySelectionActions, En
           this.onMessage(`Target set: ${this.sourceEntity.id} -> ${entity.id}`);
         }
         this.selectionMode = false;
+        this.sourceEntity = null;
         this.emitSelectionChanged();
       } else {
         // Invalid target - cancel selection
@@ -136,7 +137,8 @@ export class EntitySelectionPlugin extends BasePlugin<EntitySelectionActions, En
       this.selectionMode = false;
       this.sourceEntity = null;
       this.emitSelectionChanged();
-      return false; // Prevent further processing
+      // Return true to let handleMapClick continue and deselect naturally
+      return true;
     }
 
     // Note: onClick with entity is only called when onSelecting returns true (not in selection mode)

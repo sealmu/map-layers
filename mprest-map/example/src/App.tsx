@@ -5,7 +5,7 @@ import {
   Layer,
   LayersPanel,
   ViewerProvider,
-  type CesiumMapApi,
+  type MapApi,
   type LayerData,
   type LayeredDataWithPayload,
   type RendererRegistry,
@@ -64,7 +64,7 @@ function AppContent({
 }) {
   const { viewer } = useViewer();
   const layersConfig = useMemo(() => getLayersConfig(), []);
-  const [mapApi, setMapApi] = useState<CesiumMapApi | null>(null);
+  const [mapApi, setMapApi] = useState<MapApi | null>(null);
 
   useDroneAnimation(viewer, {
     droneId: "drone2",
@@ -84,7 +84,7 @@ function AppContent({
           renderers={renderers}
           animateActivation={true}
           animateVisibility={true}
-          onApiReady={setMapApi}
+          onApiChange={setMapApi}
         >
           <Layer
             id="points"
@@ -133,7 +133,7 @@ function AppContent({
         </CesiumMap>
       </div>
       <div style={{ padding: "10px", backgroundColor: "#f5f5f5" }}>
-        {mapApi && <LayersPanel api={mapApi.api.layersPanel} />}
+        {mapApi && <LayersPanel api={mapApi.layersPanel} />}
       </div>
     </div>
   );

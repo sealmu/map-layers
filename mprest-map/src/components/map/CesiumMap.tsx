@@ -19,9 +19,8 @@ import type {
   LayerProps,
   RendererRegistry,
   LayerData,
-  CesiumMapApi,
   ViewerWithConfigs,
-  BasePlugin,
+  MapApi,
 } from "../../types";
 import { useViewer } from "../../hooks/useViewer";
 import { useLayerManager } from "../../hooks/useLayerManager";
@@ -32,13 +31,16 @@ import { extractLayersFromChildren, hasLayersChanged } from "./utils";
 import { createEventHandler } from "./utils/EventHandler";
 import { useBindHandlers } from "./handlers/bindHandlers";
 
+// Module-level variable to hold current API
+let currentViewerApi: MapApi | null = null;
+
 const CesiumMap = <R extends RendererRegistry>({
   children,
   defaultToken,
   renderers,
   animateActivation = false,
   animateVisibility = false,
-  onApiReady,
+  onApiChange,
   onEntityCreating,
   onEntityCreate,
   onEntityChange,
@@ -48,7 +50,7 @@ const CesiumMap = <R extends RendererRegistry>({
   onSelected,
   onChangePosition,
   plugins = {},
-}: CesiumMapProps<R> & { onApiReady?: (api: CesiumMapApi) => void }) => {
+}: CesiumMapProps<R>) => {
   const { setViewer: setContextViewer } = useViewer();
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewer, setViewer] = useState<ViewerWithConfigs<R> | null>(null);
@@ -90,13 +92,12 @@ const CesiumMap = <R extends RendererRegistry>({
       fullscreenButton: false,
     }) as ViewerWithConfigs<R>;
 
-    setViewer(newViewer);
-
-    // Update context viewer
-    setContextViewer(newViewer as unknown as ViewerWithConfigs);
-
-    // Set mapref
-    newViewer.mapref = { onEntityCreating, onEntityCreate };
+    // Define getter for viewer.api to always return current API
+    Object.defineProperty(newViewer, 'api', {
+      get: () => currentViewerApi,
+      enumerable: true,
+      configurable: true,
+    });
 
     // Set up handlers
     newViewer.handlers = {
@@ -106,13 +107,40 @@ const CesiumMap = <R extends RendererRegistry>({
       onSelected: createEventHandler(),
       onChangePosition: createEventHandler(),
       onEntityChange: createEventHandler(),
+      onApiChange: createEventHandler(),
     };
 
     // Set up plugins
-    newViewer.plugins = {
-      instances: {},
-      actions: {},
+    newViewer.plugins = {};
+
+    // Set up mapref callbacks
+    newViewer.mapref = {
+      onEntityCreating,
+      onEntityCreate,
     };
+
+    setViewer(newViewer);
+
+    // Create initial API
+    const initialApi = {
+      layersPanel: layersPanelApi,
+      filtersPanel: filtersPanelApi,
+      searchPanel: searchPanelApi,
+      entities: entitiesApi,
+    };
+
+    // Update module-level API variable
+    currentViewerApi = initialApi;
+
+    // Update context viewer
+    setContextViewer(newViewer as unknown as ViewerWithConfigs);
+
+    // Emit initial API change event asynchronously to allow subscriptions to be set up
+    Promise.resolve().then(() => {
+      newViewer.handlers.onApiChange.subscribers.forEach((callback) => {
+        callback(initialApi);
+      });
+    });
 
     // Add OpenStreetMap imagery layer
     const imageryProvider = new OpenStreetMapImageryProvider({
@@ -156,8 +184,39 @@ const CesiumMap = <R extends RendererRegistry>({
 
       viewer.filters = filtersPanelApi;
 
+      // Create new API object
+      const api = {
+        layersPanel: layersPanelApi,
+        filtersPanel: filtersPanelApi,
+        searchPanel: searchPanelApi,
+        entities: entitiesApi,
+      };
+
+      // Update module-level API variable (viewer.api getter will return this)
+      currentViewerApi = api;
+
+      // Notify parent component of API change
+      onApiChange?.(api);
+
+      // Emit API change event on viewer
+      viewer.handlers.onApiChange.subscribers.forEach((callback) => {
+        callback(api);
+      });
+
+      // Instantiate plugins when APIs are ready
+      if (Object.keys(viewer.plugins).length === 0 && Object.keys(plugins).length > 0) {
+        const api = {
+          api: viewer.api,
+          viewer,
+        };
+        for (const [name, PluginClass] of Object.entries(plugins)) {
+          const instance = new PluginClass(api);
+          viewer.plugins[name] = instance;
+        }
+      }
+
     }
-  }, [viewer, layers, renderers, filtersPanelApi]);
+  }, [viewer, layers, renderers, filtersPanelApi, layersPanelApi, searchPanelApi, entitiesApi, plugins, onApiChange]);
 
   // Handle street map visibility
   useEffect(() => {
@@ -177,40 +236,6 @@ const CesiumMap = <R extends RendererRegistry>({
     onChangePosition,
     onEntityChange,
   });
-
-  const api = useMemo<CesiumMapApi | null>(() => {
-    if (!viewer || !layersPanelApi || !filtersPanelApi || !searchPanelApi || !entitiesApi) return null;
-    return {
-      api: {
-        layersPanel: layersPanelApi,
-        filtersPanel: filtersPanelApi,
-        searchPanel: searchPanelApi,
-        entities: entitiesApi,
-      },
-      viewer,
-    };
-  }, [layersPanelApi, filtersPanelApi, searchPanelApi, entitiesApi, viewer]);
-
-  const prevApiRef = useRef<CesiumMapApi | null>(null);
-
-  useEffect(() => {
-    if (typeof onApiReady === "function" && api && api !== prevApiRef.current) {
-      prevApiRef.current = api;
-      // Instantiate plugins
-      if (viewer) {
-        const pluginInstances: Record<string, BasePlugin> = {};
-        const actions: Record<string, (...args: any[]) => any> = {};
-        for (const [name, PluginClass] of Object.entries(plugins)) {
-          const instance = new PluginClass(api);
-          pluginInstances[name] = instance;
-          Object.assign(actions, (instance as any).actions);
-        }
-        viewer.plugins.instances = pluginInstances;
-        viewer.plugins.actions = actions;
-      }
-      onApiReady(api);
-    }
-  }, [api, onApiReady, plugins, viewer]);
 
   return (
     <div className="cesium-map-container">

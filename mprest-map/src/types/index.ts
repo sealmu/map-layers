@@ -227,7 +227,7 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
   renderers: R;
   animateActivation?: boolean;
   animateVisibility?: boolean;
-  onApiReady?: (api: CesiumMapApi) => boolean | void;
+  onApiChange?: (api: MapApi) => void;
   onEntityCreating?: (
     options: Entity.ConstructorOptions,
     item: LayerData,
@@ -351,20 +351,22 @@ export interface SearchPanelApi {
   closeSearchModal: () => void;
 }
 
-export interface CesiumMapApi {
-  api: {
-    layersPanel: LayersPanelApi;
-    filtersPanel: FiltersPanelApi;
-    searchPanel: SearchPanelApi;
-    entities: {
-      findEntity: (entityId: string, layerId?: string) => Entity | null;
-      selectEntity: (
-        entityId: string,
-        layerId?: string,
-        flyTo?: boolean | number,
-      ) => boolean;
-    };
+export interface MapApi {
+  layersPanel: LayersPanelApi;
+  filtersPanel: FiltersPanelApi;
+  searchPanel: SearchPanelApi;
+  entities: {
+    findEntity: (entityId: string, layerId?: string) => Entity | null;
+    selectEntity: (
+      entityId: string,
+      layerId?: string,
+      flyTo?: boolean | number,
+    ) => boolean;
   };
+}
+
+export interface CesiumMapApi {
+  api: MapApi;
   viewer: ViewerWithConfigs<any>;
 }
 
@@ -379,17 +381,15 @@ export interface FiltersPanelProps {
 }
 
 export interface SearchPanelProps {
-  api: {
-    searchPanel: SearchPanelApi;
-    filtersPanel: FiltersPanelApi;
-    entities: {
-      findEntity: (entityId: string, layerId?: string) => Entity | null;
-      selectEntity: (
-        entityId: string,
-        layerId?: string,
-        flyTo?: boolean | number,
-      ) => boolean;
-    };
+  api: SearchPanelApi;
+  filtersPanel: FiltersPanelApi;
+  entities: {
+    findEntity: (entityId: string, layerId?: string) => Entity | null;
+    selectEntity: (
+      entityId: string,
+      layerId?: string,
+      flyTo?: boolean | number,
+    ) => boolean;
   };
 }
 
@@ -403,12 +403,6 @@ export interface DroneAnimationConfig {
   altAmp: number;
   segments: number;
   orbitDurationMs: number;
-}
-
-// ViewerContext
-export interface ViewerContextType {
-  viewer: ViewerWithConfigs | null;
-  setViewer: (viewer: ViewerWithConfigs | null) => void;
 }
 
 // ViewerProvider
@@ -428,6 +422,7 @@ export interface ViewerWithConfigs<
     getRenderers: () => R;
   };
   filters: FiltersPanelApi;
+  api: MapApi;
   handlers: {
     onClick: EventHandler<
       (
@@ -457,11 +452,9 @@ export interface ViewerWithConfigs<
         collectionName: string,
       ) => void
     >;
+    onApiChange: EventHandler<(api: MapApi) => void>;
   };
-  plugins: {
-    instances: Record<string, BasePlugin>;
-    actions: Record<string, (...args: any[]) => any>;
-  };
+  plugins: Record<string, BasePlugin>;
   mapref: {
     onEntityCreating?: (
       options: Entity.ConstructorOptions,
@@ -485,4 +478,9 @@ export type DataConnectorConfig = {
 export type DataConnectorProps = {
   dataSource: Record<string, LayerData[]>;
   config: DataConnectorConfig;
+};
+
+export type ViewerContextType = {
+  viewer: ViewerWithConfigs | null;
+  setViewer: React.Dispatch<React.SetStateAction<ViewerWithConfigs | null>>;
 };

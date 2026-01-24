@@ -87,7 +87,7 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
         ): boolean | void => {
           if (
             !callPluginMethod(
-              viewer.plugins.instances,
+              viewer.plugins,
               "onClick",
               entity,
               location,
@@ -108,12 +108,7 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
     onSelecting: viewer
       ? (entity: Entity, location: MapClickLocation) => {
           if (
-            !callPluginMethod(
-              viewer.plugins.instances,
-              "onSelecting",
-              entity,
-              location,
-            )
+            !callPluginMethod(viewer.plugins, "onSelecting", entity, location)
           )
             return false;
           const result = onSelecting?.(entity, location);
@@ -126,7 +121,7 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
       ? (entity: Entity, location: MapClickLocation) => {
           if (
             !callPluginMethod(
-              viewer.plugins.instances,
+              viewer.plugins,
               "onClickPrevented",
               entity,
               location,
@@ -150,7 +145,7 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
         ) => {
           if (
             !callPluginMethod(
-              viewer.plugins.instances,
+              viewer.plugins,
               "onSelected",
               entity,
               location,
@@ -174,13 +169,7 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
     viewer,
     onChangePosition: viewer
       ? (location: MapClickLocation | null) => {
-          if (
-            !callPluginMethod(
-              viewer.plugins.instances,
-              "onChangePosition",
-              location,
-            )
-          )
+          if (!callPluginMethod(viewer.plugins, "onChangePosition", location))
             return;
           const result = onChangePosition?.(location);
           if (result === false) return;
@@ -195,7 +184,7 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
       if (
         viewer &&
         !callPluginMethod(
-          viewer.plugins.instances,
+          viewer.plugins,
           "onEntityChange",
           entity,
           status,

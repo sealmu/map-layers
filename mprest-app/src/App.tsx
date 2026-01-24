@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
 import { Cartesian2, Color, Entity, Cartesian3, Cartographic, ConstantProperty, PolygonHierarchy, ColorMaterialProperty } from "cesium";
 
@@ -18,6 +18,7 @@ import {
   FiltersPanel,
   SearchPanel,
   DataConnector,
+  type MapApi,
 } from "@mprest/map";
 
 import DynamicPanel from "./components/DynamicPanel";
@@ -31,7 +32,6 @@ import type {
   RendererRegistry,
   LayerData,
   LayeredDataWithPayload,
-  CesiumMapApi,
   ViewerWithConfigs,
   MapClickLocation,
 } from "@mprest/map";
@@ -150,7 +150,76 @@ function App() {
   return (
     <ViewerProvider>
       <AppContent data={data} renderers={renderers} />
+      <AppPanels />
     </ViewerProvider>
+  );
+}
+
+
+function AppPanels() {
+  const { viewer } = useViewer();
+  const [api, setApi] = useState<MapApi | undefined>(undefined);
+
+  const [layersPanelDocked, setLayersPanelDocked] = useState(true);
+  const [dynamicPanelsDocked, setDynamicPanelsDocked] = useState(true);
+
+  // Subscribe to API changes from viewer
+  useLayoutEffect(() => {
+    if (!viewer) return;
+
+    if (!viewer.handlers?.onApiChange) return;
+
+    const unsubscribe = viewer.handlers.onApiChange.subscribe((newApi) => {
+      setApi(newApi);
+    });
+
+    return unsubscribe;
+  }, [viewer]);
+
+  const handleFilter = () => {
+    if (!api) return;
+    api.filtersPanel.openFilterModal();
+  };
+
+  const handleSearch = () => {
+    if (!api) return;
+    api.searchPanel.openSearchModal();
+  };
+
+  if (!viewer || !api) return null;
+  return (
+    <>
+      <FiltersPanel api={api.filtersPanel} />
+      <SearchPanel api={api.searchPanel} filtersPanel={api.filtersPanel} entities={api.entities} />
+      <Expander
+        title="Simulations"
+        position="right"
+        size="content"
+        isDocked={dynamicPanelsDocked}
+        onToggle={setDynamicPanelsDocked}
+      >
+        <div className="dynamic-panels-container" style={{ marginLeft: "10px", marginTop: "10px" }}>
+          <div style={{ marginRight: "20px" }}>
+            <DynamicPanel renderers={renderers} />
+          </div>
+          <div style={{ marginRight: "20px" }}>
+            <DynamicRawDataPanel />
+          </div>
+        </div>
+      </Expander>
+
+      <Expander
+        title="Layers"
+        position="bottom"
+        size="full"
+        isDocked={layersPanelDocked}
+        onToggle={setLayersPanelDocked}
+      >
+        <div style={{ marginTop: "8px", marginBottom: "15px", marginLeft: "12px", marginRight: "12px" }}>
+          <LayersPanel api={api.layersPanel} onFilter={handleFilter} onSearch={handleSearch} />
+        </div>
+      </Expander>
+    </>
   );
 }
 
@@ -160,29 +229,27 @@ function AppContent({
   renderers,
 }: AppContentProps<AppRenderers> & { data: AppData[] }) {
   const { viewer } = useViewer();
+
   const layersConfig = useMemo(() => getLayersConfig(), []);
-  const [mapApi, setMapApi] = useState<CesiumMapApi | null>(null);
-  const [layersPanelDocked, setLayersPanelDocked] = useState(true);
-  const [dynamicPanelsDocked, setDynamicPanelsDocked] = useState(true);
+
   const [popupInfo, setPopupInfo] = useState<EntityPopupInfo | null>(null);
   const [popupDimensions] = useState({ width: 350, height: 250 });
   const [currentPosition, setCurrentPosition] = useState<MapClickLocation | null>(null);
   const [selectionModeActive, setSelectionModeActive] = useState(false);
   const [selectionSourceEntity, setSelectionSourceEntity] = useState<Entity | undefined>(undefined);
 
-  const handleApiReady = useCallback((api: CesiumMapApi) => {
-    if (mapApi !== api) {
-      setMapApi(api);
-      console.log('CesiumMap API is ready:', api);
-    }
-  }, [mapApi]);
+  const pluginsSubscribedRef = useRef(false);
+
+  const plugins = useMemo(() => ({ entitySelection: EntitySelectionPlugin }), []);
 
   // Subscribe to plugin events
   useEffect(() => {
-    if (!viewer || !mapApi) return;
+    if (!viewer || !viewer.plugins || pluginsSubscribedRef.current) return;
 
-    const plugin = viewer.plugins.instances['entitySelection'] as EntitySelectionPlugin;
+    const plugin = viewer.plugins['entitySelection'] as EntitySelectionPlugin;
     if (!plugin) return;
+
+    pluginsSubscribedRef.current = true;
 
     const unsubscribeSource = plugin.events.onEntitySource.subscribe((entity) => {
       console.log('onEntitySource:', entity.id);
@@ -217,8 +284,9 @@ function AppContent({
       unsubscribeTarget();
       unsubscribeSet();
       unsubscribeSelectionChanged();
+      pluginsSubscribedRef.current = false;
     };
-  }, [viewer, mapApi]);
+  }, [viewer]);
 
   // Calculate popup position to stay within viewport bounds
   const popupPosition = useMemo(() => {
@@ -265,16 +333,6 @@ function AppContent({
   //   console.log('Entity creation requested:', { type, item, layerId });
   //   return null; // Return null to use default createEntityFromData
   // }, []);
-
-  const handleFilter = () => {
-    if (!mapApi) return;
-    mapApi.api.filtersPanel.openFilterModal();
-  };
-
-  const handleSearch = () => {
-    if (!mapApi) return;
-    mapApi.api.searchPanel.openSearchModal();
-  };
 
   const handleMapClick = useCallback((entity: Entity | null, location: MapClickLocation, screenPosition?: Cartesian2): boolean | void => {
     if (entity && screenPosition) {
@@ -341,7 +399,7 @@ function AppContent({
 
   // Subscribe to onSelected event from viewer
   useEffect(() => {
-    if (!viewer) return;
+    if (!viewer || !viewer.handlers) return;
 
     const unsubscribe = viewer.handlers.onSelected.subscribe((entity, location, screenPosition) => {
       console.log('Entity onSelected(viewer):', {
@@ -380,14 +438,14 @@ function AppContent({
           renderers={renderers}
           animateActivation={true}
           animateVisibility={true}
-          onApiReady={handleApiReady}
+          // onApiReady={handleApiReady}
           // onEntityChange={handleEntityChange}
           onClick={handleMapClick}
           onSelecting={handleSelecting}
           onClickPrevented={handleClickPrevented}
           onSelected={handleSelected}
           onChangePosition={handleChangePosition}
-          plugins={{ entitySelection: EntitySelectionPlugin }}
+          plugins={plugins}
         >
           <Layer
             id="points"
@@ -534,44 +592,6 @@ function AppContent({
         <PositionInfoBar position={currentPosition} />
 
         {viewer && <DataConnector dataSource={dataSourceDynamic} config={DataConnectorConfig} />}
-
-
-
-        {mapApi && <FiltersPanel api={mapApi.api.filtersPanel} />}
-
-        {mapApi && <SearchPanel api={mapApi.api} />}
-
-        <Expander
-          title="Simulations"
-          position="right"
-          size="content"
-          isDocked={dynamicPanelsDocked}
-          onToggle={setDynamicPanelsDocked}
-        >
-          <div className="dynamic-panels-container" style={{ marginLeft: "10px", marginTop: "10px" }}>
-            <div style={{ marginRight: "20px" }}>
-              <DynamicPanel renderers={renderers} />
-            </div>
-            <div style={{ marginRight: "20px" }}>
-              <DynamicRawDataPanel />
-            </div>
-
-          </div>
-        </Expander>
-
-        {mapApi && (
-          <Expander
-            title="Layers"
-            position="bottom"
-            size="full"
-            isDocked={layersPanelDocked}
-            onToggle={setLayersPanelDocked}
-          >
-            <div style={{ marginTop: "8px", marginBottom: "15px", marginLeft: "12px", marginRight: "12px" }}>
-              <LayersPanel api={mapApi.api.layersPanel} onFilter={handleFilter} onSearch={handleSearch} />
-            </div>
-          </Expander>
-        )}
       </div>
     </>
   );
