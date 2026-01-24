@@ -51,13 +51,7 @@ export function handleMapClick<R extends RendererRegistry = RendererRegistry>({
     location.cartesian,
   );
 
-  // Call onClick first
-  if (onClick) {
-    const result = onClick(pickedEntity, location, screenPosition);
-    if (result === false) return;
-  }
-
-  // Proceed with selection logic
+  // Check selection permission first before calling onClick
   if (pickedEntity) {
     if (onSelecting) {
       // Get entity position for the location parameter
@@ -83,20 +77,26 @@ export function handleMapClick<R extends RendererRegistry = RendererRegistry>({
       if (entityLocation) {
         const shouldSelect =
           onSelecting(pickedEntity, entityLocation) !== false;
-        if (shouldSelect) {
-          // Selection approved - manually set selected entity
-          viewer.selectedEntity = pickedEntity;
-        } else {
-          // Selection not approved - call onClickPrevented if provided
+        if (!shouldSelect) {
+          // Selection not approved - call onClickPrevented and don't call onClick
           if (onClickPrevented) {
             onClickPrevented(pickedEntity, entityLocation);
           }
+          return; // Don't proceed with onClick or selection
         }
       }
-    } else {
-      // No onSelecting callback - allow selection
-      viewer.selectedEntity = pickedEntity;
     }
+  }
+
+  // Call onClick after selection permission is granted
+  if (onClick) {
+    const result = onClick(pickedEntity, location, screenPosition);
+    if (result === false) return;
+  }
+
+  // Proceed with selection
+  if (pickedEntity) {
+    viewer.selectedEntity = pickedEntity;
   } else {
     // Clicked on empty space - deselect
     viewer.selectedEntity = undefined;
