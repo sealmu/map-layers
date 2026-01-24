@@ -50,7 +50,6 @@ export function FlightOverlay({ isAnimating, sourceId, targetId, progress, onCan
             height: '100%',
             backgroundColor: '#00ff00',
             borderRadius: '4px',
-            transition: 'width 0.1s linear',
           }}
         />
       </div>

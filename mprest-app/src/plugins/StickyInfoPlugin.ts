@@ -24,10 +24,15 @@ interface StickyInfoEvents {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: EventHandler<(...args: any[]) => any>;
   onEntitySource: EventHandler<(entity: Entity) => boolean>;
-  onRender: EventHandler<(info: StickyEntityInfo | null, entityId: string) => void>;
+  onRender: EventHandler<
+    (info: StickyEntityInfo | null, entityId: string) => void
+  >;
 }
 
-export class StickyInfoPlugin extends BasePlugin<StickyInfoActions, StickyInfoEvents> {
+export class StickyInfoPlugin extends BasePlugin<
+  StickyInfoActions,
+  StickyInfoEvents
+> {
   // Track multiple entities
   private trackedEntities: Map<string, Entity> = new Map();
   private unsubscribeEntityChange: (() => void) | null = null;
@@ -68,21 +73,24 @@ export class StickyInfoPlugin extends BasePlugin<StickyInfoActions, StickyInfoEv
   }
 
   private emitRender(info: StickyEntityInfo | null, entityId: string) {
-    this.events.onRender.subscribers.forEach(callback => callback(info, entityId));
+    this.events.onRender.subscribers.forEach((callback) =>
+      callback(info, entityId),
+    );
   }
 
   private subscribeToEntityChanges() {
     if (this.unsubscribeEntityChange) return;
 
-    this.unsubscribeEntityChange = this.api.viewer.handlers.onEntityChange.subscribe(
-      (entity: Entity, status: EntityChangeStatus) => {
-        const entityId = entity.id?.toString() ?? '';
-        if (status === "changed" && this.trackedEntities.has(entityId)) {
-          // Entity position changed, update the info
-          this.updateEntityInfo(entity);
-        }
-      },
-    );
+    this.unsubscribeEntityChange =
+      this.api.viewer.handlers.onEntityChange.subscribe(
+        (entity: Entity, status: EntityChangeStatus) => {
+          const entityId = entity.id?.toString() ?? "";
+          if (status === "changed" && this.trackedEntities.has(entityId)) {
+            // Entity position changed, update the info
+            this.updateEntityInfo(entity);
+          }
+        },
+      );
   }
 
   private unsubscribeFromEntityChanges() {
@@ -93,14 +101,17 @@ export class StickyInfoPlugin extends BasePlugin<StickyInfoActions, StickyInfoEv
   }
 
   private updateEntityInfo(entity: Entity) {
-    const entityId = entity.id?.toString() ?? '';
+    const entityId = entity.id?.toString() ?? "";
     if (!this.trackedEntities.has(entityId)) return;
 
-    const position = entity.position?.getValue(this.api.viewer.clock.currentTime);
+    const position = entity.position?.getValue(
+      this.api.viewer.clock.currentTime,
+    );
     if (!position) return;
 
     // Convert Cartesian3 to screen position
-    const screenPosition = this.api.viewer.scene.cartesianToCanvasCoordinates(position);
+    const screenPosition =
+      this.api.viewer.scene.cartesianToCanvasCoordinates(position);
     if (!screenPosition) return;
 
     // Get location info
@@ -113,36 +124,26 @@ export class StickyInfoPlugin extends BasePlugin<StickyInfoActions, StickyInfoEv
       cartographic,
     };
 
-    this.emitRender({
-      entity,
-      location,
-      screenPosition,
-    }, entityId);
+    this.emitRender(
+      {
+        entity,
+        location,
+        screenPosition,
+      },
+      entityId,
+    );
   }
 
-  onSelecting = (entity: Entity, location: MapClickLocation): boolean | void => {
-    void location;
-    // Check if entity should be selected for sticky info
-    const results = this.events.onEntitySource.subscribers.map(callback => callback(entity));
-    if (results.some(result => result === true)) {
-      return true; // Allow selection
-    }
-    return; // Let other handlers decide
-  };
-
-  onSelected = (
-    entity: Entity | null,
-    location?: MapClickLocation,
-    screenPosition?: Cartesian2,
+  onSelecting = (
+    entity: Entity,
+    location: MapClickLocation,
   ): boolean | void => {
-    if (!entity || !location) {
-      return;
-    }
-
-    // Check if entity is a valid source for sticky info
-    const results = this.events.onEntitySource.subscribers.map(callback => callback(entity));
-    if (results.some(result => result === true)) {
-      const entityId = entity.id?.toString() ?? '';
+    // Check if entity should be selected for sticky info
+    const results = this.events.onEntitySource.subscribers.map((callback) =>
+      callback(entity),
+    );
+    if (results.some((result) => result === true)) {
+      const entityId = entity.id?.toString() ?? "";
 
       // Add to tracked entities
       this.trackedEntities.set(entityId, entity);
@@ -150,17 +151,24 @@ export class StickyInfoPlugin extends BasePlugin<StickyInfoActions, StickyInfoEv
       // Subscribe to entity changes if not already
       this.subscribeToEntityChanges();
 
-      // Emit render event with entity info
-      // screenPosition from onSelected should be correct (same as EntityPopup uses)
-      this.emitRender({
-        entity,
-        location,
-        screenPosition,
-      }, entityId);
+      // Get screen position
+      const screenPosition = this.api.viewer.scene.cartesianToCanvasCoordinates(
+        location.cartesian,
+      );
 
+      // Emit render event with entity info
+      this.emitRender(
+        {
+          entity,
+          location,
+          screenPosition,
+        },
+        entityId,
+      );
+
+      // Return true to allow selection
       return true;
     }
-
-    return true;
+    return; // Let other handlers decide
   };
 }
