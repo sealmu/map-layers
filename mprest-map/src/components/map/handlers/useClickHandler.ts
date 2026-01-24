@@ -22,14 +22,17 @@ export interface UseClickHandlerOptions<
     entity: Entity | null,
     location: MapClickLocation,
     screenPosition?: Cartesian2,
-  ) => void;
-  onSelecting?: (entity: Entity, location: MapClickLocation) => boolean;
-  onClickPrevented?: (entity: Entity, location: MapClickLocation) => void;
+  ) => boolean | void;
+  onSelecting?: (entity: Entity, location: MapClickLocation) => boolean | void;
+  onClickPrevented?: (
+    entity: Entity,
+    location: MapClickLocation,
+  ) => boolean | void;
   onSelected?: (
     entity: Entity | null,
     location?: MapClickLocation,
     screenPosition?: Cartesian2,
-  ) => void;
+  ) => boolean | void;
 }
 
 /**
@@ -130,8 +133,8 @@ export function useClickHandler<R extends RendererRegistry = RendererRegistry>({
       handleMapClick({
         viewer,
         position: click.position,
-        onSelecting,
         onClick,
+        onSelecting,
         onClickPrevented,
       });
     }, ScreenSpaceEventType.LEFT_CLICK);

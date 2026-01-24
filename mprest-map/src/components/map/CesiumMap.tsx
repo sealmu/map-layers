@@ -99,6 +99,7 @@ const CesiumMap = <R extends RendererRegistry>({
     // Set up handlers
     newViewer.handlers = {
       onClick: createEventHandler(),
+      onSelecting: createEventHandler(),
       onClickPrevented: createEventHandler(),
       onSelected: createEventHandler(),
       onChangePosition: createEventHandler(),

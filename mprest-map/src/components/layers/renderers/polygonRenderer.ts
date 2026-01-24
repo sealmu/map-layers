@@ -1,4 +1,4 @@
-import { Color, Entity } from "cesium";
+import { Color, Entity, HeightReference } from "cesium";
 import type { LayerData } from "@mprest/map";
 
 export function createPolygonEntity(
@@ -13,6 +13,8 @@ export function createPolygonEntity(
       outline: true,
       outlineColor: Color.BLACK,
       outlineWidth: 2,
+      height: 0, // Disable terrain clamping to enable outlines
+      heightReference: HeightReference.NONE,
     },
   };
 }

@@ -181,11 +181,11 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
   renderers: R;
   animateActivation?: boolean;
   animateVisibility?: boolean;
-  onApiReady?: (api: CesiumMapApi) => void;
+  onApiReady?: (api: CesiumMapApi) => boolean | void;
   onEntityCreating?: (
     options: Entity.ConstructorOptions,
     item: LayerData,
-  ) => void;
+  ) => boolean | void;
   onEntityCreate?: (
     type: RenderTypeFromRegistry<RendererRegistry>,
     item: LayerData,
@@ -196,20 +196,23 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
     entity: Entity,
     status: EntityChangeStatus,
     collectionName: string,
-  ) => void;
+  ) => boolean | void;
   onClick?: (
     entity: Entity | null,
     location: MapClickLocation,
     screenPosition?: Cartesian2,
-  ) => void;
-  onSelecting?: (entity: Entity, location: MapClickLocation) => boolean;
-  onClickPrevented?: (entity: Entity, location: MapClickLocation) => void;
+  ) => boolean | void;
+  onSelecting?: (entity: Entity, location: MapClickLocation) => boolean | void;
+  onClickPrevented?: (
+    entity: Entity,
+    location: MapClickLocation,
+  ) => boolean | void;
   onSelected?: (
     entity: Entity | null,
     location?: MapClickLocation,
     screenPosition?: Cartesian2,
-  ) => void;
-  onChangePosition?: (location: MapClickLocation | null) => void;
+  ) => boolean | void;
+  onChangePosition?: (location: MapClickLocation | null) => boolean | void;
 }
 
 export interface LayersPanelApi {
@@ -384,6 +387,9 @@ export interface ViewerWithConfigs<
         location: MapClickLocation,
         screenPosition?: Cartesian2,
       ) => void
+    >;
+    onSelecting: EventHandler<
+      (entity: Entity, location: MapClickLocation) => void
     >;
     onClickPrevented: EventHandler<
       (entity: Entity, location: MapClickLocation) => void

@@ -14,7 +14,7 @@ export interface UsePositionHandlerOptions<
   R extends RendererRegistry = RendererRegistry,
 > {
   viewer: ViewerWithConfigs<R> | null;
-  onChangePosition?: (location: MapClickLocation | null) => void;
+  onChangePosition?: (location: MapClickLocation | null) => boolean | void;
 }
 
 /**

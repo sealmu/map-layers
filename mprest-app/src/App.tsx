@@ -166,6 +166,13 @@ function AppContent({
   const [popupDimensions] = useState({ width: 350, height: 250 });
   const [currentPosition, setCurrentPosition] = useState<MapClickLocation | null>(null);
 
+  const handleApiReady = useCallback((api: CesiumMapApi) => {
+    if (mapApi !== api) {
+      setMapApi(api);
+      console.log('CesiumMap API is ready:', api);
+    }
+  }, [mapApi]);
+
   // Calculate popup position to stay within viewport bounds
   const popupPosition = useMemo(() => {
     if (!popupInfo?.location) return null;
@@ -222,7 +229,7 @@ function AppContent({
     mapApi.api.searchPanel.openSearchModal();
   };
 
-  const handleMapClick = useCallback((entity: Entity | null, location: MapClickLocation, screenPosition?: Cartesian2) => {
+  const handleMapClick = useCallback((entity: Entity | null, location: MapClickLocation, screenPosition?: Cartesian2): boolean | void => {
     if (entity && screenPosition) {
       setPopupInfo({ entity, location, screenPosition });
     } else {
@@ -233,11 +240,11 @@ function AppContent({
   const handleClickPrevented = useCallback((
     entity: Entity,
     //location: MapClickLocation
-  ) => {
+  ): boolean | void => {
     setPopupInfo({ entity });
   }, []);
 
-  const handleSelected = useCallback((entity: Entity | null, location?: MapClickLocation, screenPosition?: Cartesian2) => {
+  const handleSelected = useCallback((entity: Entity | null, location?: MapClickLocation, screenPosition?: Cartesian2): boolean | void => {
     console.log('Entity onSelected(on prop):', {
       entityId: entity?.id ?? 'none',
       location,
@@ -253,7 +260,7 @@ function AppContent({
   const handleSelecting = useCallback((
     entity: Entity,
     //location: MapClickLocation
-  ) => {
+  ): boolean | void => {
     // Cancel selection for polyline entities
     if (entity.polyline) {
       return false; // Cancel selection for polylines
@@ -265,7 +272,7 @@ function AppContent({
   //   console.log('Entity changed:', { entityId: entity.id, status, collectionName });
   // }, []);
 
-  const handleChangePosition = useCallback((location: MapClickLocation | null) => {
+  const handleChangePosition = useCallback((location: MapClickLocation | null): boolean | void => {
     setCurrentPosition(location);
   }, []);
 
@@ -315,6 +322,8 @@ function AppContent({
   //   return unsubscribe;
   // }, [viewer]);
 
+  //console.log('App render');
+
   return (
     <>
       <CesiumMap
@@ -323,7 +332,7 @@ function AppContent({
         renderers={renderers}
         animateActivation={true}
         animateVisibility={true}
-        onApiReady={setMapApi}
+        onApiReady={handleApiReady}
         // onEntityChange={handleEntityChange}
         onClick={handleMapClick}
         onSelecting={handleSelecting}

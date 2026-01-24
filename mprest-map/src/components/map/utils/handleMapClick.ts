@@ -17,13 +17,16 @@ export interface HandleMapClickOptions<
 > {
   viewer: ViewerWithConfigs<R>;
   position: Cartesian2;
-  onSelecting?: (entity: Entity, location: MapClickLocation) => boolean;
   onClick?: (
     entity: Entity | null,
     location: MapClickLocation,
     screenPosition?: Cartesian2,
-  ) => void;
-  onClickPrevented?: (entity: Entity, location: MapClickLocation) => void;
+  ) => boolean | void;
+  onSelecting?: (entity: Entity, location: MapClickLocation) => boolean | void;
+  onClickPrevented?: (
+    entity: Entity,
+    location: MapClickLocation,
+  ) => boolean | void;
 }
 
 /**
@@ -33,20 +36,28 @@ export interface HandleMapClickOptions<
 export function handleMapClick<R extends RendererRegistry = RendererRegistry>({
   viewer,
   position,
-  onSelecting,
   onClick,
+  onSelecting,
   onClickPrevented,
 }: HandleMapClickOptions<R>): void {
   const location = getLocationFromPosition(viewer, position);
+  if (!location) return;
+
   const pickedObject = viewer.scene.pick(position);
   const pickedEntity: Entity | null =
     defined(pickedObject) && pickedObject.id ? pickedObject.id : null;
 
-  // Track whether the entity was approved for selection
-  let approvedEntity: Entity | null = null;
-  let shouldCallOnClick = true;
+  const screenPosition = viewer.scene.cartesianToCanvasCoordinates(
+    location.cartesian,
+  );
 
-  // Handle selection logic
+  // Call onClick first
+  if (onClick) {
+    const result = onClick(pickedEntity, location, screenPosition);
+    if (result === false) return;
+  }
+
+  // Proceed with selection logic
   if (pickedEntity) {
     if (onSelecting) {
       // Get entity position for the location parameter
@@ -64,40 +75,30 @@ export function handleMapClick<R extends RendererRegistry = RendererRegistry>({
           latitude: CesiumMath.toDegrees(cartographic.latitude),
           height: cartographic.height,
         };
-      } else if (location) {
+      } else {
         // Fallback to click location if entity has no position
         entityLocation = location;
       }
 
       if (entityLocation) {
-        const shouldSelect = onSelecting(pickedEntity, entityLocation);
+        const shouldSelect =
+          onSelecting(pickedEntity, entityLocation) !== false;
         if (shouldSelect) {
           // Selection approved - manually set selected entity
           viewer.selectedEntity = pickedEntity;
-          approvedEntity = pickedEntity;
         } else {
           // Selection not approved - call onClickPrevented if provided
           if (onClickPrevented) {
             onClickPrevented(pickedEntity, entityLocation);
           }
-          shouldCallOnClick = false;
         }
       }
     } else {
       // No onSelecting callback - allow selection
       viewer.selectedEntity = pickedEntity;
-      approvedEntity = pickedEntity;
     }
   } else {
     // Clicked on empty space - deselect
     viewer.selectedEntity = undefined;
-  }
-
-  // Call onClick callback if provided - only pass approved entity
-  if (onClick && location && shouldCallOnClick) {
-    const screenPosition = viewer.scene.cartesianToCanvasCoordinates(
-      location.cartesian,
-    );
-    onClick(approvedEntity, location, screenPosition);
   }
 }

@@ -18,20 +18,23 @@ export interface BindHandlersOptions<
     entity: Entity | null,
     location: MapClickLocation,
     screenPosition?: Cartesian2,
-  ) => void;
-  onSelecting?: (entity: Entity, location: MapClickLocation) => boolean;
-  onClickPrevented?: (entity: Entity, location: MapClickLocation) => void;
+  ) => boolean | void;
+  onSelecting?: (entity: Entity, location: MapClickLocation) => boolean | void;
+  onClickPrevented?: (
+    entity: Entity,
+    location: MapClickLocation,
+  ) => boolean | void;
   onSelected?: (
     entity: Entity | null,
     location?: MapClickLocation,
     screenPosition?: Cartesian2,
-  ) => void;
-  onChangePosition?: (location: MapClickLocation | null) => void;
+  ) => boolean | void;
+  onChangePosition?: (location: MapClickLocation | null) => boolean | void;
   onEntityChange?: (
     entity: Entity,
     status: EntityChangeStatus,
     collectionName: string,
-  ) => void;
+  ) => boolean | void;
 }
 
 /**
@@ -64,7 +67,8 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
           location: MapClickLocation,
           screenPosition?: Cartesian2,
         ) => {
-          onClick?.(entity, location, screenPosition);
+          const result = onClick?.(entity, location, screenPosition);
+          if (result === false) return;
           callAllSubscribers(
             viewer.handlers.onClick,
             entity,
@@ -75,12 +79,16 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
       : onClick,
     onSelecting: viewer
       ? (entity: Entity, location: MapClickLocation) => {
-          return onSelecting?.(entity, location) ?? true;
+          const result = onSelecting?.(entity, location);
+          if (result === false) return false;
+          callAllSubscribers(viewer.handlers.onSelecting, entity, location);
+          return true;
         }
       : onSelecting,
     onClickPrevented: viewer
       ? (entity: Entity, location: MapClickLocation) => {
-          onClickPrevented?.(entity, location);
+          const result = onClickPrevented?.(entity, location);
+          if (result === false) return;
           callAllSubscribers(
             viewer.handlers.onClickPrevented,
             entity,
@@ -94,7 +102,8 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
           location?: MapClickLocation,
           screenPosition?: Cartesian2,
         ) => {
-          onSelected?.(entity, location, screenPosition);
+          const result = onSelected?.(entity, location, screenPosition);
+          if (result === false) return;
           callAllSubscribers(
             viewer.handlers.onSelected,
             entity,
@@ -109,7 +118,8 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
     viewer,
     onChangePosition: viewer
       ? (location: MapClickLocation | null) => {
-          onChangePosition?.(location);
+          const result = onChangePosition?.(location);
+          if (result === false) return;
           callAllSubscribers(viewer.handlers.onChangePosition, location);
         }
       : onChangePosition,
@@ -118,16 +128,15 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
   // Create processEntityChange function
   const processEntityChange = useCallback(
     (entity: Entity, status: EntityChangeStatus, collectionName: string) => {
+      const result = onEntityChange?.(entity, status, collectionName);
+      if (result === false) return;
       if (viewer) {
-        onEntityChange?.(entity, status, collectionName);
         callAllSubscribers(
           viewer.handlers.onEntityChange,
           entity,
           status,
           collectionName,
         );
-      } else {
-        onEntityChange?.(entity, status, collectionName);
       }
     },
     [viewer, onEntityChange],

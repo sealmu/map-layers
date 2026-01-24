@@ -1,4 +1,4 @@
-import { Entity } from "cesium";
+import { Entity, HeightReference } from "cesium";
 import type { LayerData } from "@mprest/map";
 
 export function createDomeEntity(item: LayerData): Entity.ConstructorOptions {
@@ -18,6 +18,7 @@ export function createDomeEntity(item: LayerData): Entity.ConstructorOptions {
       outlineColor: item.color,
       outlineWidth: 2,
       height: 0, // On ground
+      heightReference: HeightReference.NONE,
     },
   };
 }
