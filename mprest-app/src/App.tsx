@@ -4,6 +4,7 @@ import { Cartesian2, Color, Entity, Cartesian3, Cartographic, ConstantProperty, 
 
 import { useDroneAnimation, useDroneAnimation2 } from "./hooks/useDroneAnimation";
 import { useRadarAnimation } from "./hooks/useRadarAnimation";
+import { useDroneTargetAnimation } from "./hooks/useDroneTargetAnimation";
 
 import {
   CesiumMap,
@@ -240,6 +241,17 @@ function AppContent({
 
   const pluginsSubscribedRef = useRef(false);
 
+  // Drone target animation
+  const { state: animationState, controls: animationControls } = useDroneTargetAnimation(
+    viewer as ViewerWithConfigs,
+    {
+      durationMs: 5000,
+      onComplete: (sourceId, targetId) => {
+        console.log(`Animation complete: ${sourceId} reached ${targetId}`);
+      },
+    },
+  );
+
   const plugins = useMemo(() => ({ entitySelection: EntitySelectionPlugin }), []);
 
   // Subscribe to plugin events
@@ -271,6 +283,8 @@ function AppContent({
 
     const unsubscribeSet = plugin.events.onTargetSet.subscribe((source, target) => {
       console.log('onTargetSet:', source.id, '->', target.id);
+      // Start drone animation when target is set
+      animationControls.startAnimation(source, target);
     });
 
     const unsubscribeSelectionChanged = plugin.events.onSelectionChanged.subscribe((isActive, sourceEntity) => {
@@ -286,7 +300,7 @@ function AppContent({
       unsubscribeSelectionChanged();
       pluginsSubscribedRef.current = false;
     };
-  }, [viewer]);
+  }, [viewer, animationControls]);
 
   // Calculate popup position to stay within viewport bounds
   const popupPosition = useMemo(() => {
@@ -580,6 +594,72 @@ function AppContent({
             <div style={{ marginTop: '5px', fontSize: '10px', opacity: 0.8 }}>
               Click on empty space to cancel
             </div>
+          </div>
+        )}
+
+        {animationState.isAnimating && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '10px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              backgroundColor: 'rgba(0, 100, 0, 0.9)',
+              color: 'white',
+              padding: '15px 25px',
+              borderRadius: '10px',
+              textAlign: 'center',
+              zIndex: 1001,
+              boxShadow: '0 4px 15px rgba(0, 0, 0, 0.4)',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              border: '2px solid #00ff00',
+              minWidth: '250px',
+            }}
+          >
+            <div style={{ marginBottom: '8px', fontSize: '18px' }}>
+              Drone in Flight
+            </div>
+            <div style={{ marginBottom: '8px', fontSize: '12px', fontWeight: 'normal' }}>
+              {animationState.sourceId} → {animationState.targetId}
+            </div>
+            <div
+              style={{
+                width: '100%',
+                height: '8px',
+                backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                borderRadius: '4px',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  width: `${animationState.progress * 100}%`,
+                  height: '100%',
+                  backgroundColor: '#00ff00',
+                  borderRadius: '4px',
+                  transition: 'width 0.1s linear',
+                }}
+              />
+            </div>
+            <div style={{ marginTop: '8px', fontSize: '12px', fontWeight: 'normal' }}>
+              {Math.round(animationState.progress * 100)}% complete
+            </div>
+            <button
+              onClick={animationControls.stopAnimation}
+              style={{
+                marginTop: '10px',
+                padding: '5px 15px',
+                backgroundColor: '#ff4444',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontSize: '12px',
+              }}
+            >
+              Cancel Flight
+            </button>
           </div>
         )}
 

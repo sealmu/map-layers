@@ -30,11 +30,11 @@ export interface EventHandler<T> {
 
 // Plugin types
 export interface PluginActions {
-  [key: string]: (...args: any[]) => any;
+  [key: string]: (...args: unknown[]) => unknown;
 }
 
 export interface PluginEvents {
-  [key: string]: EventHandler<any>;
+  [key: string]: EventHandler<(...args: unknown[]) => unknown>;
 }
 
 export abstract class BasePlugin<
@@ -367,6 +367,7 @@ export interface MapApi {
 
 export interface CesiumMapApi {
   api: MapApi;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   viewer: ViewerWithConfigs<any>;
 }
 
