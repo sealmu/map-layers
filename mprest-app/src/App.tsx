@@ -1,6 +1,6 @@
-import { useMemo, useState, useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 
-import { Cartesian2, Color, Entity, Cartesian3 } from "cesium";
+import { Cartesian2, Entity } from "cesium";
 
 import { useDroneAnimation, useDroneAnimation2 } from "./hooks/useDroneAnimation";
 import { useRadarAnimation } from "./hooks/useRadarAnimation";
@@ -10,25 +10,19 @@ import {
   CesiumMap,
   ViewerProvider,
   useViewer,
-  LayersPanel,
-  FiltersPanel,
-  SearchPanel,
   DataConnector,
-  type MapApi,
 } from "@mprest/map";
 
-import DynamicPanel from "./components/DynamicPanel";
-import DynamicRawDataPanel from "./components/DynamicRawDataPanel";
-import { Expander } from "./components";
-import { EntityPopup, type EntityPopupInfo, StickyPopups } from "./components/popups";
+import { EntityPopup, type EntityPopupInfo, StickyPopups, usePopupPosition } from "./components/popups";
 import { SelectionOverlay, FlightOverlay } from "./components/overlays";
 import { PositionInfoBar } from "./components/PositionInfoBar";
 import { AppLayers } from "./AppLayers";
 import { AppRenderers } from "./AppRenderers";
+import { AppPanels } from "./AppPanels";
+import { dataSourceDynamic } from "./AppData";
 
 import type {
   AppContentProps,
-  LayerData,
   LayeredDataWithPayload,
   ViewerWithConfigs,
   MapClickLocation,
@@ -40,6 +34,7 @@ import { EntitySelectionPlugin } from "./plugins/EntitySelectionPlugin";
 import { StickyInfoPlugin, type StickyEntityInfo } from "./plugins/StickyInfoPlugin";
 
 type AppRenderers = typeof AppRenderers;
+
 type MyDataPayload = {
   x: number;
   y: number;
@@ -51,69 +46,9 @@ type MyDataPayload = {
     angle: number;
   };
 };
+
 type AppData = LayeredDataWithPayload<MyDataPayload>;
 
-
-
-const dataSourceDynamic = {
-  "dynamic-raw": [
-    {
-      id: "raw1",
-      name: "Raw Point 1",
-      color: Color.RED,
-      positions: [Cartesian3.fromDegrees(-75.0, 40.0, 100.0)],
-      view: "default",
-      renderType: "points",
-    },
-    {
-      id: "raw2",
-      name: "Raw Point 2",
-      color: Color.BLUE,
-      positions: [Cartesian3.fromDegrees(-76.0, 41.0, 100.0)],
-      view: "default",
-      renderType: "points",
-    },
-    {
-      id: "raw3",
-      name: "Raw Point 3",
-      color: Color.GREEN,
-      positions: [Cartesian3.fromDegrees(-74.0, 42.0, 100.0)],
-      view: "default",
-      renderType: "points",
-    },
-  ] as LayerData[],
-};
-
-function DataUpdater(
-  data: Record<string, LayerData[]>,
-  interval: number = 1000,
-) {
-  const timerId = setInterval(() => {
-    const keys = Object.keys(data);
-    if (keys.length === 0) return;
-
-    const randomKey = keys[Math.floor(Math.random() * keys.length)];
-    const layerArray = data[randomKey];
-    if (!layerArray || layerArray.length === 0) return;
-
-    const randomIndex = Math.floor(Math.random() * layerArray.length);
-
-    const randomLon = -125 + Math.random() * 59; // -125 → -66
-    const randomLat = 24 + Math.random() * 25;  // 24 → 49
-
-    layerArray[randomIndex].positions = [
-      Cartesian3.fromDegrees(randomLon, randomLat, 100.0),
-    ];
-  }, interval);
-
-  // return a way to stop it
-  return () => clearInterval(timerId);
-}
-
-
-(function updateDataFromSocket() {
-  DataUpdater(dataSourceDynamic, 500);
-})();
 
 
 const DataConnectorConfig = {
@@ -132,74 +67,6 @@ function App() {
       <AppContent data={data} renderers={AppRenderers} />
       <AppPanels />
     </ViewerProvider>
-  );
-}
-
-
-function AppPanels() {
-  const { viewer } = useViewer();
-  const [api, setApi] = useState<MapApi | undefined>(undefined);
-
-  const [layersPanelDocked, setLayersPanelDocked] = useState(true);
-  const [dynamicPanelsDocked, setDynamicPanelsDocked] = useState(true);
-
-  // Subscribe to API changes from viewer
-  useLayoutEffect(() => {
-    if (!viewer) return;
-
-    if (!viewer.handlers?.onApiChange) return;
-
-    const unsubscribe = viewer.handlers.onApiChange.subscribe((newApi) => {
-      setApi(newApi);
-    });
-
-    return unsubscribe;
-  }, [viewer]);
-
-  const handleFilter = () => {
-    if (!api) return;
-    api.filtersPanel.openFilterModal();
-  };
-
-  const handleSearch = () => {
-    if (!api) return;
-    api.searchPanel.openSearchModal();
-  };
-
-  if (!viewer || !api) return null;
-  return (
-    <>
-      <FiltersPanel api={api.filtersPanel} />
-      <SearchPanel api={api.searchPanel} filtersPanel={api.filtersPanel} entities={api.entities} />
-      <Expander
-        title="Simulations"
-        position="right"
-        size="content"
-        isDocked={dynamicPanelsDocked}
-        onToggle={setDynamicPanelsDocked}
-      >
-        <div className="dynamic-panels-container" style={{ marginLeft: "10px", marginTop: "10px" }}>
-          <div style={{ marginRight: "20px" }}>
-            <DynamicPanel renderers={AppRenderers} />
-          </div>
-          <div style={{ marginRight: "20px" }}>
-            <DynamicRawDataPanel />
-          </div>
-        </div>
-      </Expander>
-
-      <Expander
-        title="Layers"
-        position="bottom"
-        size="full"
-        isDocked={layersPanelDocked}
-        onToggle={setLayersPanelDocked}
-      >
-        <div style={{ marginTop: "8px", marginBottom: "15px", marginLeft: "12px", marginRight: "12px" }}>
-          <LayersPanel api={api.layersPanel} onFilter={handleFilter} onSearch={handleSearch} />
-        </div>
-      </Expander>
-    </>
   );
 }
 
@@ -326,35 +193,7 @@ function AppContent({
   }, [viewer]);
 
   // Calculate popup position to stay within viewport bounds
-  const popupPosition = useMemo(() => {
-    if (!popupInfo?.location) return null;
-
-    const offset = 10;
-    let left = popupInfo.screenPosition!.x + offset;
-    let top = popupInfo.screenPosition!.y + offset;
-
-    const popupWidth = popupDimensions.width;
-    const popupHeight = popupDimensions.height;
-
-    // Check if positioning to the right would go off-screen
-    const wouldOverflowRight = left + popupWidth > window.innerWidth;
-    const wouldOverflowBottom = top + popupHeight > window.innerHeight;
-
-    // Adjust position based on available space
-    if (wouldOverflowRight) {
-      left = popupInfo.screenPosition!.x - popupWidth - offset;
-    }
-
-    if (wouldOverflowBottom) {
-      top = popupInfo.screenPosition!.y - popupHeight - offset;
-    }
-
-    // Ensure popup stays within viewport bounds
-    left = Math.max(0, Math.min(left, window.innerWidth - popupWidth));
-    top = Math.max(0, Math.min(top, window.innerHeight - popupHeight));
-
-    return { left, top };
-  }, [popupInfo, popupDimensions]);
+  const popupPosition = usePopupPosition(popupInfo, popupDimensions);
 
   // Close sticky info handler for a specific entity
   const handleCloseStickyInfo = useCallback((entityId: string) => {

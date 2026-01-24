@@ -1,1 +1,4 @@
-export { calcStickyInfoPosition, type PopupPosition } from "./calcStickyInfoPosition";
+export {
+  calcStickyInfoPosition,
+  type PopupPosition,
+} from "./calcStickyInfoPosition";
