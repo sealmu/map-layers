@@ -1,13 +1,17 @@
 import { Entity, Cartesian2 } from "cesium";
 import { BasePlugin, createEventHandler } from "@mprest/map";
-import type { CesiumMapApi, MapClickLocation, EventHandler, PluginActions, PluginEvents } from "@mprest/map";
+import type { CesiumMapApi, MapClickLocation, EventHandler } from "@mprest/map";
 
-interface EntitySelectionActions extends PluginActions {
+interface EntitySelectionActions {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: (...args: any[]) => any;
   startSelection: (entity: Entity) => void;
   cancelSelection: () => void;
 }
 
-interface EntitySelectionEvents extends PluginEvents {
+interface EntitySelectionEvents {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: EventHandler<(...args: any[]) => any>;
   onEntitySource: EventHandler<(entity: Entity) => boolean>;
   onEntityTarget: EventHandler<(entity: Entity) => boolean>;
   onTargetSet: EventHandler<(source: Entity, target: Entity) => void>;

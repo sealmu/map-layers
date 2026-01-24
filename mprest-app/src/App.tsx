@@ -25,7 +25,8 @@ import {
 import DynamicPanel from "./components/DynamicPanel";
 import DynamicRawDataPanel from "./components/DynamicRawDataPanel";
 import { Expander } from "./components";
-import { EntityPopup, type EntityPopupInfo } from "./components/EntityPopup";
+import { EntityPopup, type EntityPopupInfo, StickyPopups } from "./components/popups";
+import { SelectionOverlay, FlightOverlay } from "./components/overlays";
 import { PositionInfoBar } from "./components/PositionInfoBar";
 
 import type {
@@ -51,6 +52,7 @@ import {
 import { getLayersConfig } from "./config/layersConfig";
 
 import { EntitySelectionPlugin } from "./plugins/EntitySelectionPlugin";
+import { StickyInfoPlugin, type StickyEntityInfo } from "./plugins/StickyInfoPlugin";
 
 const renderers = {
   ...defaultRenderers,
@@ -238,8 +240,10 @@ function AppContent({
   const [currentPosition, setCurrentPosition] = useState<MapClickLocation | null>(null);
   const [selectionModeActive, setSelectionModeActive] = useState(false);
   const [selectionSourceEntity, setSelectionSourceEntity] = useState<Entity | undefined>(undefined);
+  const [stickyInfoMap, setStickyInfoMap] = useState<Map<string, StickyEntityInfo>>(new Map());
 
   const pluginsSubscribedRef = useRef(false);
+  const stickyInfoSubscribedRef = useRef(false);
 
   // Drone target animation
   const { state: animationState, controls: animationControls } = useDroneTargetAnimation(
@@ -252,7 +256,10 @@ function AppContent({
     },
   );
 
-  const plugins = useMemo(() => ({ entitySelection: EntitySelectionPlugin }), []);
+  const plugins = useMemo(() => ({
+    entitySelection: EntitySelectionPlugin,
+    stickyInfo: StickyInfoPlugin,
+  }), []);
 
   // Subscribe to plugin events
   useEffect(() => {
@@ -302,6 +309,46 @@ function AppContent({
     };
   }, [viewer, animationControls]);
 
+  // Subscribe to StickyInfo plugin events
+  useEffect(() => {
+    if (!viewer || !viewer.plugins || stickyInfoSubscribedRef.current) return;
+
+    const plugin = viewer.plugins['stickyInfo'] as StickyInfoPlugin;
+    if (!plugin) return;
+
+    stickyInfoSubscribedRef.current = true;
+
+    // Define which entities can have sticky info
+    const unsubscribeSource = plugin.events.onEntitySource.subscribe((entity) => {
+      // For example, only drones can have sticky info that follows them
+      return entity.id?.toString().includes('drone') ?? false;
+    });
+
+    // Handle render updates (called on click and when entity moves)
+    const unsubscribeRender = plugin.events.onRender.subscribe((info, entityId) => {
+      if (info === null) {
+        // Entity was closed, remove from map
+        setStickyInfoMap(prev => {
+          const next = new Map(prev);
+          next.delete(entityId);
+          return next;
+        });
+        return;
+      }
+      setStickyInfoMap(prev => {
+        const next = new Map(prev);
+        next.set(entityId, info);
+        return next;
+      });
+    });
+
+    return () => {
+      unsubscribeSource();
+      unsubscribeRender();
+      stickyInfoSubscribedRef.current = false;
+    };
+  }, [viewer]);
+
   // Calculate popup position to stay within viewport bounds
   const popupPosition = useMemo(() => {
     if (!popupInfo?.location) return null;
@@ -333,6 +380,14 @@ function AppContent({
     return { left, top };
   }, [popupInfo, popupDimensions]);
 
+  // Close sticky info handler for a specific entity
+  const handleCloseStickyInfo = useCallback((entityId: string) => {
+    const plugin = viewer?.plugins?.['stickyInfo'] as StickyInfoPlugin | undefined;
+    if (plugin) {
+      plugin.actions.closeInfo(entityId);
+    }
+  }, [viewer]);
+
   // const enrichEntity = useCallback((entity: Entity.ConstructorOptions) => {
   //   console.log('Entity is being created', entity);
   //   void entity; // Return null to use default createEntityFromData
@@ -348,9 +403,9 @@ function AppContent({
   //   return null; // Return null to use default createEntityFromData
   // }, []);
 
-  const handleMapClick = useCallback((entity: Entity | null, location: MapClickLocation, screenPosition?: Cartesian2): boolean | void => {
+  const handleMapClick = useCallback((entity: Entity | null, _location: MapClickLocation, screenPosition?: Cartesian2): boolean | void => {
     if (entity && screenPosition) {
-      setPopupInfo({ entity, location, screenPosition });
+      //setPopupInfo({ entity, location, screenPosition });
     } else {
       //setPopupInfo(null);
     }
@@ -370,6 +425,10 @@ function AppContent({
       screenPosition,
     });
     if (entity) {
+      // Skip popup for drones - they use StickyInfo plugin
+      if (entity.id?.toString().includes('drone')) {
+        return;
+      }
       setPopupInfo({ entity, location, screenPosition });
     } else {
       //setPopupInfo(null);
@@ -563,111 +622,23 @@ function AppContent({
           />
         </CesiumMap>
 
-        {selectionModeActive && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '10px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
-              color: 'white',
-              padding: '10px 20px',
-              borderRadius: '8px',
-              textAlign: 'center',
-              zIndex: 1000,
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              border: '2px solid #007bff',
-            }}
-          >
-            <div style={{ marginBottom: '5px', fontSize: '16px' }}>
-              🎯 Selection Mode Active
-            </div>
-            <div style={{ marginBottom: '5px', fontSize: '12px', fontWeight: 'normal' }}>
-              Source: {selectionSourceEntity?.id || 'Unknown'}
-            </div>
-            <div style={{ fontSize: '12px', fontWeight: 'normal' }}>
-              Click on a target entity to complete selection
-            </div>
-            <div style={{ marginTop: '5px', fontSize: '10px', opacity: 0.8 }}>
-              Click on empty space to cancel
-            </div>
-          </div>
-        )}
+        <SelectionOverlay isActive={selectionModeActive} sourceEntity={selectionSourceEntity} />
 
-        {animationState.isAnimating && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '10px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              backgroundColor: 'rgba(0, 100, 0, 0.9)',
-              color: 'white',
-              padding: '15px 25px',
-              borderRadius: '10px',
-              textAlign: 'center',
-              zIndex: 1001,
-              boxShadow: '0 4px 15px rgba(0, 0, 0, 0.4)',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              border: '2px solid #00ff00',
-              minWidth: '250px',
-            }}
-          >
-            <div style={{ marginBottom: '8px', fontSize: '18px' }}>
-              Drone in Flight
-            </div>
-            <div style={{ marginBottom: '8px', fontSize: '12px', fontWeight: 'normal' }}>
-              {animationState.sourceId} → {animationState.targetId}
-            </div>
-            <div
-              style={{
-                width: '100%',
-                height: '8px',
-                backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                borderRadius: '4px',
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  width: `${animationState.progress * 100}%`,
-                  height: '100%',
-                  backgroundColor: '#00ff00',
-                  borderRadius: '4px',
-                  transition: 'width 0.1s linear',
-                }}
-              />
-            </div>
-            <div style={{ marginTop: '8px', fontSize: '12px', fontWeight: 'normal' }}>
-              {Math.round(animationState.progress * 100)}% complete
-            </div>
-            <button
-              onClick={animationControls.stopAnimation}
-              style={{
-                marginTop: '10px',
-                padding: '5px 15px',
-                backgroundColor: '#ff4444',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                cursor: 'pointer',
-                fontSize: '12px',
-              }}
-            >
-              Cancel Flight
-            </button>
-          </div>
-        )}
+        <FlightOverlay
+          isAnimating={animationState.isAnimating}
+          sourceId={animationState.sourceId}
+          targetId={animationState.targetId}
+          progress={animationState.progress}
+          onCancel={animationControls.stopAnimation}
+        />
 
         <EntityPopup
           popupInfo={popupInfo}
           popupPosition={popupPosition}
           onClose={() => setPopupInfo(null)}
         />
+
+        <StickyPopups stickyInfoMap={stickyInfoMap} onClose={handleCloseStickyInfo} />
 
         <PositionInfoBar position={currentPosition} />
 
