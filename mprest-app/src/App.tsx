@@ -27,6 +27,7 @@ import type {
   LayeredDataWithPayload,
   ViewerWithConfigs,
   MapClickLocation,
+  // FeatureState,
 } from "@mprest/map";
 
 import { dataSource } from "./data/dataSource";
@@ -324,6 +325,10 @@ function AppContent({
 
   const layers = useMemo(() => AppLayers(data, renderers), [data, renderers]);
 
+  // const handleFeatureStateChanged = useCallback((name: 'layersPanel' | 'filtersPanel' | 'searchPanel' | 'entities', state: FeatureState) => {
+  //   console.log(`Feature ${name} changed:`, state);
+  // }, []);
+
   return (
     <>
       <div style={{ position: 'relative', width: '100%', height: '100vh', cursor: selectionModeActive ? 'crosshair' : 'default' }}>
@@ -340,6 +345,7 @@ function AppContent({
           onClickPrevented={handleClickPrevented}
           onSelected={handleSelected}
           onChangePosition={handleChangePosition}
+          // onFeatureStateChanged={handleFeatureStateChanged}
           plugins={plugins}
         >
           {layers}

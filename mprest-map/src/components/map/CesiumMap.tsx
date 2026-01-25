@@ -46,6 +46,7 @@ const CesiumMap = <R extends RendererRegistry>({
   onClickPrevented,
   onSelected,
   onChangePosition,
+  onFeatureStateChanged,
   plugins = {},
 }: CesiumMapProps<R>) => {
   const { setViewer: setContextViewer } = useViewer();
@@ -211,6 +212,23 @@ const CesiumMap = <R extends RendererRegistry>({
 
     }
   }, [viewer, layers, renderers, filtersPanelApi, layersPanelApi, searchPanelApi, entitiesApi, plugins, onApiChange]);
+
+  // Handle feature state changes
+  useEffect(() => {
+    onFeatureStateChanged?.('layersPanel', layersPanelApi);
+  }, [layersPanelApi, onFeatureStateChanged]);
+
+  useEffect(() => {
+    onFeatureStateChanged?.('filtersPanel', filtersPanelApi);
+  }, [filtersPanelApi, onFeatureStateChanged]);
+
+  useEffect(() => {
+    onFeatureStateChanged?.('searchPanel', searchPanelApi);
+  }, [searchPanelApi, onFeatureStateChanged]);
+
+  useEffect(() => {
+    onFeatureStateChanged?.('entities', entitiesApi);
+  }, [entitiesApi, onFeatureStateChanged]);
 
   // Handle street map visibility
   useEffect(() => {

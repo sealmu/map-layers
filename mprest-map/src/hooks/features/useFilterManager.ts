@@ -61,10 +61,6 @@ export const useFilterManager = <R extends RendererRegistry>(
           }
         }
       }
-
-      console.log(
-        `Layer ${displayName}, type ${type}: ${visible ? "visible" : "hidden"}`,
-      );
     },
     [viewer],
   );

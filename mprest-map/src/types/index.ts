@@ -259,6 +259,10 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
     screenPosition?: Cartesian2,
   ) => boolean | void;
   onChangePosition?: (location: MapClickLocation | null) => boolean | void;
+  onFeatureStateChanged?: (
+    name: "layersPanel" | "filtersPanel" | "searchPanel" | "entities",
+    state: FeatureState,
+  ) => void;
   plugins?: Record<string, PluginClass>;
 }
 
@@ -350,6 +354,21 @@ export interface SearchPanelApi {
   openSearchModal: () => void;
   closeSearchModal: () => void;
 }
+
+export type EntitiesApi = {
+  findEntity: (entityId: string, layerId?: string) => Entity | null;
+  selectEntity: (
+    entityId: string,
+    layerId?: string,
+    flyTo?: boolean | number,
+  ) => boolean;
+};
+
+export type FeatureState =
+  | LayersPanelApi
+  | FiltersPanelApi
+  | SearchPanelApi
+  | EntitiesApi;
 
 export interface MapApi {
   layersPanel: LayersPanelApi;

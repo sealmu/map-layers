@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type { LayerProps, LayerData, RendererRegistry } from "../types";
 import { useLayerManager } from "./useLayerManager";
 import { useFilterManager } from "./useFilterManager";
@@ -12,10 +13,13 @@ export const useFeatures = <R extends RendererRegistry>(
   const searchPanelApi = useSearchManager(filtersPanelApi.filterData, layers);
   const entitiesApi = useEntitiesManager();
 
-  return {
-    layersPanelApi,
-    filtersPanelApi,
-    searchPanelApi,
-    entitiesApi,
-  };
+  return useMemo(
+    () => ({
+      layersPanelApi,
+      filtersPanelApi,
+      searchPanelApi,
+      entitiesApi,
+    }),
+    [layersPanelApi, filtersPanelApi, searchPanelApi, entitiesApi],
+  );
 };
