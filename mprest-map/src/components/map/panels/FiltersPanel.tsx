@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { FilterModal, type FiltersPanelProps } from "@mprest/map";
 
 const FiltersPanel = ({ api }: FiltersPanelProps) => {
@@ -9,10 +9,9 @@ const FiltersPanel = ({ api }: FiltersPanelProps) => {
     closeFilterModal,
   } = api;
 
-  const [modalKey, setModalKey] = useState(0);
-
-  useEffect(() => {
-    setModalKey(k => k + 1);
+  const modalKey = useMemo(() => {
+    // Create a key that changes when filterData changes
+    return JSON.stringify(filterData);
   }, [filterData]);
 
   return (

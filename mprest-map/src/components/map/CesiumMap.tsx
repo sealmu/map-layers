@@ -23,10 +23,7 @@ import type {
   MapApi,
 } from "../../types";
 import { useViewer } from "../../hooks/useViewer";
-import { useLayerManager } from "../../hooks/useLayerManager";
-import { useFilterManager } from "../../hooks/useFilterManager";
-import { useSearchManager } from "../../hooks/useSearchManager";
-import { useEntitiesManager } from "../../hooks/useEntitiesManager";
+import { useFeatures } from "../../features/useFeatures";
 import { extractLayersFromChildren, hasLayersChanged } from "./utils";
 import { createEventHandler } from "./utils/EventHandler";
 import { useBindHandlers } from "./handlers/bindHandlers";
@@ -66,10 +63,7 @@ const CesiumMap = <R extends RendererRegistry>({
     return layersRef.current;
   }, [children]);
 
-  const layersPanelApi = useLayerManager(layers);
-  const filtersPanelApi = useFilterManager(layers, layersPanelApi.layerStates);
-  const searchPanelApi = useSearchManager(filtersPanelApi.filterData, layers);
-  const entitiesApi = useEntitiesManager();
+  const { layersPanelApi, filtersPanelApi, searchPanelApi, entitiesApi } = useFeatures(layers);
 
   // Initialize Cesium Viewer
   useEffect(() => {

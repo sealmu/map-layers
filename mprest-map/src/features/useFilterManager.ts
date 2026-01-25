@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { collectLayerData } from "../helpers/collectLayerData";
-import { useViewer } from "./useViewer";
+import { useViewer } from "../hooks/useViewer";
 import type {
   LayerProps,
   LayerData,
