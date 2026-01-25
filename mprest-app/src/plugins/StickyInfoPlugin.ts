@@ -11,6 +11,7 @@ export interface StickyEntityInfo {
   entity: Entity;
   location?: MapClickLocation;
   screenPosition?: Cartesian2;
+  isSticky: boolean;
 }
 
 interface StickyInfoActions {
@@ -129,6 +130,7 @@ export class StickyInfoPlugin extends BasePlugin<
         entity,
         location,
         screenPosition,
+        isSticky: true,
       },
       entityId,
     );
@@ -162,6 +164,7 @@ export class StickyInfoPlugin extends BasePlugin<
           entity,
           location,
           screenPosition,
+          isSticky: true,
         },
         entityId,
       );

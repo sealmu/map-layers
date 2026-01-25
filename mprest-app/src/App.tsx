@@ -178,9 +178,14 @@ function AppContent({
         });
         return;
       }
+      // Modify isSticky based on entity ID
+      const modifiedInfo = {
+        ...info,
+        isSticky: !entityId.includes('drone2'),
+      };
       setStickyInfoMap(prev => {
         const next = new Map(prev);
-        next.set(entityId, info);
+        next.set(entityId, modifiedInfo);
         return next;
       });
     });
