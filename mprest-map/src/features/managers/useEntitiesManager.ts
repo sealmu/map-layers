@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { useViewer } from "../hooks/useViewer";
+import { useViewer } from "../../hooks/useViewer";
 import { HeadingPitchRange } from "cesium";
 
 export const useEntitiesManager = () => {

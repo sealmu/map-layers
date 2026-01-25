@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
-import { collectLayerData } from "../helpers/collectLayerData";
-import { useViewer } from "../hooks/useViewer";
+import { collectLayerData } from "../../helpers/collectLayerData";
+import { useViewer } from "../../hooks/useViewer";
 import type {
   LayerProps,
   LayerData,
@@ -8,7 +8,7 @@ import type {
   FilterData,
   SearchData,
   SearchResult,
-} from "../types";
+} from "../../types";
 
 export const useSearchManager = <R extends RendererRegistry>(
   filterData?: FilterData,

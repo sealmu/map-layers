@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import type { LayerProps, LayerData, RendererRegistry } from "../types";
+import type { LayerProps, LayerData, RendererRegistry } from "../../types";
 
 export const useLayerManager = <R extends RendererRegistry>(
   layers: LayerProps<LayerData, R>[],

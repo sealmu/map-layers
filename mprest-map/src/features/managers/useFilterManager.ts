@@ -1,12 +1,12 @@
 import { useState, useCallback, useMemo } from "react";
-import { collectLayerData } from "../helpers/collectLayerData";
-import { useViewer } from "../hooks/useViewer";
+import { collectLayerData } from "../../helpers/collectLayerData";
+import { useViewer } from "../../hooks/useViewer";
 import type {
   LayerProps,
   LayerData,
   RendererRegistry,
   FilterData,
-} from "../types";
+} from "../../types";
 
 export const useFilterManager = <R extends RendererRegistry>(
   layers?: LayerProps<LayerData, R>[],

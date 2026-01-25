@@ -24,6 +24,7 @@ import type {
 } from "../../types";
 import { useViewer } from "../../hooks/useViewer";
 import { useFeatures } from "../../features/useFeatures";
+import { useFeatureChangeEvent } from "../../features/useFeatureChangeEvent";
 import { extractLayersFromChildren, hasLayersChanged } from "./utils";
 import { createEventHandler } from "./utils/EventHandler";
 import { useBindHandlers } from "./handlers/bindHandlers";
@@ -214,21 +215,7 @@ const CesiumMap = <R extends RendererRegistry>({
   }, [viewer, layers, renderers, filtersPanelApi, layersPanelApi, searchPanelApi, entitiesApi, plugins, onApiChange]);
 
   // Handle feature state changes
-  useEffect(() => {
-    onFeatureStateChanged?.('layersPanel', layersPanelApi);
-  }, [layersPanelApi, onFeatureStateChanged]);
-
-  useEffect(() => {
-    onFeatureStateChanged?.('filtersPanel', filtersPanelApi);
-  }, [filtersPanelApi, onFeatureStateChanged]);
-
-  useEffect(() => {
-    onFeatureStateChanged?.('searchPanel', searchPanelApi);
-  }, [searchPanelApi, onFeatureStateChanged]);
-
-  useEffect(() => {
-    onFeatureStateChanged?.('entities', entitiesApi);
-  }, [entitiesApi, onFeatureStateChanged]);
+  useFeatureChangeEvent(layersPanelApi, filtersPanelApi, searchPanelApi, entitiesApi, onFeatureStateChanged);
 
   // Handle street map visibility
   useEffect(() => {
