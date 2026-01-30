@@ -8,13 +8,12 @@ import type {
   FilterData,
 } from "../../types";
 
-export const useFilterManager = <R extends RendererRegistry>(
-  layers?: LayerProps<LayerData, R>[],
-  layerStates?: Record<
-    string,
-    { isActive: boolean; isVisible: boolean; isDocked: boolean }
-  >,
-) => {
+type Layer = LayerProps<LayerData, RendererRegistry>;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const useFilters = (ctx: Record<string, any>) => {
+  const { layerStates } = ctx;
+  const layers = ctx.layers as Layer[];
   const [filterData, setFilterData] = useState<FilterData>({});
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const { viewer } = useViewer();
@@ -126,7 +125,7 @@ export const useFilterManager = <R extends RendererRegistry>(
     setIsFilterModalOpen(false);
   }, []);
 
-  const filtersApi = useMemo(
+  const api = useMemo(
     () => ({
       filterData,
       isFilterModalOpen,
@@ -143,5 +142,5 @@ export const useFilterManager = <R extends RendererRegistry>(
     ],
   );
 
-  return filtersApi;
+  return api;
 };

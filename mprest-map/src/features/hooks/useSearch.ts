@@ -1,19 +1,20 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { collectLayerData } from "../../helpers/collectLayerData";
-import { useViewer } from "../useViewer";
+import { useViewer } from "../../hooks/useViewer";
 import type {
   LayerProps,
   LayerData,
   RendererRegistry,
-  FilterData,
   SearchData,
   SearchResult,
 } from "../../types";
 
-export const useSearchManager = <R extends RendererRegistry>(
-  filterData?: FilterData,
-  layers?: LayerProps<LayerData, R>[],
-) => {
+type Layer = LayerProps<LayerData, RendererRegistry>;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const useSearch = (ctx: Record<string, any>) => {
+  const { filterData } = ctx;
+  const layers = ctx.layers as Layer[];
   const [searchData, setSearchData] = useState<SearchData>({});
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -24,7 +25,7 @@ export const useSearchManager = <R extends RendererRegistry>(
   const { viewer } = useViewer();
 
   const collectSearchData = useCallback(
-    (layers: LayerProps<LayerData, R>[]) => {
+    (layers: Layer[]) => {
       if (!viewer) return {};
 
       const layerData = collectLayerData(layers, viewer);
@@ -205,7 +206,7 @@ export const useSearchManager = <R extends RendererRegistry>(
     [],
   );
 
-  const searchApi = useMemo(
+  const api = useMemo(
     () => ({
       searchData,
       searchFilterData,
@@ -232,5 +233,5 @@ export const useSearchManager = <R extends RendererRegistry>(
     ],
   );
 
-  return searchApi;
+  return api;
 };

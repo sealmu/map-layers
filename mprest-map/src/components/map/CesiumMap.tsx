@@ -65,7 +65,7 @@ const CesiumMap = <R extends RendererRegistry>({
     return layersRef.current;
   }, [children]);
 
-  const { layersApi, filtersApi, searchApi, entitiesApi } = useFeatures(layers);
+  const { layers: layersApi, filters: filtersApi, search: searchApi, entities: entitiesApi } = useFeatures(layers) as MapApi;
 
   // Initialize Cesium Viewer
   useEffect(() => {
@@ -203,7 +203,7 @@ const CesiumMap = <R extends RendererRegistry>({
       }
 
     }
-  }, [viewer, layers, renderers, filtersApi, layersApi, searchApi, entitiesApi, plugins, onApiChange]);
+  }, [viewer, layers, renderers, layersApi, filtersApi, searchApi, entitiesApi, plugins, onApiChange]);
 
   // Handle feature state changes
   useFeatureChangeEvent(layersApi, filtersApi, searchApi, entitiesApi, onFeatureStateChanged);

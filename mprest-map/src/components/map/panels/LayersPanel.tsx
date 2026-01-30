@@ -4,7 +4,7 @@ import type { LayersPanelProps, LayerConfig } from "@mprest/map";
 
 const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
   const {
-    layers,
+    layerConfigs,
     layerStates,
     toggleLayerActive,
     toggleLayerVisible,
@@ -22,7 +22,7 @@ const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
   const groupedLayers = useMemo(() => {
     const groups: Record<string, { groupName: string; layers: LayerConfig[] }> = {};
     const ungrouped: LayerConfig[] = [];
-    layers.forEach((layer) => {
+    layerConfigs.forEach((layer: LayerConfig) => {
       if (layer.group) {
         if (!groups[layer.group]) {
           groups[layer.group] = { groupName: layer.groupName || layer.group, layers: [] };
@@ -33,20 +33,20 @@ const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
       }
     });
     return { groups, ungrouped };
-  }, [layers]);
-  const activeCount = layers.filter(
-    (layer) =>
+  }, [layerConfigs]);
+  const activeCount = layerConfigs.filter(
+    (layer: LayerConfig) =>
       layer.id !== "street-map" && (layerStates[layer.id]?.isActive ?? false),
   ).length;
   const allActive =
-    activeCount === layers.filter((layer) => layer.id !== "street-map").length;
+    activeCount === layerConfigs.filter((layer: LayerConfig) => layer.id !== "street-map").length;
   const someActive = activeCount > 0 && !allActive;
-  const visibleCount = layers.filter(
-    (layer) =>
+  const visibleCount = layerConfigs.filter(
+    (layer: LayerConfig) =>
       layer.id !== "street-map" && (layerStates[layer.id]?.isVisible ?? false),
   ).length;
   const allVisible =
-    visibleCount === layers.filter((layer) => layer.id !== "street-map").length;
+    visibleCount === layerConfigs.filter((layer: LayerConfig) => layer.id !== "street-map").length;
 
   return (
     <div className="layer-control">
@@ -60,13 +60,13 @@ const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
           </button>
           <h3>Layers</h3>
           {/* Docked Layers Bar */}
-          {layers.some((layer) => layerStates[layer.id]?.isDocked) && (
+          {layerConfigs.some((layer: LayerConfig) => layerStates[layer.id]?.isDocked) && (
             <div className="docked-layers-bar">
               {(() => {
                 if (isGrouped) {
                   const dockedGroups: Record<string, { groupName: string; layers: LayerConfig[] }> = {};
                   const dockedUngrouped: LayerConfig[] = [];
-                  layers.filter((layer) => layerStates[layer.id]?.isDocked).forEach((layer) => {
+                  layerConfigs.filter((layer: LayerConfig) => layerStates[layer.id]?.isDocked).forEach((layer) => {
                     if (layer.group) {
                       if (!dockedGroups[layer.group]) {
                         dockedGroups[layer.group] = { groupName: layer.groupName || layer.group, layers: [] };
@@ -111,9 +111,9 @@ const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
                     </>
                   );
                 } else {
-                  return layers
-                    .filter((layer) => layerStates[layer.id]?.isDocked)
-                    .map((layer) => (
+                  return layerConfigs
+                    .filter((layer: LayerConfig) => layerStates[layer.id]?.isDocked)
+                    .map((layer: LayerConfig) => (
                       <LayerCard
                         key={layer.id}
                         layer={layer}
@@ -260,9 +260,9 @@ const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
             })}
           </>
         ) : (
-          layers
-            .filter((layer) => !layer.isDocked)
-            .map((layer) => (
+          layerConfigs
+            .filter((layer: LayerConfig) => !layer.isDocked)
+            .map((layer: LayerConfig) => (
               <LayerCard
                 key={layer.id}
                 layer={layer}

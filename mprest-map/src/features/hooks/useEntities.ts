@@ -2,7 +2,8 @@ import { useCallback, useMemo } from "react";
 import { useViewer } from "../../hooks/useViewer";
 import { HeadingPitchRange } from "cesium";
 
-export const useEntitiesManager = () => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const useEntities = (_ctx: Record<string, unknown>) => {
   const { viewer } = useViewer();
 
   const findEntity = useCallback(
@@ -66,7 +67,7 @@ export const useEntitiesManager = () => {
     [findEntity, viewer],
   );
 
-  const entitiesApi = useMemo(
+  const api = useMemo(
     () => ({
       findEntity,
       selectEntity,
@@ -74,5 +75,5 @@ export const useEntitiesManager = () => {
     [findEntity, selectEntity],
   );
 
-  return entitiesApi;
+  return api;
 };

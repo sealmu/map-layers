@@ -298,7 +298,7 @@ export interface LayersPanelApi {
   toggleGroupActive: (group: string) => void;
   toggleGroupVisible: (group: string) => void;
   toggleGroupDocked: (group: string) => void;
-  layers: LayerConfig[];
+  layerConfigs: LayerConfig[];
 }
 
 export type FilterData = Record<

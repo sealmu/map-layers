@@ -1,9 +1,11 @@
 import { useState, useCallback, useMemo } from "react";
 import type { LayerProps, LayerData, RendererRegistry } from "../../types";
 
-export const useLayerManager = <R extends RendererRegistry>(
-  layers: LayerProps<LayerData, R>[],
-) => {
+type Layer = LayerProps<LayerData, RendererRegistry>;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const useLayers = (ctx: Record<string, any>) => {
+  const layers = ctx.layers as Layer[];
   const [layerStates, setLayerStates] = useState<
     Record<string, { isActive: boolean; isVisible: boolean; isDocked: boolean }>
   >(() => {
@@ -183,7 +185,7 @@ export const useLayerManager = <R extends RendererRegistry>(
     [layerStates, layers],
   );
 
-  const layersApi = useMemo(
+  const api = useMemo(
     () => ({
       layerStates,
       setLayerStates,
@@ -196,7 +198,7 @@ export const useLayerManager = <R extends RendererRegistry>(
       toggleGroupActive,
       toggleGroupVisible,
       toggleGroupDocked,
-      layers: layerConfigs,
+      layerConfigs,
     }),
     [
       layerStates,
@@ -214,5 +216,5 @@ export const useLayerManager = <R extends RendererRegistry>(
     ],
   );
 
-  return layersApi;
+  return api;
 };
