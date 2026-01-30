@@ -33,6 +33,10 @@ import type {
 import { dataSource } from "./data/dataSource";
 
 import { StickyInfoPlugin, type StickyEntityInfo } from "./plugins/StickyInfoPlugin";
+import {
+  TracerPlugin,
+  // type EntityTrace
+} from "./plugins/TracerPlugin";
 
 type AppRenderers = typeof AppRenderers;
 
@@ -88,6 +92,8 @@ function AppContent({
 
   const pluginsSubscribedRef = useRef(false);
   const stickyInfoSubscribedRef = useRef(false);
+  const tracerSubscribedRef = useRef(false);
+  // const [tracerInfo, setTracerInfo] = useState<Map<string, EntityTrace>>(new Map());
 
   // Drone target animation
   const { state: animationState, controls: animationControls } = useDroneTargetAnimation(
@@ -103,6 +109,7 @@ function AppContent({
   const plugins = useMemo(() => ({
     entitySelection: EntitySelectionPlugin,
     stickyInfo: StickyInfoPlugin,
+    tracer: TracerPlugin,
   }), []);
 
   // Subscribe to plugin events
@@ -197,6 +204,87 @@ function AppContent({
       stickyInfoSubscribedRef.current = false;
     };
   }, [viewer]);
+
+  // Subscribe to Tracer plugin events and start tracing drone2
+  useEffect(() => {
+    if (!viewer || !viewer.plugins || tracerSubscribedRef.current) return;
+
+    const plugin = viewer.plugins['tracer'] as TracerPlugin;
+    if (!plugin) return;
+
+    tracerSubscribedRef.current = true;
+
+    // Subscribe to trace changes
+    // const unsubscribeChange = plugin.events.onChange.subscribe((entityId, trace) => {
+    //   setTracerInfo(prev => {
+    //     const next = new Map(prev);
+    //     if (trace === null) {
+    //       next.delete(entityId);
+    //     } else {
+    //       next.set(entityId, trace);
+    //     }
+    //     return next;
+    //   });
+    //   // Log trace updates for demo
+    //   if (trace) {
+    //     console.log(`Tracer: ${entityId} has ${trace.coordinates.length} trace points`);
+    //   }
+    // });
+
+    // Trace config - only override what you need, rest uses defaults
+    const traceConfig = {
+      maxCoordinates: 5000,
+      coordinateLifetime: 20000, // 20 seconds (default: 60000)
+    };
+
+    // Function to start tracing drone1
+    const startTracingDrone1 = () => {
+      const drone1Entity = viewer.api.entities.findEntity('drone1');
+      if (drone1Entity) {
+        plugin.actions.trace(drone1Entity, traceConfig);
+        console.log('Started tracing drone1');
+        return true;
+      }
+      return false;
+    };
+
+    // Try to start tracing immediately
+    if (!startTracingDrone1()) {
+      // If drone1 not found yet, subscribe to entity changes and wait for it
+      const unsubscribeEntityChange = viewer.handlers.onEntityChange.subscribe(
+        (entity, status) => {
+          if (status === 'added' && entity.id === 'drone1') {
+            // Use the entity directly from the event instead of findEntity
+            plugin.actions.trace(entity, traceConfig);
+            console.log('Started tracing drone1 (from added event)');
+            unsubscribeEntityChange();
+          }
+        }
+      );
+
+      return () => {
+        //unsubscribeChange();
+        unsubscribeEntityChange();
+        plugin.actions.untraceAll();
+        tracerSubscribedRef.current = false;
+      };
+    }
+
+    return () => {
+      //unsubscribeChange();
+      plugin.actions.untraceAll();
+      tracerSubscribedRef.current = false;
+    };
+  }, [viewer]);
+
+  // Log tracer info for debugging (can be used for UI display)
+  // useEffect(() => {
+  //   if (tracerInfo.size > 0) {
+  //     tracerInfo.forEach((trace, entityId) => {
+  //       console.log(`Tracer state: ${entityId} - ${trace.coordinates.length} points`);
+  //     });
+  //   }
+  // }, [tracerInfo]);
 
   // Calculate popup position to stay within viewport bounds
   const popupPosition = usePopupPosition(popupInfo, popupDimensions);

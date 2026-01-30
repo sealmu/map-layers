@@ -41,9 +41,9 @@ export abstract class BasePlugin<
   A extends PluginActions = PluginActions,
   E extends PluginEvents = PluginEvents,
 > {
-  protected api: CesiumMapApi;
-  constructor(api: CesiumMapApi) {
-    this.api = api;
+  protected map: MapInstance;
+  constructor(map: MapInstance) {
+    this.map = map;
   }
 
   abstract actions: A;
@@ -72,7 +72,7 @@ export abstract class BasePlugin<
   ) => boolean | void;
 }
 
-export type PluginClass = new (api: CesiumMapApi) => BasePlugin;
+export type PluginClass = new (map: MapInstance) => BasePlugin;
 
 // Type for entity renderer functions
 export type EntityRenderer = (item: LayerData) => Entity.ConstructorOptions;
@@ -218,6 +218,16 @@ export interface DataSourceLayerProps<
     status: EntityChangeStatus,
     collectionName: string,
   ) => void;
+  onEntityCreating?: (
+    options: Entity.ConstructorOptions,
+    item: LayerData,
+  ) => void;
+  onEntityCreate?: (
+    type: RenderTypeFromRegistry<R>,
+    item: LayerData,
+    renderers: R,
+    layerId?: string,
+  ) => Entity.ConstructorOptions | null;
 }
 
 // CesiumMap Component
@@ -260,7 +270,7 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
   ) => boolean | void;
   onChangePosition?: (location: MapClickLocation | null) => boolean | void;
   onFeatureStateChanged?: (
-    name: "layersPanel" | "filtersPanel" | "searchPanel" | "entities",
+    name: "layers" | "filters" | "search" | "entities",
     state: FeatureState,
   ) => void;
   plugins?: Record<string, PluginClass>;
@@ -371,9 +381,9 @@ export type FeatureState =
   | EntitiesApi;
 
 export interface MapApi {
-  layersPanel: LayersPanelApi;
-  filtersPanel: FiltersPanelApi;
-  searchPanel: SearchPanelApi;
+  layers: LayersPanelApi;
+  filters: FiltersPanelApi;
+  search: SearchPanelApi;
   entities: {
     findEntity: (entityId: string, layerId?: string) => Entity | null;
     selectEntity: (
@@ -384,8 +394,7 @@ export interface MapApi {
   };
 }
 
-export interface CesiumMapApi {
-  api: MapApi;
+export interface MapInstance {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   viewer: ViewerWithConfigs<any>;
 }
@@ -402,7 +411,7 @@ export interface FiltersPanelProps {
 
 export interface SearchPanelProps {
   api: SearchPanelApi;
-  filtersPanel: FiltersPanelApi;
+  filters: FiltersPanelApi;
   entities: {
     findEntity: (entityId: string, layerId?: string) => Entity | null;
     selectEntity: (
@@ -434,14 +443,13 @@ export interface ViewerProviderProps {
 export interface ViewerWithConfigs<
   R extends RendererRegistry = RendererRegistry,
 > extends CesiumViewer {
-  layers: {
+  layersConfig: {
     getLayerConfig: (layerId: string) => LayerProps<LayerData, R> | undefined;
     getAllLayerConfigs: () => LayerProps<LayerData, R>[];
   };
   renderers: {
     getRenderers: () => R;
   };
-  filters: FiltersPanelApi;
   api: MapApi;
   handlers: {
     onClick: EventHandler<
@@ -473,20 +481,19 @@ export interface ViewerWithConfigs<
       ) => void
     >;
     onApiChange: EventHandler<(api: MapApi) => void>;
+    onEntityCreating: EventHandler<
+      (options: Entity.ConstructorOptions, item: LayerData) => void
+    >;
+    onEntityCreate: EventHandler<
+      (
+        type: RenderTypeFromRegistry<RendererRegistry>,
+        item: LayerData,
+        renderers: RendererRegistry,
+        layerId?: string,
+      ) => Entity.ConstructorOptions | null
+    >;
   };
   plugins: Record<string, BasePlugin>;
-  mapref: {
-    onEntityCreating?: (
-      options: Entity.ConstructorOptions,
-      item: LayerData,
-    ) => void;
-    onEntityCreate?: (
-      type: RenderTypeFromRegistry<RendererRegistry>,
-      item: LayerData,
-      renderers: RendererRegistry,
-      layerId?: string,
-    ) => Entity.ConstructorOptions | null;
-  };
 }
 
 // DataConnector

@@ -2,26 +2,26 @@ import { useEffect } from "react";
 import type { LayersPanelApi, FiltersPanelApi, SearchPanelApi, EntitiesApi } from "../types";
 
 export const useFeatureChangeEvent = (
-  layersPanelApi: LayersPanelApi,
-  filtersPanelApi: FiltersPanelApi,
-  searchPanelApi: SearchPanelApi,
+  layersApi: LayersPanelApi,
+  filtersApi: FiltersPanelApi,
+  searchApi: SearchPanelApi,
   entitiesApi: EntitiesApi,
   onFeatureStateChanged?: (
-    name: 'layersPanel' | 'filtersPanel' | 'searchPanel' | 'entities',
+    name: 'layers' | 'filters' | 'search' | 'entities',
     state: LayersPanelApi | FiltersPanelApi | SearchPanelApi | EntitiesApi,
   ) => void,
 ) => {
   useEffect(() => {
-    onFeatureStateChanged?.('layersPanel', layersPanelApi);
-  }, [layersPanelApi, onFeatureStateChanged]);
+    onFeatureStateChanged?.('layers', layersApi);
+  }, [layersApi, onFeatureStateChanged]);
 
   useEffect(() => {
-    onFeatureStateChanged?.('filtersPanel', filtersPanelApi);
-  }, [filtersPanelApi, onFeatureStateChanged]);
+    onFeatureStateChanged?.('filters', filtersApi);
+  }, [filtersApi, onFeatureStateChanged]);
 
   useEffect(() => {
-    onFeatureStateChanged?.('searchPanel', searchPanelApi);
-  }, [searchPanelApi, onFeatureStateChanged]);
+    onFeatureStateChanged?.('search', searchApi);
+  }, [searchApi, onFeatureStateChanged]);
 
   useEffect(() => {
     onFeatureStateChanged?.('entities', entitiesApi);

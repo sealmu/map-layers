@@ -21,6 +21,8 @@ const DataSourceLayer = <R extends RendererRegistry>({
   animateActivation = false,
   animateVisibility = false,
   onEntityChange,
+  onEntityCreating,
+  onEntityCreate,
 }: DataSourceLayerProps<R>) => {
   const dataSourceRef = useRef<CesiumCustomDataSource | null>(null);
 
@@ -102,41 +104,36 @@ const DataSourceLayer = <R extends RendererRegistry>({
           ? { ...item, customRenderer }
           : item;
 
-        // Check if onEntityCreate callback is provided
+        // Call onEntityCreate - first non-null result wins
         let entityOptions: Entity.ConstructorOptions | null = null;
-        if (viewer.mapref.onEntityCreate) {
-          entityOptions = viewer.mapref.onEntityCreate(
-            type,
-            itemWithRenderer,
-            renderers,
-            id,
-          );
+        if (onEntityCreate) {
+          entityOptions = onEntityCreate(type, itemWithRenderer, renderers, id);
         }
 
-        // If callback didn't provide options, use createEntityFromData
+        // If no result, use createEntityFromData
         if (!entityOptions) {
           entityOptions = createEntityFromData(
             type,
             itemWithRenderer,
             renderers,
             id,
-            viewer.mapref.onEntityCreating,
+            onEntityCreating,
           );
         }
         if (entityOptions) {
           const entity = dataSourceInstance.entities.add(entityOptions);
 
           // Apply current filter state to the new entity
-          if (entity && viewer.filters) {
+          if (entity && viewer.api?.filters) {
             const rendererType = entity.properties?.rendererType?.getValue();
             if (rendererType) {
-              entity.show = viewer.filters.filterData[id]?.types[rendererType] ?? true;
+              entity.show = viewer.api.filters.filterData[id]?.types[rendererType] ?? true;
             }
           }
         }
       });
     }
-  }, [data, type, customRenderer, renderers, getDataSourceInstance, viewer, id]);
+  }, [data, type, customRenderer, renderers, getDataSourceInstance, viewer, id, onEntityCreate, onEntityCreating]);
 
   // Update enabled(active) by removing/adding dataSource from viewer
   useEffect(() => {

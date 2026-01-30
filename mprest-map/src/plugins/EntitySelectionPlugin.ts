@@ -1,6 +1,6 @@
 import { Entity, Cartesian2 } from "cesium";
 import { BasePlugin, createEventHandler } from "@mprest/map";
-import type { CesiumMapApi, MapClickLocation, EventHandler } from "@mprest/map";
+import type { MapInstance, MapClickLocation, EventHandler } from "@mprest/map";
 
 interface EntitySelectionActions {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -30,8 +30,8 @@ export class EntitySelectionPlugin extends BasePlugin<
   actions: EntitySelectionActions;
   events: EntitySelectionEvents;
 
-  constructor(api: CesiumMapApi) {
-    super(api);
+  constructor(map: MapInstance) {
+    super(map);
     this.actions = {
       startSelection: this.startSelection.bind(this),
       cancelSelection: this.cancelSelection.bind(this),

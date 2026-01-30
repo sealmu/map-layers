@@ -143,7 +143,7 @@ export function useDroneAnimation2(viewer: ViewerWithConfigs | null) {
       // Dynamic speed: 10x when far, 5x when close
       const closeDistanceThreshold = 1; // radians
       const speedMultiplier = distance > closeDistanceThreshold ? 10 : 5;
-      const baseSpeed = 0.47 / 60; // drone2 speed per frame (0.47 degrees/sec / 60 fps)
+      const baseSpeed = 0.15 / 60; // drone2 speed per frame (0.15 degrees/sec / 60 fps)
       const maxMoveDistance = baseSpeed * speedMultiplier;
       const moveDistance = Math.min(maxMoveDistance, distance);
 

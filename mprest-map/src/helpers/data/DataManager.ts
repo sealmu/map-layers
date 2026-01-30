@@ -28,13 +28,25 @@ export class DataManager {
   }
 
   /**
-   * Add a single item to a specific layer
+   * Add a single item to a specific layer or default entity collection
+   * @param item Entity options to add
+   * @param layerName Layer name. Use "__default__" to add to viewer.entities directly.
+   * @param renderType Optional render type for metadata
    */
   addItem(
     item: Entity.ConstructorOptions,
-    layerName: string,
+    layerName?: string,
     renderType?: string,
   ): Entity | null {
+    // Handle default entity collection
+    if (!layerName || layerName === "__default__") {
+      try {
+        return this.viewer.entities.add(item);
+      } catch {
+        return null;
+      }
+    }
+
     const dataSource = this.getDataSourceByName(layerName);
     if (!dataSource) {
       //console.warn(`Data source with name "${layerName}" not found.`);
@@ -50,7 +62,7 @@ export class DataManager {
     // Apply current filter state to the new entity
     if (entity) {
       entity.show =
-        this.viewer.filters.filterData[layerName]?.types[finalRenderType] ??
+        this.viewer.api.filters.filterData[layerName]?.types[finalRenderType] ??
         true;
     }
 
@@ -69,7 +81,7 @@ export class DataManager {
     customRenderer?: (item: LayerData) => Entity.ConstructorOptions;
   } | null {
     // Get layer configuration
-    const layerConfig = this.viewer.layers.getLayerConfig(layerId);
+    const layerConfig = this.viewer.layersConfig.getLayerConfig(layerId);
     if (!layerConfig) {
       console.warn(`Layer configuration not found for layer: ${layerId}`);
       return null;
@@ -118,25 +130,33 @@ export class DataManager {
       type = rendererType;
     }
 
-    // Check if onEntityCreate callback is provided
+    // Call onEntityCreate subscribers - first non-null result wins
     let entityOptions: Entity.ConstructorOptions | null = null;
-    if (this.viewer.mapref.onEntityCreate) {
-      entityOptions = this.viewer.mapref.onEntityCreate(
+    for (const callback of this.viewer.handlers.onEntityCreate.subscribers) {
+      const result = callback(
         type as RenderTypeFromRegistry<typeof renderers>,
         itemToUse,
         renderers,
         layerId,
       );
+      if (result) {
+        entityOptions = result;
+        break;
+      }
     }
 
-    // If callback didn't provide options, use createEntityFromData
+    // If no subscriber provided options, use createEntityFromData
     if (!entityOptions) {
+      // Create wrapper that calls all onEntityCreating subscribers
+      const onEntityCreatingWrapper = (options: Entity.ConstructorOptions, item: LayerData) => {
+        this.viewer.handlers.onEntityCreating.subscribers.forEach(cb => cb(options, item));
+      };
       entityOptions = createEntityFromData(
         type as RenderTypeFromRegistry<typeof renderers>,
         itemToUse,
         renderers,
         layerId,
-        this.viewer.mapref.onEntityCreating,
+        onEntityCreatingWrapper,
       );
     }
 
@@ -289,16 +309,23 @@ export class DataManager {
   // }
 
   /**
-   * Get an item by id from a specific layer or search all layers
+   * Get an item by id from a specific layer or search all layers (including default)
+   * @param id Entity ID to find
+   * @param layerName Optional layer name. Use "__default__" to search viewer.entities only.
    */
   getItem(id: string, layerName?: string): Entity | undefined {
+    // Handle default entity collection explicitly
+    if (layerName === "__default__") {
+      return this.viewer.entities.getById(id);
+    }
+
     if (layerName) {
       const dataSource = this.getDataSourceByName(layerName);
       if (!dataSource) return undefined;
       return dataSource.entities.getById(id);
     }
 
-    // Search all data sources
+    // Search all data sources first
     try {
       for (let i = 0; i < this.viewer.dataSources.length; i++) {
         const dataSource = this.viewer.dataSources.get(i);
@@ -308,13 +335,26 @@ export class DataManager {
     } catch {
       //console.error('Error accessing viewer.dataSources in getItem:', e);
     }
-    return undefined;
+
+    // Fallback: try default entity collection (viewer.entities)
+    try {
+      return this.viewer.entities.getById(id);
+    } catch {
+      return undefined;
+    }
   }
 
   /**
-   * Remove an item by id from a specific layer or search all layers
+   * Remove an item by id from a specific layer or search all layers (including default)
+   * @param id Entity ID to remove
+   * @param layerName Optional layer name. Use "__default__" to remove from viewer.entities only.
    */
   removeItem(id: string, layerName?: string): boolean {
+    // Handle default entity collection explicitly
+    if (layerName === "__default__") {
+      return this.viewer.entities.removeById(id);
+    }
+
     if (layerName) {
       const dataSource = this.getDataSourceByName(layerName);
       if (!dataSource) return false;
@@ -324,7 +364,7 @@ export class DataManager {
       return true;
     }
 
-    // Search all data sources
+    // Search all data sources first
     try {
       for (let i = 0; i < this.viewer.dataSources.length; i++) {
         const dataSource = this.viewer.dataSources.get(i);
@@ -337,7 +377,13 @@ export class DataManager {
     } catch {
       //console.error("Error accessing viewer.dataSources in removeItem:", e);
     }
-    return false;
+
+    // Fallback: try default entity collection (viewer.entities)
+    try {
+      return this.viewer.entities.removeById(id);
+    } catch {
+      return false;
+    }
   }
 
   /**

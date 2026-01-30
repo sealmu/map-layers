@@ -205,7 +205,7 @@ export const useSearchManager = <R extends RendererRegistry>(
     [],
   );
 
-  const searchPanelApi = useMemo(
+  const searchApi = useMemo(
     () => ({
       searchData,
       searchFilterData,
@@ -232,5 +232,5 @@ export const useSearchManager = <R extends RendererRegistry>(
     ],
   );
 
-  return searchPanelApi;
+  return searchApi;
 };

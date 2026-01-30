@@ -35,19 +35,19 @@ export function AppPanels() {
 
   const handleFilter = () => {
     if (!api) return;
-    api.filtersPanel.openFilterModal();
+    api.filters.openFilterModal();
   };
 
   const handleSearch = () => {
     if (!api) return;
-    api.searchPanel.openSearchModal();
+    api.search.openSearchModal();
   };
 
   if (!viewer || !api) return null;
   return (
     <>
-      <FiltersPanel api={api.filtersPanel} />
-      <SearchPanel api={api.searchPanel} filtersPanel={api.filtersPanel} entities={api.entities} />
+      <FiltersPanel api={api.filters} />
+      <SearchPanel api={api.search} filters={api.filters} entities={api.entities} />
       <Expander
         title="Simulations"
         position="right"
@@ -73,7 +73,7 @@ export function AppPanels() {
         onToggle={setLayersPanelDocked}
       >
         <div style={{ marginTop: "8px", marginBottom: "15px", marginLeft: "12px", marginRight: "12px" }}>
-          <LayersPanel api={api.layersPanel} onFilter={handleFilter} onSearch={handleSearch} />
+          <LayersPanel api={api.layers} onFilter={handleFilter} onSearch={handleSearch} />
         </div>
       </Expander>
     </>

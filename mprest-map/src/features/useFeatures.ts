@@ -8,18 +8,18 @@ import { useEntitiesManager } from "./managers/useEntitiesManager";
 export const useFeatures = <R extends RendererRegistry>(
   layers: LayerProps<LayerData, R>[],
 ) => {
-  const layersPanelApi = useLayerManager(layers);
-  const filtersPanelApi = useFilterManager(layers, layersPanelApi.layerStates);
-  const searchPanelApi = useSearchManager(filtersPanelApi.filterData, layers);
+  const layersApi = useLayerManager(layers);
+  const filtersApi = useFilterManager(layers, layersApi.layerStates);
+  const searchApi = useSearchManager(filtersApi.filterData, layers);
   const entitiesApi = useEntitiesManager();
 
   return useMemo(
     () => ({
-      layersPanelApi,
-      filtersPanelApi,
-      searchPanelApi,
+      layersApi,
+      filtersApi,
+      searchApi,
       entitiesApi,
     }),
-    [layersPanelApi, filtersPanelApi, searchPanelApi, entitiesApi],
+    [layersApi, filtersApi, searchApi, entitiesApi],
   );
 };

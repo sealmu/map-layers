@@ -1,12 +1,14 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useClickHandler } from "./useClickHandler";
 import { usePositionHandler } from "./usePositionHandler";
 import type {
   ViewerWithConfigs,
   RendererRegistry,
+  RenderTypeFromRegistry,
   MapClickLocation,
   EntityChangeStatus,
   BasePlugin,
+  LayerData,
 } from "../../../types";
 import { Entity, Cartesian2 } from "cesium";
 import { callAllSubscribers } from "../utils/EventHandler";
@@ -14,12 +16,15 @@ import { callAllSubscribers } from "../utils/EventHandler";
 function callPluginMethod(
   plugins: Record<string, BasePlugin>,
   methodName: keyof BasePlugin,
-  ...args: any[]
+  ...args: unknown[]
 ): boolean {
   for (const plugin of Object.values(plugins)) {
     const method = plugin[methodName];
     if (typeof method === "function") {
-      const result = (method as (...args: any[]) => any).apply(plugin, args);
+      const result = (method as (...args: unknown[]) => unknown).apply(
+        plugin,
+        args,
+      );
       if (result === false) {
         return false;
       }
@@ -32,6 +37,7 @@ export interface BindHandlersOptions<
   R extends RendererRegistry = RendererRegistry,
 > {
   viewer: ViewerWithConfigs<R> | null;
+  // Prop callbacks to subscribe as initial subscribers
   onClick?: (
     entity: Entity | null,
     location: MapClickLocation,
@@ -53,6 +59,16 @@ export interface BindHandlersOptions<
     status: EntityChangeStatus,
     collectionName: string,
   ) => boolean | void;
+  onEntityCreating?: (
+    options: Entity.ConstructorOptions,
+    item: LayerData,
+  ) => boolean | void;
+  onEntityCreate?: (
+    type: RenderTypeFromRegistry<RendererRegistry>,
+    item: LayerData,
+    renderers: RendererRegistry,
+    layerId?: string,
+  ) => Entity.ConstructorOptions | null;
 }
 
 /**
@@ -68,15 +84,59 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
   onSelected,
   onChangePosition,
   onEntityChange,
+  onEntityCreating,
+  onEntityCreate,
 }: BindHandlersOptions<R>): {
-  processEntityChange:
-    | ((
-        entity: Entity,
-        status: EntityChangeStatus,
-        collectionName: string,
-      ) => void)
-    | undefined;
+  processEntityChange?: (
+    entity: Entity,
+    status: EntityChangeStatus,
+    collectionName: string,
+  ) => void;
+  processEntityCreating?: (
+    options: Entity.ConstructorOptions,
+    item: LayerData,
+  ) => void;
+  processEntityCreate?: (
+    type: RenderTypeFromRegistry<R>,
+    item: LayerData,
+    renderers: R,
+    layerId?: string,
+  ) => Entity.ConstructorOptions | null;
 } {
+  // Track if callbacks have been subscribed to avoid duplicate subscriptions
+  const subscribedRef = useRef(false);
+
+  // Subscribe prop callbacks as initial subscribers (once when viewer is available)
+  useEffect(() => {
+    if (!viewer || subscribedRef.current) return;
+    subscribedRef.current = true;
+
+    if (onClick) {
+      viewer.handlers.onClick.subscribe(onClick);
+    }
+    if (onSelecting) {
+      viewer.handlers.onSelecting.subscribe(onSelecting);
+    }
+    if (onClickPrevented) {
+      viewer.handlers.onClickPrevented.subscribe(onClickPrevented);
+    }
+    if (onSelected) {
+      viewer.handlers.onSelected.subscribe(onSelected);
+    }
+    if (onChangePosition) {
+      viewer.handlers.onChangePosition.subscribe(onChangePosition);
+    }
+    if (onEntityChange) {
+      viewer.handlers.onEntityChange.subscribe(onEntityChange);
+    }
+    if (onEntityCreating) {
+      viewer.handlers.onEntityCreating.subscribe(onEntityCreating);
+    }
+    if (onEntityCreate) {
+      viewer.handlers.onEntityCreate.subscribe(onEntityCreate);
+    }
+  }, [viewer, onClick, onSelecting, onClickPrevented, onSelected, onChangePosition, onEntityChange, onEntityCreating, onEntityCreate]);
+
   useClickHandler({
     viewer,
     onClick: viewer
@@ -95,28 +155,23 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
             )
           )
             return false;
-          const result = onClick?.(entity, location, screenPosition);
-          if (result === false) return false;
-          callAllSubscribers(
+          return callAllSubscribers(
             viewer.handlers.onClick,
             entity,
             location,
             screenPosition,
           );
         }
-      : onClick,
+      : undefined,
     onSelecting: viewer
       ? (entity: Entity, location: MapClickLocation) => {
           if (
             !callPluginMethod(viewer.plugins, "onSelecting", entity, location)
           )
             return false;
-          const result = onSelecting?.(entity, location);
-          if (result === false) return false;
-          callAllSubscribers(viewer.handlers.onSelecting, entity, location);
-          return true;
+          return callAllSubscribers(viewer.handlers.onSelecting, entity, location);
         }
-      : onSelecting,
+      : undefined,
     onClickPrevented: viewer
       ? (entity: Entity, location: MapClickLocation) => {
           if (
@@ -127,16 +182,14 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
               location,
             )
           )
-            return;
-          const result = onClickPrevented?.(entity, location);
-          if (result === false) return;
-          callAllSubscribers(
+            return false;
+          return callAllSubscribers(
             viewer.handlers.onClickPrevented,
             entity,
             location,
           );
         }
-      : onClickPrevented,
+      : undefined,
     onSelected: viewer
       ? (
           entity: Entity | null,
@@ -152,17 +205,15 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
               screenPosition,
             )
           )
-            return;
-          const result = onSelected?.(entity, location, screenPosition);
-          if (result === false) return;
-          callAllSubscribers(
+            return false;
+          return callAllSubscribers(
             viewer.handlers.onSelected,
             entity,
             location,
             screenPosition,
           );
         }
-      : onSelected,
+      : undefined,
   });
 
   usePositionHandler({
@@ -170,12 +221,10 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
     onChangePosition: viewer
       ? (location: MapClickLocation | null) => {
           if (!callPluginMethod(viewer.plugins, "onChangePosition", location))
-            return;
-          const result = onChangePosition?.(location);
-          if (result === false) return;
-          callAllSubscribers(viewer.handlers.onChangePosition, location);
+            return false;
+          return callAllSubscribers(viewer.handlers.onChangePosition, location);
         }
-      : onChangePosition,
+      : undefined,
   });
 
   // Create processEntityChange function
@@ -192,8 +241,6 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
         )
       )
         return;
-      const result = onEntityChange?.(entity, status, collectionName);
-      if (result === false) return;
       if (viewer) {
         callAllSubscribers(
           viewer.handlers.onEntityChange,
@@ -203,8 +250,39 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
         );
       }
     },
-    [viewer, onEntityChange],
+    [viewer],
   );
 
-  return { processEntityChange };
+  // Create processEntityCreating function - calls all subscribers
+  const processEntityCreating = useCallback(
+    (options: Entity.ConstructorOptions, item: LayerData) => {
+      if (viewer) {
+        callAllSubscribers(viewer.handlers.onEntityCreating, options, item);
+      }
+    },
+    [viewer],
+  );
+
+  // Create processEntityCreate function - first non-null result wins
+  const processEntityCreate = useCallback(
+    (
+      type: RenderTypeFromRegistry<R>,
+      item: LayerData,
+      renderers: R,
+      layerId?: string,
+    ): Entity.ConstructorOptions | null => {
+      if (viewer) {
+        for (const callback of viewer.handlers.onEntityCreate.subscribers) {
+          const result = callback(type, item, renderers, layerId);
+          if (result) {
+            return result;
+          }
+        }
+      }
+      return null;
+    },
+    [viewer],
+  );
+
+  return { processEntityChange, processEntityCreating, processEntityCreate };
 }

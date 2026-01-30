@@ -126,7 +126,7 @@ export const useFilterManager = <R extends RendererRegistry>(
     setIsFilterModalOpen(false);
   }, []);
 
-  const filtersPanelApi = useMemo(
+  const filtersApi = useMemo(
     () => ({
       filterData,
       isFilterModalOpen,
@@ -143,5 +143,5 @@ export const useFilterManager = <R extends RendererRegistry>(
     ],
   );
 
-  return filtersPanelApi;
+  return filtersApi;
 };

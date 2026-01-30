@@ -1,7 +1,7 @@
 import { Entity, Cartesian2, Cartographic, Math as CesiumMath } from "cesium";
 import { BasePlugin, createEventHandler } from "@mprest/map";
 import type {
-  CesiumMapApi,
+  MapInstance,
   MapClickLocation,
   EventHandler,
   EntityChangeStatus,
@@ -41,8 +41,8 @@ export class StickyInfoPlugin extends BasePlugin<
   actions: StickyInfoActions;
   events: StickyInfoEvents;
 
-  constructor(api: CesiumMapApi) {
-    super(api);
+  constructor(map: MapInstance) {
+    super(map);
     this.actions = {
       closeInfo: this.closeInfo.bind(this),
       closeAll: this.closeAll.bind(this),
@@ -83,7 +83,7 @@ export class StickyInfoPlugin extends BasePlugin<
     if (this.unsubscribeEntityChange) return;
 
     this.unsubscribeEntityChange =
-      this.api.viewer.handlers.onEntityChange.subscribe(
+      this.map.viewer.handlers.onEntityChange.subscribe(
         (entity: Entity, status: EntityChangeStatus) => {
           const entityId = entity.id?.toString() ?? "";
           if (status === "changed" && this.trackedEntities.has(entityId)) {
@@ -106,13 +106,13 @@ export class StickyInfoPlugin extends BasePlugin<
     if (!this.trackedEntities.has(entityId)) return;
 
     const position = entity.position?.getValue(
-      this.api.viewer.clock.currentTime,
+      this.map.viewer.clock.currentTime,
     );
     if (!position) return;
 
     // Convert Cartesian3 to screen position
     const screenPosition =
-      this.api.viewer.scene.cartesianToCanvasCoordinates(position);
+      this.map.viewer.scene.cartesianToCanvasCoordinates(position);
     if (!screenPosition) return;
 
     // Get location info
@@ -154,7 +154,7 @@ export class StickyInfoPlugin extends BasePlugin<
       this.subscribeToEntityChanges();
 
       // Get screen position
-      const screenPosition = this.api.viewer.scene.cartesianToCanvasCoordinates(
+      const screenPosition = this.map.viewer.scene.cartesianToCanvasCoordinates(
         location.cartesian,
       );
 

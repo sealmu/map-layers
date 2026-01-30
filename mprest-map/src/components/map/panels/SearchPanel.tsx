@@ -1,6 +1,6 @@
 import { SearchModal, type SearchPanelProps } from "@mprest/map";
 
-const SearchPanel = ({ api, filtersPanel, entities }: SearchPanelProps) => {
+const SearchPanel = ({ api, filters, entities }: SearchPanelProps) => {
   const {
     searchData,
     searchFilterData,
@@ -20,7 +20,7 @@ const SearchPanel = ({ api, filtersPanel, entities }: SearchPanelProps) => {
         onClose={closeSearchModal}
         searchData={searchData}
         filterData={searchFilterData}
-        globalFilterData={filtersPanel.filterData}
+        globalFilterData={filters.filterData}
         searchResults={searchResults}
         searchQuery={searchQuery}
         onLayerToggle={handleLayerToggle}

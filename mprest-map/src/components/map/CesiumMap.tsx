@@ -65,7 +65,7 @@ const CesiumMap = <R extends RendererRegistry>({
     return layersRef.current;
   }, [children]);
 
-  const { layersPanelApi, filtersPanelApi, searchPanelApi, entitiesApi } = useFeatures(layers);
+  const { layersApi, filtersApi, searchApi, entitiesApi } = useFeatures(layers);
 
   // Initialize Cesium Viewer
   useEffect(() => {
@@ -95,7 +95,7 @@ const CesiumMap = <R extends RendererRegistry>({
       configurable: true,
     });
 
-    // Set up handlers
+    // Set up handlers (all use EventHandler pattern for consistency)
     newViewer.handlers = {
       onClick: createEventHandler(),
       onSelecting: createEventHandler(),
@@ -104,24 +104,20 @@ const CesiumMap = <R extends RendererRegistry>({
       onChangePosition: createEventHandler(),
       onEntityChange: createEventHandler(),
       onApiChange: createEventHandler(),
+      onEntityCreating: createEventHandler(),
+      onEntityCreate: createEventHandler(),
     };
 
     // Set up plugins
     newViewer.plugins = {};
 
-    // Set up mapref callbacks
-    newViewer.mapref = {
-      onEntityCreating,
-      onEntityCreate,
-    };
-
     setViewer(newViewer);
 
     // Create initial API
     const initialApi = {
-      layersPanel: layersPanelApi,
-      filtersPanel: filtersPanelApi,
-      searchPanel: searchPanelApi,
+      layers: layersApi,
+      filters: filtersApi,
+      search: searchApi,
       entities: entitiesApi,
     };
 
@@ -165,7 +161,7 @@ const CesiumMap = <R extends RendererRegistry>({
   useEffect(() => {
     if (viewer) {
 
-      viewer.layers = {
+      viewer.layersConfig = {
         getLayerConfig: (layerId: string) =>
           layers.find((layer) => layer.id === layerId) as
           | LayerProps<LayerData, R>
@@ -178,13 +174,11 @@ const CesiumMap = <R extends RendererRegistry>({
         getRenderers: () => renderers,
       };
 
-      viewer.filters = filtersPanelApi;
-
       // Create new API object
       const api = {
-        layersPanel: layersPanelApi,
-        filtersPanel: filtersPanelApi,
-        searchPanel: searchPanelApi,
+        layers: layersApi,
+        filters: filtersApi,
+        search: searchApi,
         entities: entitiesApi,
       };
 
@@ -201,32 +195,29 @@ const CesiumMap = <R extends RendererRegistry>({
 
       // Instantiate plugins when APIs are ready
       if (Object.keys(viewer.plugins).length === 0 && Object.keys(plugins).length > 0) {
-        const api = {
-          api: viewer.api,
-          viewer,
-        };
+        const map = { viewer };
         for (const [name, PluginClass] of Object.entries(plugins)) {
-          const instance = new PluginClass(api);
+          const instance = new PluginClass(map);
           viewer.plugins[name] = instance;
         }
       }
 
     }
-  }, [viewer, layers, renderers, filtersPanelApi, layersPanelApi, searchPanelApi, entitiesApi, plugins, onApiChange]);
+  }, [viewer, layers, renderers, filtersApi, layersApi, searchApi, entitiesApi, plugins, onApiChange]);
 
   // Handle feature state changes
-  useFeatureChangeEvent(layersPanelApi, filtersPanelApi, searchPanelApi, entitiesApi, onFeatureStateChanged);
+  useFeatureChangeEvent(layersApi, filtersApi, searchApi, entitiesApi, onFeatureStateChanged);
 
   // Handle street map visibility
   useEffect(() => {
     if (imageryLayerRef.current) {
       imageryLayerRef.current.show =
-        layersPanelApi.layerStates["street-map"]?.isVisible ?? true;
+        layersApi.layerStates["street-map"]?.isVisible ?? true;
     }
-  }, [layersPanelApi.layerStates]);
+  }, [layersApi.layerStates]);
 
-  // Handle onClick and onSelecting callbacks
-  const { processEntityChange } = useBindHandlers({
+  // Handle click and position callbacks via handlers
+  const { processEntityChange, processEntityCreating, processEntityCreate } = useBindHandlers({
     viewer,
     onClick,
     onSelecting,
@@ -234,6 +225,8 @@ const CesiumMap = <R extends RendererRegistry>({
     onSelected,
     onChangePosition,
     onEntityChange,
+    onEntityCreating,
+    onEntityCreate,
   });
 
   return (
@@ -270,14 +263,16 @@ const CesiumMap = <R extends RendererRegistry>({
             viewer={viewer}
             id={layer.id}
             type={layer.type}
-            isActive={layersPanelApi.layerStates[layer.id]?.isActive ?? true}
-            isVisible={layersPanelApi.layerStates[layer.id]?.isVisible ?? true}
+            isActive={layersApi.layerStates[layer.id]?.isActive ?? true}
+            isVisible={layersApi.layerStates[layer.id]?.isVisible ?? true}
             data={layer.data}
             customRenderer={layer.customRenderer}
             renderers={renderers}
             animateActivation={animateActivation}
             animateVisibility={animateVisibility}
             onEntityChange={processEntityChange}
+            onEntityCreating={processEntityCreating}
+            onEntityCreate={processEntityCreate}
           />
         ))}
     </div>

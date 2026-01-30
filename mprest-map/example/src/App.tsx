@@ -133,7 +133,7 @@ function AppContent({
         </CesiumMap>
       </div>
       <div style={{ padding: "10px", backgroundColor: "#f5f5f5" }}>
-        {mapApi && <LayersPanel api={mapApi.layersPanel} />}
+        {mapApi && <LayersPanel api={mapApi.layers} />}
       </div>
     </div>
   );

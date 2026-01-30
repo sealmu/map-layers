@@ -183,7 +183,7 @@ export const useLayerManager = <R extends RendererRegistry>(
     [layerStates, layers],
   );
 
-  const layersPanelApi = useMemo(
+  const layersApi = useMemo(
     () => ({
       layerStates,
       setLayerStates,
@@ -214,5 +214,5 @@ export const useLayerManager = <R extends RendererRegistry>(
     ],
   );
 
-  return layersPanelApi;
+  return layersApi;
 };

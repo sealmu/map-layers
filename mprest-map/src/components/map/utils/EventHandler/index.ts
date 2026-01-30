@@ -27,8 +27,10 @@ export function createEventHandler<T>(): EventHandler<T> {
 export function callAllSubscribers<T>(
   handler: EventHandler<T>,
   ...args: T extends (...args: infer P) => unknown ? P : never
-) {
-  handler.subscribers.forEach((sub) =>
-    (sub as (...args: unknown[]) => unknown)(...args),
-  );
+): boolean {
+  for (const sub of handler.subscribers) {
+    const result = (sub as (...args: unknown[]) => unknown)(...args);
+    if (result === false) return false; // Stop propagation
+  }
+  return true;
 }
