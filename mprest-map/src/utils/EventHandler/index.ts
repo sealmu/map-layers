@@ -1,4 +1,4 @@
-import type { EventHandler } from "../../../../types";
+import type { EventHandler } from "../../types";
 
 export function createEventHandler<T>(): EventHandler<T> {
   const subscribers: T[] = [];

@@ -5,7 +5,17 @@ import {
   Entity,
   ConstantPositionProperty,
 } from "cesium";
-import type { DroneAnimationConfig } from "@mprest/map";
+
+export interface DroneAnimationConfig {
+  droneId: string;
+  centerLon: number;
+  centerLat: number;
+  radius: number;
+  baseAlt: number;
+  altAmp: number;
+  segments: number;
+  orbitDurationMs: number;
+}
 
 export function useDroneAnimation(
   viewer: CesiumViewer | null,

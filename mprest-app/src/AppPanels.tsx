@@ -26,11 +26,6 @@ export function AppPanels() {
   useLayoutEffect(() => {
     if (!viewer) return;
 
-    // Read current API immediately (in case it was already set before this component mounted)
-    if (viewer.api) {
-      setApi(viewer.api);
-    }
-
     if (!viewer.handlers?.onApiChange) return;
 
     const unsubscribe = viewer.handlers.onApiChange.subscribe((newApi) => {

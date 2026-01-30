@@ -1,5 +1,5 @@
 import { Children, isValidElement, type ReactNode } from "react";
-import type { LayerProps, LayerData, RendererRegistry } from "../../../types";
+import type { LayerProps, LayerData, RendererRegistry } from "../types";
 
 /**
  * Extracts layer props from React children (Layer components)

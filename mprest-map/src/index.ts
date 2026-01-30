@@ -39,7 +39,7 @@ export { default as Layer } from "./components/layers/Layer";
 export { default as DataSourceLayer } from "./components/layers/ProviderDataSourceLayer";
 
 // Event system
-export { createEventHandler } from "./components/map/utils/EventHandler";
+export { createEventHandler } from "./utils";
 
 // Panel components
 export { default as LayersPanel } from "./components/map/panels/LayersPanel";
@@ -116,7 +116,6 @@ export {
   type LayersPanelProps,
   type FiltersPanelProps,
   type SearchPanelProps,
-  type DroneAnimationConfig,
   type ViewerProviderProps,
   type ViewerWithConfigs,
   type DataConnectorConfig,

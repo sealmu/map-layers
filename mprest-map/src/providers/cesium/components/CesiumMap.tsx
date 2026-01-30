@@ -23,8 +23,7 @@ import type {
 import { useViewer } from "../../../hooks/useViewer";
 import { useFeatures } from "../../../features/useFeatures";
 import { useFeatureChangeEvent } from "../../../features/useFeatureChangeEvent";
-import { extractLayersFromChildren, hasLayersChanged } from "../../../components/map/utils";
-import { createEventHandler } from "../../../components/map/utils/EventHandler";
+import { extractLayersFromChildren, hasLayersChanged, createEventHandler } from "../../../utils";
 import { useBindHandlers } from "../handlers/bindHandlers";
 import { createCesiumMapAccessors } from "../CesiumMapAccessors";
 

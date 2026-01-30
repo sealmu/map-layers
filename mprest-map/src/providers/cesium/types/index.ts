@@ -433,17 +433,6 @@ export interface SearchPanelProps {
   };
 }
 
-export interface DroneAnimationConfig {
-  droneId: string;
-  centerLon: number;
-  centerLat: number;
-  radius: number;
-  baseAlt: number;
-  altAmp: number;
-  segments: number;
-  orbitDurationMs: number;
-}
-
 export interface ViewerProviderProps {
   children: ReactNode;
 }

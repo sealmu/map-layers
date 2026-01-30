@@ -1,4 +1,4 @@
-import type { LayerProps, LayerData, RendererRegistry } from "../../../types";
+import type { LayerProps, LayerData, RendererRegistry } from "../types";
 
 /**
  * Compares two layer arrays to check if they have changed

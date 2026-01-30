@@ -81,7 +81,6 @@ export {
   type MapInstance,
 
   // Config Types
-  type DroneAnimationConfig,
   type ViewerProviderProps,
   type ViewerWithConfigs,
   type DataConnectorConfig,

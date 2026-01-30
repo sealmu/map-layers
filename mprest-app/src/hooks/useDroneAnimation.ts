@@ -1,11 +1,8 @@
 import { useEffect, useCallback, useMemo } from "react";
 import { Cartesian3, Cartographic, Entity } from "cesium";
 import { DataManager } from "@mprest/map";
-import type {
-  DroneAnimationConfig,
-  ViewerWithConfigs,
-  EntityChangeStatus,
-} from "@mprest/map";
+import type { ViewerWithConfigs, EntityChangeStatus } from "@mprest/map";
+import type { DroneAnimationConfig } from "../types";
 
 export function useDroneAnimation(
   viewer: ViewerWithConfigs | null,
