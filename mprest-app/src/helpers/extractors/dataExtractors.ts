@@ -1,4 +1,4 @@
-import type { LayerData } from "@mprest/map";
+import type { LayerData } from "@mprest/map-cesium";
 import { extractByView } from "./byView.extractor";
 export {
   extractByPathValue,

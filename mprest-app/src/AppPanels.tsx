@@ -1,12 +1,7 @@
 import { useState, useLayoutEffect } from "react";
 
-import {
-  useViewer,
-  FiltersPanel,
-  SearchPanel,
-  LayersPanel,
-  type MapApi,
-} from "@mprest/map";
+import { useViewer, FiltersPanel, SearchPanel, LayersPanel, type IMapApi } from "@mprest/map-core";
+import type { MapApi } from "@mprest/map-cesium";
 
 import { Expander } from "./components";
 import DynamicPanel from "./components/DynamicPanel";
@@ -16,7 +11,7 @@ import { AppRenderers } from "./AppRenderers";
 
 export function AppPanels() {
   const { viewer } = useViewer();
-  const [api, setApi] = useState<MapApi | undefined>(undefined);
+  const [api, setApi] = useState<IMapApi | undefined>(undefined);
 
   const [layersPanelDocked, setLayersPanelDocked] = useState(true);
   const [dynamicPanelsDocked, setDynamicPanelsDocked] = useState(true);
@@ -49,7 +44,7 @@ export function AppPanels() {
   return (
     <>
       <FiltersPanel api={api.filters} />
-      <SearchPanel api={api.search} filters={api.filters} entities={api.entities} />
+      <SearchPanel api={api.search} filters={api.filters} entities={(api as MapApi).entities} />
       <Expander
         title="Simulations"
         position="right"
@@ -86,7 +81,7 @@ export function AppPanels() {
         isDocked={bookmarksPanelDocked}
         onToggle={setBookmarksPanelDocked}
       >
-        <BookmarksPanel api={api} />
+        <BookmarksPanel api={api as MapApi} />
       </Expander>
     </>
   );

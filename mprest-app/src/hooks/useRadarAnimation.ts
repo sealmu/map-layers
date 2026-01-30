@@ -5,8 +5,7 @@ import {
   PolygonHierarchy,
   CallbackProperty,
 } from "cesium";
-import { DataManager } from "@mprest/map";
-import type { ViewerWithConfigs } from "@mprest/map";
+import { DataManager, type ViewerWithConfigs } from "@mprest/map-cesium";
 
 type RadarEntityData = {
   data?: {

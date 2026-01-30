@@ -1,7 +1,7 @@
 import { useEffect, useCallback, useMemo } from "react";
 import { Cartesian3, Cartographic, Entity } from "cesium";
-import { DataManager } from "@mprest/map";
-import type { ViewerWithConfigs, EntityChangeStatus } from "@mprest/map";
+import type { EntityChangeStatus } from "@mprest/map-core";
+import { DataManager, type ViewerWithConfigs } from "@mprest/map-cesium";
 import type { DroneAnimationConfig } from "../types";
 
 export function useDroneAnimation(
@@ -22,7 +22,7 @@ export function useDroneAnimation(
   useEffect(() => {
     if (!viewer) return;
 
-    const dataManager = new DataManager(viewer as ViewerWithConfigs);
+    const dataManager = new DataManager(viewer);
 
     const waypoints: [number, number, number][] = Array.from(
       { length: segments },
@@ -89,7 +89,7 @@ export function useDroneAnimation(
 export function useDroneAnimation2(viewer: ViewerWithConfigs | null) {
   const dataManager = useMemo(() => {
     if (!viewer) return null;
-    return new DataManager(viewer as ViewerWithConfigs);
+    return new DataManager(viewer);
   }, [viewer]);
 
   const handleEntityChange = useCallback(

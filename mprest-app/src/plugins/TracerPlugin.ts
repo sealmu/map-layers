@@ -7,14 +7,15 @@ import {
   CallbackProperty,
   ConstantProperty,
 } from "cesium";
-import { BasePlugin, createEventHandler, DataManager } from "@mprest/map";
-import type {
-  MapInstance,
-  MapClickLocation,
-  EventHandler,
-  EntityChangeStatus,
-  ViewerWithConfigs,
-} from "@mprest/map";
+import { createEventHandler, type EntityChangeStatus } from "@mprest/map-core";
+import {
+  BasePlugin,
+  DataManager,
+  type MapInstance,
+  type MapClickLocation,
+  type EventHandler,
+  type ViewerWithConfigs,
+} from "@mprest/map-cesium";
 
 // Trace coordinate with timestamp and animation state
 export interface TraceCoordinate {
@@ -141,7 +142,7 @@ export class TracerPlugin extends BasePlugin<TracerActions, TracerEvents> {
   constructor(map: MapInstance, options?: TracerPluginOptions) {
     super(map);
 
-    this.dataManager = new DataManager(map.viewer as ViewerWithConfigs);
+    this.dataManager = new DataManager(map.viewer as unknown as ViewerWithConfigs);
     this.defaultOptions = { ...DEFAULT_OPTIONS, ...options };
 
     this.actions = {

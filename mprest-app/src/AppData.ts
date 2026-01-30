@@ -1,5 +1,5 @@
 import { Color, Cartesian3 } from "cesium";
-import type { LayerData } from "@mprest/map";
+import type { LayerData } from "@mprest/map-cesium";
 
 export const dataSourceDynamic = {
   "dynamic-raw": [

@@ -1,5 +1,5 @@
 import { Cartesian2, Entity } from "cesium";
-import type { MapClickLocation } from "@mprest/map";
+import type { MapClickLocation } from "@mprest/map-cesium";
 
 export interface EntityPopupInfo {
   entity: Entity;

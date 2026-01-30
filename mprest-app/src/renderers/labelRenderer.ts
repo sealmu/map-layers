@@ -1,5 +1,5 @@
 import { Cartesian2, Color, Entity } from "cesium";
-import type { LayerData } from "@mprest/map";
+import type { LayerData } from "@mprest/map-cesium";
 
 export function createLabelEntity(item: LayerData): Entity.ConstructorOptions {
   return {

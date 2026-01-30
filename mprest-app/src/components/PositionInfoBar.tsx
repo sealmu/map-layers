@@ -1,4 +1,4 @@
-import type { MapClickLocation } from "@mprest/map";
+import type { MapClickLocation } from "@mprest/map-cesium";
 
 interface PositionInfoBarProps {
   position: MapClickLocation | null;

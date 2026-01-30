@@ -1,17 +1,19 @@
 import { useState, useEffect, useRef } from "react";
 import { useMemo } from "react";
 import { Cartesian3, Color, Math as CesiumMath, JulianDate } from "cesium";
-import type { RendererRegistry, ViewerWithConfigs } from "@mprest/map";
-import { useViewer, DataManager } from "@mprest/map";
+import { useViewer } from "@mprest/map-core";
+import { DataManager, type RendererRegistry, type ViewerWithConfigs } from "@mprest/map-cesium";
 
 interface DynamicPanelProps {
   renderers: RendererRegistry;
 }
 
 const DynamicPanel = ({ renderers }: DynamicPanelProps) => {
-  const { viewer } = useViewer();
+  const { viewer: coreViewer } = useViewer();
+  // Cast to Cesium-specific viewer type
+  const viewer = coreViewer as unknown as ViewerWithConfigs | null;
   const dataManager = useMemo(
-    () => (viewer ? new DataManager(viewer as ViewerWithConfigs) : null),
+    () => (viewer ? new DataManager(viewer) : null),
     [viewer],
   );
   const [objectCount, setObjectCount] = useState(0);

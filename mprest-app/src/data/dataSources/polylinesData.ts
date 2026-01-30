@@ -1,5 +1,5 @@
 import { Cartesian3, Color } from "cesium";
-import type { LayerData } from "@mprest/map";
+import type { LayerData } from "@mprest/map-cesium";
 
 export const polylinesData: LayerData[] = [
   {

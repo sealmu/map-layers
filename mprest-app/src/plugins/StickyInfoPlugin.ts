@@ -1,11 +1,11 @@
 import { Entity, Cartesian2, Cartographic, Math as CesiumMath } from "cesium";
-import { BasePlugin, createEventHandler } from "@mprest/map";
-import type {
-  MapInstance,
-  MapClickLocation,
-  EventHandler,
-  EntityChangeStatus,
-} from "@mprest/map";
+import { createEventHandler, type EntityChangeStatus } from "@mprest/map-core";
+import {
+  BasePlugin,
+  type MapInstance,
+  type MapClickLocation,
+  type EventHandler,
+} from "@mprest/map-cesium";
 
 export interface StickyEntityInfo {
   entity: Entity;

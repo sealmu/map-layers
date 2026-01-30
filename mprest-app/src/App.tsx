@@ -6,13 +6,15 @@ import { useDroneAnimation, useDroneAnimation2 } from "./hooks/useDroneAnimation
 import { useRadarAnimation } from "./hooks/useRadarAnimation";
 import { useDroneTargetAnimation } from "./hooks/useDroneTargetAnimation";
 
+import { Mmap, ViewerProvider } from "@mprest/map-core";
 import {
-  CesiumMap,
-  ViewerProvider,
-  useViewer,
+  useCesiumViewer,
   DataConnector,
   EntitySelectionPlugin,
-} from "@mprest/map";
+  type AppContentProps,
+  type LayeredDataWithPayload,
+  type MapClickLocation,
+} from "@mprest/map-cesium";
 
 import { EntityPopup, type EntityPopupInfo, StickyPopups, usePopupPosition } from "./components/popups";
 import { SelectionOverlay, FlightOverlay } from "./components/overlays";
@@ -21,14 +23,6 @@ import { AppLayers } from "./AppLayers";
 import { AppRenderers } from "./AppRenderers";
 import { AppPanels } from "./AppPanels";
 import { dataSourceDynamic } from "./AppData";
-
-import type {
-  AppContentProps,
-  LayeredDataWithPayload,
-  ViewerWithConfigs,
-  MapClickLocation,
-  // FeatureState,
-} from "@mprest/map";
 
 import { dataSource } from "./data/dataSource";
 
@@ -80,7 +74,7 @@ function AppContent({
   data,
   renderers,
 }: AppContentProps<AppRenderers> & { data: AppData[] }) {
-  const { viewer } = useViewer();
+  const { viewer } = useCesiumViewer();
 
 
   const [popupInfo, setPopupInfo] = useState<EntityPopupInfo | null>(null);
@@ -97,7 +91,7 @@ function AppContent({
 
   // Drone target animation
   const { state: animationState, controls: animationControls } = useDroneTargetAnimation(
-    viewer as ViewerWithConfigs,
+    viewer,
     {
       durationMs: 5000,
       onComplete: (sourceId, targetId) => {
@@ -363,7 +357,7 @@ function AppContent({
     setCurrentPosition(location);
   }, []);
 
-  useDroneAnimation(viewer as ViewerWithConfigs, {
+  useDroneAnimation(viewer, {
     droneId: "drone2",
     centerLon: -104.99,
     centerLat: 39.7392,
@@ -374,9 +368,9 @@ function AppContent({
     orbitDurationMs: 20000,
   });
 
-  useDroneAnimation2(viewer as ViewerWithConfigs);
+  useDroneAnimation2(viewer);
 
-  useRadarAnimation(viewer as ViewerWithConfigs, "radar1");
+  useRadarAnimation(viewer, "radar1");
 
 
   // Subscribe to onSelected event from viewer
@@ -420,7 +414,8 @@ function AppContent({
   return (
     <>
       <div style={{ position: 'relative', width: '100%', height: '100vh', cursor: selectionModeActive ? 'crosshair' : 'default' }}>
-        <CesiumMap
+        <Mmap
+          provider="cesium"
           // onEntityCreating={enrichEntity}
           // onEntityCreate={onEntityCreate}
           renderers={AppRenderers}
@@ -437,7 +432,7 @@ function AppContent({
           plugins={plugins}
         >
           {layers}
-        </CesiumMap>
+        </Mmap>
 
         <SelectionOverlay isActive={selectionModeActive} sourceEntity={selectionSourceEntity} />
 

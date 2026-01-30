@@ -1,6 +1,10 @@
-import { defaultRenderers, createPolylineEntity, type RendererRegistry } from "@mprest/map";
+import {
+  defaultRenderers,
+  createPolylineEntity,
+  type RendererRegistry,
+  type LayerData,
+} from "@mprest/map-cesium";
 import { Cartesian3, Cartographic, ConstantProperty, PolygonHierarchy, ColorMaterialProperty, Color, type Entity } from "cesium";
-import type { LayerData } from "@mprest/map";
 
 export const AppRenderers = {
   ...defaultRenderers,

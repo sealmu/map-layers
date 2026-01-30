@@ -1,4 +1,4 @@
-import type { LayersConfigItem } from "@mprest/map";
+import type { LayersConfigItem } from "@mprest/map-cesium";
 import { extractPolylines } from "../helpers/extractors/dataExtractors";
 
 const config = [

@@ -1,7 +1,6 @@
 import { useEffect, useCallback, useState, useRef } from "react";
 import { Cartesian3, Cartographic, Entity } from "cesium";
-import { DataManager } from "@mprest/map";
-import type { ViewerWithConfigs } from "@mprest/map";
+import { DataManager, type ViewerWithConfigs } from "@mprest/map-cesium";
 
 export interface DroneTargetAnimationState {
   isAnimating: boolean;

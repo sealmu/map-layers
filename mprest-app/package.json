@@ -10,7 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@mprest/map": "file:../mprest-map",
+    "@mprest/map-core": "*",
+    "@mprest/map-cesium": "*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

@@ -1,4 +1,4 @@
-import type { LayerData } from "@mprest/map";
+import type { LayerData } from "@mprest/map-cesium";
 
 type ViewKey = LayerData["view"];
 

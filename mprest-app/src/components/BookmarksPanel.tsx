@@ -1,5 +1,6 @@
 import { useState } from "react";
-import type { MapApi, BookmarksApi, LocationsApi, PlaceResult } from "@mprest/map";
+import type { BookmarksApi, LocationsApi, PlaceResult } from "@mprest/map-core";
+import type { MapApi } from "@mprest/map-cesium";
 
 interface BookmarksPanelProps {
   api: MapApi & { bookmarks?: BookmarksApi; locations?: LocationsApi };
@@ -59,7 +60,7 @@ export function BookmarksPanel({ api }: BookmarksPanelProps) {
         {
           longitude: bookmark.position.longitude,
           latitude: bookmark.position.latitude,
-          height: bookmark.camera.range,
+          height: bookmark.position.height ?? 10000,
         },
         {
           heading: bookmark.camera.heading,

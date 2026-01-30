@@ -1,5 +1,5 @@
 import { Cartesian3, Color } from "cesium";
-import type { LayerData } from "@mprest/map";
+import type { LayerData } from "@mprest/map-cesium";
 import { pointsData } from "./dataSources/pointsData";
 import { labelsData } from "./dataSources/labelsData";
 import { polygonsData } from "./dataSources/polygonsData";

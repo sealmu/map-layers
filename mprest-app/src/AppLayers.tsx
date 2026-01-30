@@ -1,5 +1,5 @@
-import { Layer, createRenderTypes, applyExtractor } from "@mprest/map";
-import type { RendererRegistry, LayeredDataWithPayload, LayerData } from "@mprest/map";
+import { Layer, applyExtractor } from "@mprest/map-core";
+import { createRenderTypes, type RendererRegistry, type LayeredDataWithPayload, type LayerData } from "@mprest/map-cesium";
 import { Cartesian2, Color, Entity } from "cesium";
 
 import { extractPoints, extractPolygons, extractDrones, extractMixed, extractCones, extractDomes } from "./helpers/extractors/dataExtractors";
@@ -74,7 +74,8 @@ export function AppLayers(data: AppData[], renderers: RendererRegistry) {
       <Layer
         key={cfg.id}
         {...cfg}
-        data={applyExtractor(data, cfg.extractor) as AppData[]}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data={applyExtractor(data as any, cfg.extractor as any) as unknown as AppData[]}
       />
     )),
     <Layer
@@ -86,7 +87,8 @@ export function AppLayers(data: AppData[], renderers: RendererRegistry) {
       isActive={true}
       isVisible={true}
       description="Drone positions with custom renderer"
-      customRenderer={droneRenderer}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      customRenderer={droneRenderer as any}
     />,
     <Layer
       key="mixed"

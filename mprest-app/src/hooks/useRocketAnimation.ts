@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { Cartesian3 } from "cesium";
-import { DataManager } from "@mprest/map";
-import type { ViewerWithConfigs } from "@mprest/map";
+import { DataManager, type ViewerWithConfigs } from "@mprest/map-cesium";
 
 export interface RocketAnimationConfig {
   rocketId: string;
@@ -32,7 +31,7 @@ export function useRocketAnimation(
   useEffect(() => {
     if (!viewer) return;
 
-    const dataManager = new DataManager(viewer as ViewerWithConfigs);
+    const dataManager = new DataManager(viewer);
 
     // Create elliptical orbit with higher altitude variation for rockets
     const waypoints: [number, number, number][] = Array.from(

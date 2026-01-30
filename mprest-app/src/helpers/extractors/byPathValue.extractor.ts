@@ -1,4 +1,4 @@
-import type { LayerData, ExtractorSpec } from "@mprest/map";
+import type { LayerData, ExtractorSpec } from "@mprest/map-cesium";
 
 type CacheKey = string;
 

@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
-import { useViewer as useCesiumViewer } from '@mprest/map';
-import type { LayerData } from '@mprest/map';
+import { useViewer as useCoreViewer } from '@mprest/map-core';
+import type { LayerData } from '@mprest/map-cesium';
 import type { Entity } from 'cesium';
 
 export interface LayerConfig {
@@ -43,7 +43,7 @@ export const LayerProvider = ({ children, layerConfigs }: LayerProviderProps) =>
 
 // Extended useViewer hook that also provides layer information
 export const useViewer = () => {
-  const cesiumViewer = useCesiumViewer();
+  const cesiumViewer = useCoreViewer();
   const layerContext = useContext(LayerContext);
 
   if (!layerContext) {

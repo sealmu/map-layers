@@ -1,5 +1,5 @@
 import { Cartesian2, Cartesian3, Color, Entity } from "cesium";
-import type { LayerData } from "@mprest/map";
+import type { LayerData } from "@mprest/map-cesium";
 
 export const mixedData: LayerData[] = [
   {
