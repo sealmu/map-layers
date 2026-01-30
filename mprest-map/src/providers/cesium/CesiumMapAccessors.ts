@@ -1,26 +1,29 @@
 import {
   Viewer as CesiumViewer,
   HeadingPitchRange,
-  BoundingSphere,
-  Math as CesiumMath,
   type Entity,
 } from "cesium";
-import { toCartesian3 } from "./adapters/coordinateAdapter";
 import type {
   IMapAccessors,
   IEntityMetadata,
   ILayerMetadata,
 } from "../../types/core/interfaces/IMapAccessors";
 import type { ICoordinate, ICameraOrientation } from "../../types/core/types/coordinates";
+import { CesiumMapCamera } from "./CesiumMapCamera";
 
 /**
  * Cesium implementation of IMapAccessors
+ * Uses composition with CesiumMapCamera for camera operations
  */
 export class CesiumMapAccessors implements IMapAccessors {
   private viewer: CesiumViewer;
 
+  /** Camera control interface */
+  readonly camera: CesiumMapCamera;
+
   constructor(viewer: CesiumViewer) {
     this.viewer = viewer;
+    this.camera = new CesiumMapCamera(viewer);
   }
 
   getLayerNames(): string[] {
@@ -234,21 +237,16 @@ export class CesiumMapAccessors implements IMapAccessors {
     }
   }
 
+  // ============================================
+  // Camera methods (delegated to CesiumMapCamera)
+  // ============================================
+
   getCameraPosition(): ICoordinate {
-    const cartographic = this.viewer.camera.positionCartographic;
-    return {
-      latitude: CesiumMath.toDegrees(cartographic.latitude),
-      longitude: CesiumMath.toDegrees(cartographic.longitude),
-      height: cartographic.height,
-    };
+    return this.camera.getPosition();
   }
 
   getCameraOrientation(): ICameraOrientation {
-    return {
-      heading: this.viewer.camera.heading,
-      pitch: this.viewer.camera.pitch,
-      roll: this.viewer.camera.roll,
-    };
+    return this.camera.getOrientation();
   }
 
   flyToLocation(
@@ -260,24 +258,13 @@ export class CesiumMapAccessors implements IMapAccessors {
       duration?: number;
     },
   ): void {
-    const target = toCartesian3(coordinate);
-    const boundingSphere = new BoundingSphere(target, 0);
-    const offset = new HeadingPitchRange(
-      options?.heading ?? 0,
-      options?.pitch ?? -45 * (Math.PI / 180),
-      options?.range ?? 100000,
-    );
-
-    this.viewer.camera.flyToBoundingSphere(boundingSphere, {
-      offset,
-      duration: options?.duration ?? 1.5,
-    });
+    this.camera.flyToLocation(coordinate, options);
   }
 }
 
 /**
  * Create a CesiumMapAccessors instance from a viewer
  */
-export function createCesiumMapAccessors(viewer: CesiumViewer): IMapAccessors {
+export function createCesiumMapAccessors(viewer: CesiumViewer): CesiumMapAccessors {
   return new CesiumMapAccessors(viewer);
 }

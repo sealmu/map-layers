@@ -1,6 +1,10 @@
 /**
- * Cesium-specific types for backwards compatibility.
- * For new provider-agnostic code, use types from types/core/.
+ * Cesium-specific types.
+ *
+ * This file contains types that are specific to the Cesium provider.
+ * For provider-agnostic types, use types from @mprest/map/types/core.
+ *
+ * Many types here extend or alias core types, adding Cesium-specific properties.
  */
 import type { ReactNode, RefObject } from "react";
 import {
@@ -14,26 +18,84 @@ import {
 } from "cesium";
 import type { IMapAccessors } from "../../../types/core/interfaces/IMapAccessors";
 
-// Entity change status type
-export type EntityChangeStatus = "added" | "removed" | "changed";
+// Re-export core types for convenience (these are provider-agnostic)
+export type {
+  ILayerConfig,
+  ILayerProps,
+  ILayerDefinition,
+  ICollectedLayerData,
+  ILayerData,
+  IEntityRenderer,
+  IRendererRegistry,
+  IRenderType,
+  IRenderTypeFromRegistry,
+} from "../../../types/core/types/layer";
 
-// Event handler interface
+export type {
+  IEventHandler,
+} from "../../../types/core/types/events";
+
+export type {
+  ILayersPanelApi,
+  IFiltersPanelApi,
+  ISearchPanelApi,
+  IEntitiesApi,
+  IFilterData,
+  ISearchData,
+  ISearchResult,
+  IFeatureState,
+  IFeatureContext,
+  IFeatureExtensionModule,
+  IMapApi,
+  IExtendedMapApi,
+  ILayersPanelProps,
+  IFiltersPanelProps,
+  ISearchPanelProps,
+  IDataConnectorConfig,
+  IViewerProviderProps,
+} from "../../../types/core/types/features";
+
+export type { EntityChangeStatus } from "../../../types/core/interfaces/IMapEntity";
+
+// ============================================
+// Cesium-Specific Event Handler
+// ============================================
+
+/**
+ * Event handler interface (Cesium-specific implementation)
+ * @deprecated Use IEventHandler from core types
+ */
 export interface EventHandler<T> {
   subscribe: (callback: T) => () => void;
   unsubscribe: (callback: T) => void;
   subscribers: T[];
 }
 
-// Location returned by map click/selection callbacks
+// ============================================
+// Cesium-Specific Click Location
+// ============================================
+
+/**
+ * Location returned by Cesium map click/selection callbacks.
+ * Contains both Cesium-native types and convenience properties.
+ */
 export interface MapClickLocation {
+  /** Cesium Cartesian3 position */
   cartesian: Cartesian3;
+  /** Cesium Cartographic position */
   cartographic: Cartographic;
+  /** Longitude in degrees */
   longitude: number;
+  /** Latitude in degrees */
   latitude: number;
+  /** Height in meters */
   height: number;
 }
 
-// Plugin types
+// ============================================
+// Cesium Plugin System
+// ============================================
+
 export interface PluginActions {
   [key: string]: (...args: unknown[]) => unknown;
 }
@@ -78,15 +140,29 @@ export abstract class BasePlugin<
 
 export type PluginClass = new (map: MapInstance) => BasePlugin;
 
-// Entity renderer functions
+// ============================================
+// Cesium Entity Renderer Types
+// ============================================
+
+/**
+ * Cesium-specific entity renderer that returns Cesium Entity.ConstructorOptions
+ */
 export type EntityRenderer = (item: LayerData) => Entity.ConstructorOptions;
 
+/**
+ * Registry of Cesium entity renderers
+ */
 export type RendererRegistry = Record<string, EntityRenderer>;
+
 export type RenderTypeFromRegistry<R extends RendererRegistry> =
   | (keyof R & string)
   | "custom";
+
 export type RenderType = RenderTypeFromRegistry<RendererRegistry>;
 
+/**
+ * Helper to create render type constants from a renderer registry
+ */
 export function createRenderTypes<R extends RendererRegistry>(
   renderers: R,
 ): Record<Uppercase<RenderTypeFromRegistry<R>>, RenderTypeFromRegistry<R>> {
@@ -103,11 +179,20 @@ export function createRenderTypes<R extends RendererRegistry>(
   } as Record<Uppercase<RenderTypeFromRegistry<R>>, RenderTypeFromRegistry<R>>;
 }
 
-// Layer data with Cesium types
+// ============================================
+// Cesium Layer Data Types
+// ============================================
+
+/**
+ * Layer data with Cesium-native types (Color, Cartesian3).
+ * For provider-agnostic version, use ILayerData from core types.
+ */
 export interface LayerData {
   id: string;
   name: string;
+  /** Cesium Color instance */
   color: Color;
+  /** Array of Cesium Cartesian3 positions */
   positions: Cartesian3[];
   view: string;
   renderType?: RenderTypeFromRegistry<RendererRegistry>;
@@ -119,6 +204,10 @@ export type LayeredDataWithPayload<TData> = Omit<LayerData, "data"> & {
   data?: TData;
 };
 
+/**
+ * Collected layer data (Cesium-specific alias)
+ * @deprecated Use ICollectedLayerData from core types
+ */
 export interface CollectedLayerData {
   hasDataSource: boolean;
   isVisible: boolean;
@@ -133,6 +222,9 @@ export interface CollectedLayerData {
   types: Set<string>;
 }
 
+/**
+ * Cesium-specific animation options using CustomDataSource
+ */
 export type LayerAnimationOptions = {
   dataSourceRef: RefObject<CustomDataSource | null>;
   isActive?: boolean;
@@ -144,6 +236,10 @@ export type LayerAnimationOptions = {
 
 export type LayerType = RenderType;
 
+/**
+ * Layer configuration (Cesium-specific alias)
+ * @deprecated Use ILayerConfig from core types
+ */
 export interface LayerConfig {
   id: string;
   name: string;
@@ -156,6 +252,9 @@ export interface LayerConfig {
   groupIsDocked?: boolean;
 }
 
+/**
+ * Extractor specification for Cesium LayerData
+ */
 export type ExtractorSpec =
   | ((data: LayerData[]) => LayerData[])
   | { path: string; value: unknown };
@@ -165,6 +264,9 @@ export interface LayersConfigItem extends LayerConfig {
   extractor: ExtractorSpec;
 }
 
+/**
+ * Layer props with Cesium LayerData default
+ */
 export interface LayerProps<
   T = LayerData,
   R extends RendererRegistry = RendererRegistry,
@@ -197,6 +299,10 @@ export interface AppContentProps<
   data: LayerData[];
   renderers: R;
 }
+
+// ============================================
+// Cesium Component Props
+// ============================================
 
 export interface DataSourceLayerProps<
   R extends RendererRegistry = RendererRegistry,
@@ -273,6 +379,14 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
   plugins?: Record<string, PluginClass>;
 }
 
+// ============================================
+// Cesium Panel APIs (extend core interfaces)
+// ============================================
+
+/**
+ * Cesium-specific layers panel API
+ * Extends ILayersPanelApi with Cesium LayerConfig
+ */
 export interface LayersPanelApi {
   layerStates: Record<
     string,
@@ -362,6 +476,9 @@ export interface SearchPanelApi {
   closeSearchModal: () => void;
 }
 
+/**
+ * Cesium-specific entities API with Cesium Entity return type
+ */
 export type EntitiesApi = {
   findEntity: (entityId: string, layerId?: string) => Entity | null;
   selectEntity: (
@@ -390,6 +507,9 @@ export interface FeatureExtensionModule<T = unknown> {
 export type ExtendedMapApi<TPlugins extends Record<string, unknown> = Record<string, never>> =
   MapApi & TPlugins;
 
+/**
+ * Cesium-specific Map API with Cesium Entity type in entities
+ */
 export interface MapApi {
   layers: LayersPanelApi;
   filters: FiltersPanelApi;
@@ -409,6 +529,10 @@ export interface MapInstance {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   viewer: ViewerWithConfigs<any>;
 }
+
+// ============================================
+// Cesium Panel Component Props
+// ============================================
 
 export interface LayersPanelProps {
   api: LayersPanelApi;
@@ -437,6 +561,13 @@ export interface ViewerProviderProps {
   children: ReactNode;
 }
 
+// ============================================
+// Cesium Viewer Extension
+// ============================================
+
+/**
+ * Extended Cesium Viewer with layer configs, renderers, and API
+ */
 export interface ViewerWithConfigs<
   R extends RendererRegistry = RendererRegistry,
 > extends CesiumViewer {
@@ -492,8 +623,12 @@ export interface ViewerWithConfigs<
   };
   plugins: Record<string, BasePlugin>;
   accessors?: IMapAccessors;
-  providerType?: 'cesium' | 'leaflet' | 'mapbox' | string;
+  providerType?: "cesium" | "leaflet" | "mapbox" | string;
 }
+
+// ============================================
+// Data Connector Types
+// ============================================
 
 export type DataConnectorConfig = {
   fetchInterval?: number;
@@ -505,7 +640,14 @@ export type DataConnectorProps = {
   config: DataConnectorConfig;
 };
 
+// ============================================
+// Viewer Context
+// ============================================
+
 export type ViewerContextType = {
   viewer: ViewerWithConfigs | null;
   setViewer: React.Dispatch<React.SetStateAction<ViewerWithConfigs | null>>;
 };
+
+// Re-import EntityChangeStatus for internal use
+import type { EntityChangeStatus } from "../../../types/core/interfaces/IMapEntity";

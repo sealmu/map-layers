@@ -10,6 +10,9 @@ export * from "./adapters";
 // Cesium map accessors
 export { CesiumMapAccessors, createCesiumMapAccessors } from "./CesiumMapAccessors";
 
+// Cesium camera (implements IMapCamera)
+export { CesiumMapCamera, createCesiumMapCamera } from "./CesiumMapCamera";
+
 // Cesium entity wrapper
 export { CesiumMapEntity, toCesiumEntityOptions, updateCesiumEntity } from "./CesiumMapEntity";
 

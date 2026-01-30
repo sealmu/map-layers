@@ -62,6 +62,17 @@ export { applyExtractor } from "./helpers/extractors/byPathValue.extractor";
 export { DataManager } from "./providers/cesium/helpers/data/DataManager";
 export { createEntityFromData, enrichEntity } from "./providers/cesium/helpers/pipeline";
 
+// Provider-agnostic renderers (returns IEntityOptions)
+export {
+  createPoint,
+  createPolygon,
+  createPolyline,
+  createLabel,
+  createEllipse,
+  defaultAgnosticRenderers,
+  createRenderer,
+} from "./renderers";
+
 // Renderers (Cesium-specific, from provider)
 export {
   createPointEntity,

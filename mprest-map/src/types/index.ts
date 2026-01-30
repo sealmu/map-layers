@@ -1,29 +1,109 @@
 /**
  * Type exports for @mprest/map
  *
- * - Provider-agnostic types: from core/
+ * - Provider-agnostic types: from core/ (prefixed with I)
  * - Cesium-specific types: from providers/cesium/types/ (for backwards compatibility)
  */
 
 // ============================================
 // Provider-Agnostic Types (from core/)
 // ============================================
-export type { ICoordinate, IScreenPosition, ICameraOrientation, IBoundingBox } from "./core/types/coordinates";
-export type { IColor } from "./core/types/graphics";
-export type { IMapEntity, IEntityOptions } from "./core/interfaces/IMapEntity";
-export type { IMapProvider } from "./core/interfaces/IMapProvider";
+
+// Coordinates & Graphics
+export type {
+  ICoordinate,
+  IScreenPosition,
+  ICameraOrientation,
+  ICameraDestination,
+  IBoundingBox,
+  ICartesian3,
+} from "./core/types/coordinates";
+
+export type {
+  IColor,
+  IPointStyle,
+  ILabelStyle,
+  IPolylineStyle,
+  IPolygonStyle,
+  IBillboardStyle,
+  IModelStyle,
+  IEllipseStyle,
+} from "./core/types/graphics";
+
+export { Colors } from "./core/types/graphics";
+
+// Interfaces
+export type { IMapEntity, IEntityOptions, EntityChangeStatus } from "./core/interfaces/IMapEntity";
+export type { IMapProvider, IMapProviderOptions, IMapProviderEvents, IMapClickLocation } from "./core/interfaces/IMapProvider";
 export type { IDataManager } from "./core/interfaces/IDataManager";
 export type { IDataSource } from "./core/interfaces/IDataSource";
-export type { IMapCamera } from "./core/interfaces/IMapCamera";
+export type { IMapCamera, IFlyToOptions } from "./core/interfaces/IMapCamera";
 export type { IMapAccessors, IEntityMetadata, ILayerMetadata } from "./core/interfaces/IMapAccessors";
-export type { ILayerData, IEntityRenderer } from "./core/types/layer";
+export type {
+  IViewerWithConfigs,
+  IViewerContextType,
+  IViewerHandlers,
+  ILayerConfigAccessor,
+  IClickLocation,
+} from "./core/interfaces/IViewerWithConfigs";
+export type {
+  IProviderFactory,
+  IProviderRegistry,
+  IProviderInstance,
+  IProviderOptions,
+  IProviderCapabilities,
+} from "./core/interfaces/IProviderFactory";
+
+// Layer Types
+export type {
+  ILayerData,
+  ILayerDataWithPayload,
+  IEntityRenderer,
+  IRendererRegistry,
+  IRenderType,
+  IRenderTypeFromRegistry,
+  ILayerConfig,
+  ILayersConfigItem,
+  IExtractorSpec,
+  ILayerProps,
+  ILayerDefinition,
+  ICollectedLayerData,
+  IRenderItemFunction,
+} from "./core/types/layer";
+
+export { createIRenderTypes } from "./core/types/layer";
+
+// Events
+export type { IEventHandler } from "./core/types/events";
+export { createEventHandler } from "./core/types/events";
+
+// Feature/API Types
+export type {
+  ILayerState,
+  ILayersPanelApi,
+  IFilterData,
+  IFiltersPanelApi,
+  ISearchData,
+  ISearchResult,
+  ISearchPanelApi,
+  IEntitiesApi,
+  IFeatureState,
+  IFeatureContext,
+  IFeatureExtensionModule,
+  IMapApi,
+  IExtendedMapApi,
+  ILayersPanelProps,
+  IFiltersPanelProps,
+  ISearchPanelProps,
+  IDataConnectorConfig,
+  IViewerProviderProps,
+} from "./core/types/features";
 
 // ============================================
 // Cesium-Specific Types (for backwards compatibility)
 // ============================================
 export {
-  // Status & Events
-  type EntityChangeStatus,
+  // Events (deprecated - use IEventHandler)
   type EventHandler,
 
   // Map Click
@@ -35,14 +115,14 @@ export {
   BasePlugin,
   type PluginClass,
 
-  // Renderers
+  // Renderers (Cesium-specific)
   type EntityRenderer,
   type RendererRegistry,
   type RenderTypeFromRegistry,
   type RenderType,
   createRenderTypes,
 
-  // Layer Data
+  // Layer Data (Cesium-specific with Color, Cartesian3)
   type LayerData,
   type LayeredDataWithPayload,
   type CollectedLayerData,
@@ -63,7 +143,7 @@ export {
   type FiltersPanelProps,
   type SearchPanelProps,
 
-  // Panel APIs
+  // Panel APIs (Cesium-specific)
   type LayersPanelApi,
   type FilterData,
   type SearchData,

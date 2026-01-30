@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { ICoordinate } from "./coordinates";
 import type { IColor } from "./graphics";
 import type { IEntityOptions } from "../interfaces/IMapEntity";
@@ -18,6 +19,13 @@ export interface ILayerData {
 }
 
 /**
+ * Layer data with typed payload
+ */
+export type ILayerDataWithPayload<TData> = Omit<ILayerData, "data"> & {
+  data?: TData;
+};
+
+/**
  * Entity renderer function type
  */
 export type IEntityRenderer = (item: ILayerData) => IEntityOptions;
@@ -26,6 +34,18 @@ export type IEntityRenderer = (item: ILayerData) => IEntityOptions;
  * Renderer registry type
  */
 export type IRendererRegistry = Record<string, IEntityRenderer>;
+
+/**
+ * Render type from registry
+ */
+export type IRenderTypeFromRegistry<R extends IRendererRegistry> =
+  | (keyof R & string)
+  | "custom";
+
+/**
+ * Generic render type
+ */
+export type IRenderType = IRenderTypeFromRegistry<IRendererRegistry>;
 
 /**
  * Helper to create render types from a renderer registry
@@ -44,3 +64,89 @@ export function createIRenderTypes<R extends IRendererRegistry>(
     CUSTOM: "custom" as const,
   } as Record<Uppercase<keyof R & string> | "CUSTOM", (keyof R & string) | "custom">;
 }
+
+// ============================================
+// Layer Configuration Types
+// ============================================
+
+/**
+ * Basic layer configuration (provider-agnostic)
+ */
+export interface ILayerConfig {
+  id: string;
+  name: string;
+  isActive: boolean;
+  isVisible?: boolean;
+  description?: string;
+  isDocked?: boolean;
+  group?: string;
+  groupName?: string;
+  groupIsDocked?: boolean;
+}
+
+/**
+ * Layer configuration with extractor specification
+ */
+export interface ILayersConfigItem extends ILayerConfig {
+  type: IRenderType;
+  extractor: IExtractorSpec;
+}
+
+/**
+ * Extractor specification for filtering layer data
+ */
+export type IExtractorSpec =
+  | ((data: ILayerData[]) => ILayerData[])
+  | { path: string; value: unknown };
+
+/**
+ * Layer component props (provider-agnostic)
+ */
+export interface ILayerProps<
+  T = ILayerData,
+  R extends IRendererRegistry = IRendererRegistry,
+> {
+  id: string;
+  name: string;
+  type: IRenderTypeFromRegistry<R>;
+  data: T[];
+  isActive?: boolean;
+  isVisible?: boolean;
+  description?: string;
+  customRenderer?: IEntityRenderer;
+  isDocked?: boolean;
+  group?: string;
+  groupName?: string;
+  groupIsDocked?: boolean;
+}
+
+/**
+ * Layer definition combining config and data
+ */
+export interface ILayerDefinition<T = ILayerData> {
+  config: ILayerConfig;
+  type: IRenderType;
+  data: T[];
+}
+
+/**
+ * Collected layer data with metadata
+ */
+export interface ICollectedLayerData {
+  hasDataSource: boolean;
+  isVisible: boolean;
+  isActive: boolean;
+  displayName: string;
+  entities: Array<{
+    id: string;
+    name: string;
+    layerId: string;
+    renderType?: string;
+  }>;
+  types: Set<string>;
+}
+
+/**
+ * Function to render an item
+ */
+export type IRenderItemFunction<T = ILayerData> = (item: T) => ReactNode;

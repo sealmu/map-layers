@@ -1,20 +1,15 @@
 import { useState, useCallback, useMemo } from "react";
 import { useViewer } from "../../hooks/useViewer";
-import { toCartesian3 } from "../../providers/cesium/adapters";
-import type { FeatureExtensionModule, FeatureContext } from "../../types";
+import type { FeatureExtensionModule, FeatureContext, ICoordinate, IMapCamera } from "../../types";
 
 export interface Bookmark {
   id: string;
   name: string;
-  position: {
-    longitude: number;
-    latitude: number;
-    height: number;
-  };
+  position: ICoordinate;
   camera: {
     heading: number;
     pitch: number;
-    range: number;
+    roll: number;
   };
   createdAt: number;
 }
@@ -48,25 +43,36 @@ const useBookmarks = (_ctx: FeatureContext): BookmarksApi => {
   const { viewer } = useViewer();
   const [bookmarks, setBookmarks] = useState<Bookmark[]>(loadBookmarks);
 
+  // Get camera interface - prefer accessors.camera if available
+  const getCamera = useCallback((): IMapCamera | null => {
+    if (!viewer) return null;
+    // Use accessors.camera if available (provider-agnostic)
+    if (viewer.accessors && "camera" in viewer.accessors) {
+      return (viewer.accessors as { camera: IMapCamera }).camera;
+    }
+    return null;
+  }, [viewer]);
+
   const addBookmark = useCallback(
     (name: string): Bookmark | null => {
-      if (!viewer) return null;
+      const camera = getCamera();
+      if (!camera) return null;
 
-      const camera = viewer.camera;
-      const position = camera.positionCartographic;
+      const position = camera.getPosition();
+      const orientation = camera.getOrientation();
 
       const bookmark: Bookmark = {
         id: crypto.randomUUID(),
         name,
         position: {
-          longitude: position.longitude * (180 / Math.PI),
-          latitude: position.latitude * (180 / Math.PI),
+          longitude: position.longitude,
+          latitude: position.latitude,
           height: position.height,
         },
         camera: {
-          heading: camera.heading,
-          pitch: camera.pitch,
-          range: position.height,
+          heading: orientation.heading,
+          pitch: orientation.pitch,
+          roll: orientation.roll,
         },
         createdAt: Date.now(),
       };
@@ -79,7 +85,7 @@ const useBookmarks = (_ctx: FeatureContext): BookmarksApi => {
 
       return bookmark;
     },
-    [viewer]
+    [getCamera],
   );
 
   const removeBookmark = useCallback((id: string) => {
@@ -92,30 +98,24 @@ const useBookmarks = (_ctx: FeatureContext): BookmarksApi => {
 
   const goToBookmark = useCallback(
     (id: string): boolean => {
-      if (!viewer) return false;
+      const camera = getCamera();
+      if (!camera) return false;
 
       const bookmark = bookmarks.find((b) => b.id === id);
       if (!bookmark) return false;
 
-      const destination = toCartesian3({
-        longitude: bookmark.position.longitude,
-        latitude: bookmark.position.latitude,
-        height: bookmark.camera.range,
-      });
-
-      viewer.camera.flyTo({
-        destination,
-        orientation: {
-          heading: bookmark.camera.heading,
-          pitch: bookmark.camera.pitch,
-          roll: 0,
+      // Use provider-agnostic flyTo
+      camera.flyTo(
+        {
+          position: bookmark.position,
+          orientation: bookmark.camera,
         },
-        duration: 1.5,
-      });
+        { duration: 1.5 },
+      );
 
       return true;
     },
-    [viewer, bookmarks]
+    [getCamera, bookmarks],
   );
 
   const renameBookmark = useCallback((id: string, name: string) => {
@@ -140,7 +140,7 @@ const useBookmarks = (_ctx: FeatureContext): BookmarksApi => {
       renameBookmark,
       clearBookmarks,
     }),
-    [bookmarks, addBookmark, removeBookmark, goToBookmark, renameBookmark, clearBookmarks]
+    [bookmarks, addBookmark, removeBookmark, goToBookmark, renameBookmark, clearBookmarks],
   );
 };
 
