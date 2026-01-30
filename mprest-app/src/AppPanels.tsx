@@ -22,9 +22,14 @@ export function AppPanels() {
   const [dynamicPanelsDocked, setDynamicPanelsDocked] = useState(true);
   const [bookmarksPanelDocked, setBookmarksPanelDocked] = useState(true);
 
-  // Subscribe to API changes from viewer
+  // Subscribe to API changes from viewer and read initial value
   useLayoutEffect(() => {
     if (!viewer) return;
+
+    // Read current API immediately (in case it was already set before this component mounted)
+    if (viewer.api) {
+      setApi(viewer.api);
+    }
 
     if (!viewer.handlers?.onApiChange) return;
 

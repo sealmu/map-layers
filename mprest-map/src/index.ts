@@ -18,3 +18,4 @@ export { EntitySelectionPlugin } from "./plugins/EntitySelectionPlugin";
 
 // Feature extensions
 export type { BookmarksApi, Bookmark } from "./features/extensions/useBookmarks";
+export type { LocationsApi, Coordinates, GotoOptions, PlaceResult } from "./features/extensions/useLocations";
