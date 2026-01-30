@@ -12,7 +12,7 @@ import {
   VerticalOrigin,
   LabelStyle,
 } from "cesium";
-import type { IEntityOptions } from "../../../core/interfaces/IMapEntity";
+import type { IEntityOptions } from "../../../types/core/interfaces/IMapEntity";
 import { toCartesian3, toCartesian3Array, toCartesian2 } from "./coordinateAdapter";
 import { toCesiumColor } from "./colorAdapter";
 

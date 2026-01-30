@@ -1,15 +1,17 @@
 import {
   Viewer as CesiumViewer,
   HeadingPitchRange,
+  BoundingSphere,
   Math as CesiumMath,
   type Entity,
 } from "cesium";
+import { toCartesian3 } from "./adapters/coordinateAdapter";
 import type {
   IMapAccessors,
   IEntityMetadata,
   ILayerMetadata,
-} from "../../core/interfaces/IMapAccessors";
-import type { ICoordinate, ICameraOrientation } from "../../core/types/coordinates";
+} from "../../types/core/interfaces/IMapAccessors";
+import type { ICoordinate, ICameraOrientation } from "../../types/core/types/coordinates";
 
 /**
  * Cesium implementation of IMapAccessors
@@ -247,6 +249,29 @@ export class CesiumMapAccessors implements IMapAccessors {
       pitch: this.viewer.camera.pitch,
       roll: this.viewer.camera.roll,
     };
+  }
+
+  flyToLocation(
+    coordinate: ICoordinate,
+    options?: {
+      heading?: number;
+      pitch?: number;
+      range?: number;
+      duration?: number;
+    },
+  ): void {
+    const target = toCartesian3(coordinate);
+    const boundingSphere = new BoundingSphere(target, 0);
+    const offset = new HeadingPitchRange(
+      options?.heading ?? 0,
+      options?.pitch ?? -45 * (Math.PI / 180),
+      options?.range ?? 100000,
+    );
+
+    this.viewer.camera.flyToBoundingSphere(boundingSphere, {
+      offset,
+      duration: options?.duration ?? 1.5,
+    });
   }
 }
 

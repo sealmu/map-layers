@@ -1,5 +1,4 @@
 import { useCallback, useMemo } from "react";
-import { Cartesian3, BoundingSphere, HeadingPitchRange } from "cesium";
 import { useViewer } from "../../hooks/useViewer";
 import type { FeatureExtensionModule, FeatureContext } from "../../types";
 
@@ -46,28 +45,23 @@ const useLocations = (_ctx: FeatureContext): LocationsApi => {
 
   const gotoLocation = useCallback(
     (coords: Coordinates, options?: GotoOptions): boolean => {
-      if (!viewer) return false;
+      if (!viewer?.accessors) return false;
 
       const opts = { ...DEFAULT_OPTIONS, ...options };
-      const range = opts.range ?? 100000;
 
-      const target = Cartesian3.fromDegrees(
-        coords.longitude,
-        coords.latitude,
-        coords.height ?? 0
+      viewer.accessors.flyToLocation(
+        {
+          longitude: coords.longitude,
+          latitude: coords.latitude,
+          height: coords.height ?? 0,
+        },
+        {
+          heading: opts.heading,
+          pitch: opts.pitch,
+          range: opts.range,
+          duration: opts.duration,
+        }
       );
-
-      const boundingSphere = new BoundingSphere(target, 0);
-      const offset = new HeadingPitchRange(
-        opts.heading ?? 0,
-        opts.pitch ?? -45 * (Math.PI / 180),
-        range
-      );
-
-      viewer.camera.flyToBoundingSphere(boundingSphere, {
-        offset,
-        duration: opts.duration ?? 1.5,
-      });
 
       return true;
     },

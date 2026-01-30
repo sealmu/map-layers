@@ -2,8 +2,8 @@ import type { DataSource, Entity } from "cesium";
 import type {
   IDataSource,
   EntityChangeCallback,
-} from "../../core/interfaces/IDataSource";
-import type { IMapEntity, IEntityOptions } from "../../core/interfaces/IMapEntity";
+} from "../../types/core/interfaces/IDataSource";
+import type { IMapEntity, IEntityOptions } from "../../types/core/interfaces/IMapEntity";
 import { CesiumMapEntity, toCesiumEntityOptions } from "./CesiumMapEntity";
 
 /**

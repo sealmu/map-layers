@@ -37,44 +37,21 @@ export const useFilters = (ctx: Record<string, any>) => {
       }));
 
       // Apply the filter to actually hide/show entities based on type
-      if (viewer) {
-        // Use provider-agnostic accessors if available
-        if (viewer.accessors) {
-          const layerNames = viewer.accessors.getLayerNames();
-          const matchingLayer = layerNames.find(
-            (name) =>
-              name.toLowerCase() === layerName.toLowerCase() ||
-              name.toLowerCase() === displayName?.toLowerCase(),
-          );
+      if (viewer?.accessors) {
+        const layerNames = viewer.accessors.getLayerNames();
+        const matchingLayer = layerNames.find(
+          (name) =>
+            name.toLowerCase() === layerName.toLowerCase() ||
+            name.toLowerCase() === displayName?.toLowerCase(),
+        );
 
-          if (matchingLayer) {
-            const entities = viewer.accessors.getLayerEntities(matchingLayer);
-            entities.forEach((entity) => {
-              if (entity.renderType === type) {
-                viewer.accessors!.setEntityVisibility(entity.id, visible, matchingLayer);
-              }
-            });
-          }
-        } else {
-          // Fallback to direct Cesium access
-          const dataSources = viewer.dataSources;
-          for (let i = 0; i < dataSources.length; i++) {
-            const dataSource = dataSources.get(i);
-            const dsName = dataSource.name?.toLowerCase();
-            if (
-              dsName === layerName.toLowerCase() ||
-              dsName === displayName?.toLowerCase()
-            ) {
-              const entities = dataSource.entities.values;
-              entities.forEach((entity) => {
-                const rendererType = entity.properties?.rendererType?.getValue();
-                if (rendererType === type) {
-                  entity.show = visible;
-                }
-              });
-              break;
+        if (matchingLayer) {
+          const entities = viewer.accessors.getLayerEntities(matchingLayer);
+          entities.forEach((entity) => {
+            if (entity.renderType === type) {
+              viewer.accessors!.setEntityVisibility(entity.id, visible, matchingLayer);
             }
-          }
+          });
         }
       }
     },
@@ -101,33 +78,11 @@ export const useFilters = (ctx: Record<string, any>) => {
       data.types.forEach((type) => {
         let typeVisible = true; // Default to visible
 
-        // Use provider-agnostic accessors if available
         if (viewer.accessors) {
           const entities = viewer.accessors.getLayerEntities(layerId);
           const typeEntities = entities.filter((e) => e.renderType === type);
           if (typeEntities.length > 0) {
             typeVisible = typeEntities[0].show;
-          }
-        } else {
-          // Fallback to direct Cesium access
-          const dataSources = viewer.dataSources;
-          for (let i = 0; i < dataSources.length; i++) {
-            const dataSource = dataSources.get(i);
-            const dsName = dataSource.name?.toLowerCase();
-            const layerIdLower = layerId.toLowerCase();
-
-            if (dsName === layerIdLower) {
-              const entities = dataSource.entities.values;
-              const typeEntities = entities.filter((entity) => {
-                const rendererType = entity.properties?.rendererType?.getValue();
-                return rendererType === type;
-              });
-
-              if (typeEntities.length > 0) {
-                typeVisible = typeEntities[0].show;
-              }
-              break;
-            }
           }
         }
 

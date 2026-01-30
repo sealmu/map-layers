@@ -25,7 +25,7 @@ import { useFeatures } from "../../../features/useFeatures";
 import { useFeatureChangeEvent } from "../../../features/useFeatureChangeEvent";
 import { extractLayersFromChildren, hasLayersChanged } from "../../../components/map/utils";
 import { createEventHandler } from "../../../components/map/utils/EventHandler";
-import { useBindHandlers } from "../../../components/map/handlers/bindHandlers";
+import { useBindHandlers } from "../handlers/bindHandlers";
 import { createCesiumMapAccessors } from "../CesiumMapAccessors";
 
 // Module-level variable to hold current API
@@ -113,6 +113,9 @@ const CesiumMap = <R extends RendererRegistry>({
 
     // Set up provider-agnostic accessors
     newViewer.accessors = createCesiumMapAccessors(newViewer);
+
+    // Set provider type for component delegation
+    newViewer.providerType = 'cesium';
 
     setViewer(newViewer);
 

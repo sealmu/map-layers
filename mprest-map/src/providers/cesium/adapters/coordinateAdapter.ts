@@ -4,7 +4,7 @@ import {
   Math as CesiumMath,
   Cartesian2,
 } from "cesium";
-import type { ICoordinate, IScreenPosition } from "../../../core/types/coordinates";
+import type { ICoordinate, IScreenPosition } from "../../../types/core/types/coordinates";
 
 /**
  * Convert ICoordinate to Cesium Cartesian3

@@ -11,8 +11,8 @@ import {
   PropertyBag,
   JulianDate,
 } from "cesium";
-import type { IMapEntity, IEntityOptions } from "../../core/interfaces/IMapEntity";
-import type { ICoordinate } from "../../core/types/coordinates";
+import type { IMapEntity, IEntityOptions } from "../../types/core/interfaces/IMapEntity";
+import type { ICoordinate } from "../../types/core/types/coordinates";
 import { toCoordinate, toCartesian3 } from "./adapters/coordinateAdapter";
 import { toCesiumColor } from "./adapters/colorAdapter";
 

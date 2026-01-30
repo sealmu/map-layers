@@ -13,7 +13,7 @@ import type {
   ViewerWithConfigs,
   RendererRegistry,
 } from "../../../types";
-import { handleMapClick } from "../utils/handleMapClick";
+import { handleMapClick } from "../utils";
 
 // Track viewers that should bypass onSelecting check (set by handleMapClick)
 // Stores location and screenPosition to pass through to onSelected

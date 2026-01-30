@@ -11,7 +11,7 @@ import type {
   LayerData,
 } from "../../../types";
 import { Entity, Cartesian2 } from "cesium";
-import { callAllSubscribers } from "../utils/EventHandler";
+import { callAllSubscribers } from "../utils";
 
 function callPluginMethod(
   plugins: Record<string, BasePlugin>,

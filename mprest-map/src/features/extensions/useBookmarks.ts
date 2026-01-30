@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
-import { Cartesian3 } from "cesium";
 import { useViewer } from "../../hooks/useViewer";
+import { toCartesian3 } from "../../providers/cesium/adapters";
 import type { FeatureExtensionModule, FeatureContext } from "../../types";
 
 export interface Bookmark {
@@ -97,11 +97,11 @@ const useBookmarks = (_ctx: FeatureContext): BookmarksApi => {
       const bookmark = bookmarks.find((b) => b.id === id);
       if (!bookmark) return false;
 
-      const destination = Cartesian3.fromDegrees(
-        bookmark.position.longitude,
-        bookmark.position.latitude,
-        bookmark.camera.range
-      );
+      const destination = toCartesian3({
+        longitude: bookmark.position.longitude,
+        latitude: bookmark.position.latitude,
+        height: bookmark.camera.range,
+      });
 
       viewer.camera.flyTo({
         destination,

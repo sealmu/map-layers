@@ -86,4 +86,17 @@ export interface IMapAccessors {
    * Get current camera orientation
    */
   getCameraOrientation(): ICameraOrientation;
+
+  /**
+   * Fly camera to a location
+   */
+  flyToLocation(
+    coordinate: ICoordinate,
+    options?: {
+      heading?: number;
+      pitch?: number;
+      range?: number;
+      duration?: number;
+    },
+  ): void;
 }

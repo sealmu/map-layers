@@ -1,5 +1,5 @@
 import { Color as CesiumColor } from "cesium";
-import type { IColor } from "../../../core/types/graphics";
+import type { IColor } from "../../../types/core/types/graphics";
 
 /**
  * Convert IColor to Cesium Color

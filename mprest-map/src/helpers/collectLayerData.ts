@@ -1,14 +1,14 @@
-import type { LayerProps, LayerData, RendererRegistry, CollectedLayerData, ViewerWithConfigs } from "@mprest/map";
-import type { Viewer as CesiumViewer } from "cesium";
+import type { LayerProps, LayerData, RendererRegistry, CollectedLayerData, ViewerWithConfigs } from "../types";
 
-// Accept either a raw Cesium viewer or a ViewerWithConfigs (which may have accessors)
-type ViewerLike = CesiumViewer | ViewerWithConfigs;
-
+/**
+ * Collects layer data from the map viewer using provider-agnostic accessors.
+ * This function works with any map provider that implements IMapAccessors.
+ */
 export const collectLayerData = <R extends RendererRegistry>(
   layers: LayerProps<LayerData, R>[],
-  viewer: ViewerLike | null,
+  viewer: ViewerWithConfigs<R> | null,
 ): Record<string, CollectedLayerData> => {
-  if (!viewer) return {};
+  if (!viewer?.accessors) return {};
 
   const layerData: Record<string, CollectedLayerData> = {};
 
@@ -23,9 +23,7 @@ export const collectLayerData = <R extends RendererRegistry>(
     );
   });
 
-  // Check if viewer has provider-agnostic accessors
-  const viewerWithConfigs = viewer as ViewerWithConfigs;
-  const accessors = viewerWithConfigs.accessors;
+  const accessors = viewer.accessors;
 
   allLayers.forEach((layer) => {
     // Collect unique renderTypes from actual entities in the viewer
@@ -40,55 +38,25 @@ export const collectLayerData = <R extends RendererRegistry>(
     let isVisible = true;
     let isActive = false;
 
-    // Use provider-agnostic accessors if available
-    if (accessors) {
-      const layerMetadata = accessors.getLayerMetadata(layer.id);
-      if (layerMetadata) {
-        hasDataSource = true;
-        isVisible = layerMetadata.show;
-        isActive = true;
+    // Use provider-agnostic accessors
+    const layerMetadata = accessors.getLayerMetadata(layer.id);
+    if (layerMetadata) {
+      hasDataSource = true;
+      isVisible = layerMetadata.show;
+      isActive = true;
 
-        const layerEntities = accessors.getLayerEntities(layer.id);
-        layerEntities.forEach((entity) => {
-          if (entity.renderType) {
-            types.add(entity.renderType);
-          }
-          entities.push({
-            id: entity.id,
-            name: entity.name,
-            layerId: layer.id,
-            renderType: entity.renderType,
-          });
-        });
-      }
-    } else {
-      // Fallback to direct Cesium access
-      const dataSources = viewer.dataSources;
-      for (let i = 0; i < dataSources.length; i++) {
-        const dataSource = dataSources.get(i);
-        const dsName = dataSource.name?.toLowerCase();
-        const layerIdLower = layer.id.toLowerCase();
-        const layerNameLower = layer.name?.toLowerCase();
-        if (dsName === layerIdLower || dsName === layerNameLower) {
-          hasDataSource = true;
-          isVisible = dataSource.show;
-          isActive = true;
-          const ents = dataSource.entities.values;
-          ents.forEach((entity) => {
-            const rendererType = entity.properties?.rendererType?.getValue();
-            if (rendererType) {
-              types.add(rendererType);
-            }
-            entities.push({
-              id: entity.id,
-              name: entity.name || entity.id,
-              layerId: layer.id,
-              renderType: rendererType,
-            });
-          });
-          break;
+      const layerEntities = accessors.getLayerEntities(layer.id);
+      layerEntities.forEach((entity) => {
+        if (entity.renderType) {
+          types.add(entity.renderType);
         }
-      }
+        entities.push({
+          id: entity.id,
+          name: entity.name,
+          layerId: layer.id,
+          renderType: entity.renderType,
+        });
+      });
     }
 
     // Also collect types from layer data if available

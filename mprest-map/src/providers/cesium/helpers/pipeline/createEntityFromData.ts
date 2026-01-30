@@ -3,7 +3,7 @@ import type {
     RendererRegistry,
     RenderTypeFromRegistry,
     LayerData,
-} from "../../types";
+} from "../../../../types";
 import { enrichEntity } from "./enrichEntity";
 
 // Main function to create entity from data based on type

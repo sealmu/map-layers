@@ -1,7 +1,7 @@
 // ============================================
 // Core Types & Interfaces (Provider-agnostic)
 // ============================================
-export * from "./core";
+export * from "./types/core";
 
 // ============================================
 // Providers (Cesium, etc.)
@@ -31,11 +31,12 @@ export {
 // Legacy Exports (Backwards Compatibility)
 // ============================================
 
-// CesiumMap - the primary export
-export { default as CesiumMap } from "./components/map/CesiumMap";
+// CesiumMap - the primary export (from provider)
+export { CesiumMap } from "./providers/cesium/components";
 
-// Layer component
+// Layer components
 export { default as Layer } from "./components/layers/Layer";
+export { default as DataSourceLayer } from "./components/layers/ProviderDataSourceLayer";
 
 // Event system
 export { createEventHandler } from "./components/map/utils/EventHandler";
@@ -48,18 +49,20 @@ export { default as FilterModal } from "./components/map/panels/FilterModal";
 export { default as SearchModal } from "./components/map/panels/SearchModal";
 
 // Data connector
-export { DataConnector } from "./components/map/DataConnector";
+export { DataConnector } from "./components/data";
 
 // Context & Hooks
 export { ViewerProvider } from "./context/providers/ViewerProvider";
 export { useViewer } from "./hooks/useViewer";
 
-// Helpers
+// Helpers (provider-agnostic)
 export { applyExtractor } from "./helpers/extractors/byPathValue.extractor";
-export { DataManager } from "./helpers/data/DataManager";
-export { createEntityFromData, enrichEntity } from "./helpers/pipeline";
 
-// Renderers (from legacy location)
+// Helpers (Cesium-specific, for backwards compatibility)
+export { DataManager } from "./providers/cesium/helpers/data/DataManager";
+export { createEntityFromData, enrichEntity } from "./providers/cesium/helpers/pipeline";
+
+// Renderers (Cesium-specific, from provider)
 export {
   createPointEntity,
   createPolygonEntity,
@@ -67,7 +70,7 @@ export {
   createLabelEntity,
   createDomeEntity,
   defaultRenderers,
-} from "./components/layers/renderers";
+} from "./providers/cesium/renderers";
 
 // Types (Cesium-specific, kept for backwards compatibility)
 // Exclude EntityChangeStatus since it's already exported from core
@@ -121,8 +124,8 @@ export {
   type ViewerContextType,
 } from "./types";
 
-// Plugins
-export { EntitySelectionPlugin } from "./plugins/EntitySelectionPlugin";
+// Plugins (Cesium-specific)
+export { EntitySelectionPlugin } from "./providers/cesium/plugins";
 
 // Feature extensions
 export type { BookmarksApi, Bookmark } from "./features/extensions/useBookmarks";

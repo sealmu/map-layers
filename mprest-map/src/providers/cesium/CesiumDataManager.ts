@@ -12,14 +12,14 @@ import {
   type Entity,
   type DataSource,
 } from "cesium";
-import type { IDataManager } from "../../core/interfaces/IDataManager";
-import type { IMapEntity, IEntityOptions } from "../../core/interfaces/IMapEntity";
-import type { IDataSource } from "../../core/interfaces/IDataSource";
-import type { ILayerData } from "../../core/types/layer";
+import type { IDataManager } from "../../types/core/interfaces/IDataManager";
+import type { IMapEntity, IEntityOptions } from "../../types/core/interfaces/IMapEntity";
+import type { IDataSource } from "../../types/core/interfaces/IDataSource";
+import type { ILayerData } from "../../types/core/types/layer";
 import type { ViewerWithConfigs } from "../../types";
 import { CesiumMapEntity, toCesiumEntityOptions, updateCesiumEntity } from "./CesiumMapEntity";
 import { CesiumDataSource } from "./CesiumDataSource";
-import { enrichEntity, createEntityFromData } from "../../helpers/pipeline";
+import { enrichEntity, createEntityFromData } from "./helpers/pipeline";
 import { createRenderTypes } from "../../types";
 import type { LayerData, RenderTypeFromRegistry } from "../../types";
 
