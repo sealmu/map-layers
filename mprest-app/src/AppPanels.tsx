@@ -11,6 +11,7 @@ import {
 import { Expander } from "./components";
 import DynamicPanel from "./components/DynamicPanel";
 import DynamicRawDataPanel from "./components/DynamicRawDataPanel";
+import { BookmarksPanel } from "./components/BookmarksPanel";
 import { AppRenderers } from "./AppRenderers";
 
 export function AppPanels() {
@@ -19,6 +20,7 @@ export function AppPanels() {
 
   const [layersPanelDocked, setLayersPanelDocked] = useState(true);
   const [dynamicPanelsDocked, setDynamicPanelsDocked] = useState(true);
+  const [bookmarksPanelDocked, setBookmarksPanelDocked] = useState(true);
 
   // Subscribe to API changes from viewer
   useLayoutEffect(() => {
@@ -75,6 +77,16 @@ export function AppPanels() {
         <div style={{ marginTop: "8px", marginBottom: "15px", marginLeft: "12px", marginRight: "12px" }}>
           <LayersPanel api={api.layers} onFilter={handleFilter} onSearch={handleSearch} />
         </div>
+      </Expander>
+
+      <Expander
+        title="Bookmarks"
+        position="left"
+        size="content"
+        isDocked={bookmarksPanelDocked}
+        onToggle={setBookmarksPanelDocked}
+      >
+        <BookmarksPanel api={api} />
       </Expander>
     </>
   );

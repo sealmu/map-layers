@@ -65,7 +65,8 @@ const CesiumMap = <R extends RendererRegistry>({
     return layersRef.current;
   }, [children]);
 
-  const { layers: layersApi, filters: filtersApi, search: searchApi, entities: entitiesApi } = useFeatures(layers) as MapApi;
+  const featuresApi = useFeatures(layers) as MapApi;
+  const { layers: layersApi, filters: filtersApi, search: searchApi, entities: entitiesApi } = featuresApi;
 
   // Initialize Cesium Viewer
   useEffect(() => {
@@ -113,13 +114,8 @@ const CesiumMap = <R extends RendererRegistry>({
 
     setViewer(newViewer);
 
-    // Create initial API
-    const initialApi = {
-      layers: layersApi,
-      filters: filtersApi,
-      search: searchApi,
-      entities: entitiesApi,
-    };
+    // Create initial API (includes core features + plugins)
+    const initialApi = featuresApi;
 
     // Update module-level API variable
     currentViewerApi = initialApi;
@@ -174,13 +170,8 @@ const CesiumMap = <R extends RendererRegistry>({
         getRenderers: () => renderers,
       };
 
-      // Create new API object
-      const api = {
-        layers: layersApi,
-        filters: filtersApi,
-        search: searchApi,
-        entities: entitiesApi,
-      };
+      // Create new API object (includes core features + plugins)
+      const api = featuresApi;
 
       // Update module-level API variable (viewer.api getter will return this)
       currentViewerApi = api;
@@ -203,7 +194,7 @@ const CesiumMap = <R extends RendererRegistry>({
       }
 
     }
-  }, [viewer, layers, renderers, layersApi, filtersApi, searchApi, entitiesApi, plugins, onApiChange]);
+  }, [viewer, layers, renderers, featuresApi, plugins, onApiChange]);
 
   // Handle feature state changes
   useFeatureChangeEvent(layersApi, filtersApi, searchApi, entitiesApi, onFeatureStateChanged);

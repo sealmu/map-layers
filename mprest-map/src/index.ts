@@ -15,3 +15,6 @@ export { createEntityFromData, enrichEntity } from "./helpers/pipeline";
 export * from "./components/layers/renderers";
 export * from "./types";
 export { EntitySelectionPlugin } from "./plugins/EntitySelectionPlugin";
+
+// Feature extensions
+export type { BookmarksApi, Bookmark } from "./features/extensions/useBookmarks";

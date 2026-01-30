@@ -380,6 +380,25 @@ export type FeatureState =
   | SearchPanelApi
   | EntitiesApi;
 
+// Feature Plugin System Types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type FeatureContext = Record<string, any>;
+
+export interface FeatureExtensionModule<T = unknown> {
+  /** Unique identifier for the feature */
+  name: string;
+  /** The hook function that returns the feature API */
+  useFeature: (ctx: FeatureContext) => T;
+  /** Optional: features this plugin depends on (loaded first) */
+  dependencies?: string[];
+  /** Optional: priority for loading order (higher = loaded first, default: 0) */
+  priority?: number;
+}
+
+// Type helper for extending MapApi with plugins
+export type ExtendedMapApi<TPlugins extends Record<string, unknown> = Record<string, never>> =
+  MapApi & TPlugins;
+
 export interface MapApi {
   layers: LayersPanelApi;
   filters: FiltersPanelApi;
@@ -392,6 +411,8 @@ export interface MapApi {
       flyTo?: boolean | number,
     ) => boolean;
   };
+  // Dynamic plugins will be added here at runtime
+  [key: string]: unknown;
 }
 
 export interface MapInstance {
