@@ -8,6 +8,7 @@ import {
   Viewer as CesiumViewer,
   CustomDataSource,
 } from "cesium";
+import type { IMapAccessors } from "../core/interfaces/IMapAccessors";
 
 // Location returned by map click/selection callbacks
 export interface MapClickLocation {
@@ -515,6 +516,8 @@ export interface ViewerWithConfigs<
     >;
   };
   plugins: Record<string, BasePlugin>;
+  /** Provider-agnostic accessors for map data */
+  accessors?: IMapAccessors;
 }
 
 // DataConnector

@@ -44,7 +44,7 @@ export function BookmarksPanel({ api }: BookmarksPanelProps) {
   };
 
   const handleGotoPlace = (place: PlaceResult) => {
-    api.locations?.gotoLocation(place.coordinates, { range: 50000 });
+    api.locations?.gotoLocation(place.coordinates, { range: 1000000 });
     setPlaceResults([]);
     setPlaceQuery("");
   };

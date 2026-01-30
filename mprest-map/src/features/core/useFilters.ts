@@ -38,25 +38,42 @@ export const useFilters = (ctx: Record<string, any>) => {
 
       // Apply the filter to actually hide/show entities based on type
       if (viewer) {
-        const dataSources = viewer.dataSources;
-        for (let i = 0; i < dataSources.length; i++) {
-          const dataSource = dataSources.get(i);
-          // Match data source name/id to layer id
-          const dsName = dataSource.name?.toLowerCase();
-          if (
-            dsName === layerName.toLowerCase() ||
-            dsName === displayName?.toLowerCase()
-          ) {
-            // Update entity visibility based on type
-            const entities = dataSource.entities.values;
+        // Use provider-agnostic accessors if available
+        if (viewer.accessors) {
+          const layerNames = viewer.accessors.getLayerNames();
+          const matchingLayer = layerNames.find(
+            (name) =>
+              name.toLowerCase() === layerName.toLowerCase() ||
+              name.toLowerCase() === displayName?.toLowerCase(),
+          );
+
+          if (matchingLayer) {
+            const entities = viewer.accessors.getLayerEntities(matchingLayer);
             entities.forEach((entity) => {
-              // Get rendererType from entity properties
-              const rendererType = entity.properties?.rendererType?.getValue();
-              if (rendererType === type) {
-                entity.show = visible;
+              if (entity.renderType === type) {
+                viewer.accessors!.setEntityVisibility(entity.id, visible, matchingLayer);
               }
             });
-            break;
+          }
+        } else {
+          // Fallback to direct Cesium access
+          const dataSources = viewer.dataSources;
+          for (let i = 0; i < dataSources.length; i++) {
+            const dataSource = dataSources.get(i);
+            const dsName = dataSource.name?.toLowerCase();
+            if (
+              dsName === layerName.toLowerCase() ||
+              dsName === displayName?.toLowerCase()
+            ) {
+              const entities = dataSource.entities.values;
+              entities.forEach((entity) => {
+                const rendererType = entity.properties?.rendererType?.getValue();
+                if (rendererType === type) {
+                  entity.show = visible;
+                }
+              });
+              break;
+            }
           }
         }
       }
@@ -82,29 +99,35 @@ export const useFilters = (ctx: Record<string, any>) => {
 
       // Read current entity visibility state from the map
       data.types.forEach((type) => {
-        // Find the data source for this layer
-        const dataSources = viewer.dataSources;
         let typeVisible = true; // Default to visible
 
-        for (let i = 0; i < dataSources.length; i++) {
-          const dataSource = dataSources.get(i);
-          const dsName = dataSource.name?.toLowerCase();
-          const layerIdLower = layerId.toLowerCase();
+        // Use provider-agnostic accessors if available
+        if (viewer.accessors) {
+          const entities = viewer.accessors.getLayerEntities(layerId);
+          const typeEntities = entities.filter((e) => e.renderType === type);
+          if (typeEntities.length > 0) {
+            typeVisible = typeEntities[0].show;
+          }
+        } else {
+          // Fallback to direct Cesium access
+          const dataSources = viewer.dataSources;
+          for (let i = 0; i < dataSources.length; i++) {
+            const dataSource = dataSources.get(i);
+            const dsName = dataSource.name?.toLowerCase();
+            const layerIdLower = layerId.toLowerCase();
 
-          if (dsName === layerIdLower) {
-            // Check current visibility of entities of this type
-            const entities = dataSource.entities.values;
-            const typeEntities = entities.filter((entity) => {
-              const rendererType = entity.properties?.rendererType?.getValue();
-              return rendererType === type;
-            });
+            if (dsName === layerIdLower) {
+              const entities = dataSource.entities.values;
+              const typeEntities = entities.filter((entity) => {
+                const rendererType = entity.properties?.rendererType?.getValue();
+                return rendererType === type;
+              });
 
-            // If any entities of this type exist, use the visibility of the first one
-            // (assuming all entities of the same type have the same visibility)
-            if (typeEntities.length > 0) {
-              typeVisible = typeEntities[0].show;
+              if (typeEntities.length > 0) {
+                typeVisible = typeEntities[0].show;
+              }
+              break;
             }
-            break;
           }
         }
 

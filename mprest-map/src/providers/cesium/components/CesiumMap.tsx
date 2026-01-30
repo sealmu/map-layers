@@ -3,8 +3,6 @@ import {
   useEffect,
   useMemo,
   useRef,
-  // Children,
-  // isValidElement,
 } from "react";
 import {
   Ion,
@@ -13,8 +11,7 @@ import {
   ImageryLayer,
   Viewer as CesiumViewer,
 } from "cesium";
-import DataSourceLayer from "../layers/DataSourceLayer";
-import { createCesiumMapAccessors } from "../../providers/cesium/CesiumMapAccessors";
+import CesiumDataSourceLayer from "./CesiumDataSourceLayer";
 import type {
   CesiumMapProps,
   LayerProps,
@@ -22,13 +19,14 @@ import type {
   LayerData,
   ViewerWithConfigs,
   MapApi,
-} from "../../types";
-import { useViewer } from "../../hooks/useViewer";
-import { useFeatures } from "../../features/useFeatures";
-import { useFeatureChangeEvent } from "../../features/useFeatureChangeEvent";
-import { extractLayersFromChildren, hasLayersChanged } from "./utils";
-import { createEventHandler } from "./utils/EventHandler";
-import { useBindHandlers } from "./handlers/bindHandlers";
+} from "../../../types";
+import { useViewer } from "../../../hooks/useViewer";
+import { useFeatures } from "../../../features/useFeatures";
+import { useFeatureChangeEvent } from "../../../features/useFeatureChangeEvent";
+import { extractLayersFromChildren, hasLayersChanged } from "../../../components/map/utils";
+import { createEventHandler } from "../../../components/map/utils/EventHandler";
+import { useBindHandlers } from "../../../components/map/handlers/bindHandlers";
+import { createCesiumMapAccessors } from "../CesiumMapAccessors";
 
 // Module-level variable to hold current API
 let currentViewerApi: MapApi | null = null;
@@ -253,7 +251,7 @@ const CesiumMap = <R extends RendererRegistry>({
       )}
       {viewer &&
         layers.map((layer) => (
-          <DataSourceLayer
+          <CesiumDataSourceLayer
             key={layer.id}
             viewer={viewer}
             id={layer.id}

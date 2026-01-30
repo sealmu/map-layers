@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { Cartesian3 } from "cesium";
+import { Cartesian3, BoundingSphere, HeadingPitchRange } from "cesium";
 import { useViewer } from "../../hooks/useViewer";
 import type { FeatureExtensionModule, FeatureContext } from "../../types";
 
@@ -37,7 +37,7 @@ const DEFAULT_OPTIONS: GotoOptions = {
   duration: 1.5,
   heading: 0,
   pitch: -45 * (Math.PI / 180),
-  range: 10000,
+  range: 100000,
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -49,21 +49,23 @@ const useLocations = (_ctx: FeatureContext): LocationsApi => {
       if (!viewer) return false;
 
       const opts = { ...DEFAULT_OPTIONS, ...options };
-      const height = coords.height ?? opts.range ?? 10000;
+      const range = opts.range ?? 100000;
 
-      const destination = Cartesian3.fromDegrees(
+      const target = Cartesian3.fromDegrees(
         coords.longitude,
         coords.latitude,
-        height
+        coords.height ?? 0
       );
 
-      viewer.camera.flyTo({
-        destination,
-        orientation: {
-          heading: opts.heading ?? 0,
-          pitch: opts.pitch ?? -45 * (Math.PI / 180),
-          roll: 0,
-        },
+      const boundingSphere = new BoundingSphere(target, 0);
+      const offset = new HeadingPitchRange(
+        opts.heading ?? 0,
+        opts.pitch ?? -45 * (Math.PI / 180),
+        range
+      );
+
+      viewer.camera.flyToBoundingSphere(boundingSphere, {
+        offset,
         duration: opts.duration ?? 1.5,
       });
 
