@@ -1,0 +1,340 @@
+/* Expander Component Styles */
+.expander {
+  position: fixed;
+  display: flex;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+}
+
+/* Positioning */
+.expander.left {
+  flex-direction: row;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.expander.right {
+  flex-direction: row-reverse;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 8px 0 0 8px;
+}
+
+.expander.top {
+  flex-direction: column;
+  left: 0;
+  top: 0;
+  right: 0;
+  border-radius: 0 0 8px 8px;
+}
+
+.expander.bottom {
+  flex-direction: column-reverse;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  border-radius: 8px 8px 0 0;
+}
+
+/* Size variants */
+.expander.full.left.docked,
+.expander.full.right.docked {
+  width: 40px;
+}
+
+.expander.full.left.expanded,
+.expander.full.right.expanded {
+  width: auto;
+  min-width: 200px;
+  max-width: 70vw;
+}
+
+.expander.full.top.docked,
+.expander.full.bottom.docked {
+  height: 40px;
+}
+
+.expander.full.top.expanded,
+.expander.full.bottom.expanded {
+  height: auto;
+  min-height: 100px;
+  max-height: 70vh;
+}
+
+.expander.content.left.docked,
+.expander.content.right.docked {
+  width: 40px;
+  height: auto;
+  min-height: 40px;
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+}
+
+.expander.content.left.expanded {
+  width: auto;
+  min-width: 200px;
+  max-width: 70vw;
+  height: auto;
+  min-height: 200px;
+  max-height: 70vh;
+  top: 0;
+  bottom: auto;
+}
+
+.expander.content.right.expanded {
+  width: auto;
+  min-width: 200px;
+  max-width: 70vw;
+  height: auto;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.expander.content.top.docked,
+.expander.content.bottom.docked {
+  height: 40px;
+  width: 40px;
+  left: 20px;
+  right: auto;
+}
+
+.expander.content.top.expanded,
+.expander.content.bottom.expanded {
+  height: auto;
+  min-height: 100px;
+  max-height: 70vh;
+  width: auto;
+  min-width: 200px;
+  max-width: 70vw;
+  left: 0;
+  right: 0;
+}
+
+/* Content area */
+.expander-content {
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.expander.right.expanded .expander-content {
+  max-width: calc(70vw - 40px);
+}
+
+.expander.expanded .expander-content {
+  overflow: visible;
+  height: auto;
+}
+
+/* Override LayersPanel positioning when inside Expander */
+.expander-content .layer-control {
+  position: static !important;
+  bottom: auto !important;
+  left: auto !important;
+  right: auto !important;
+  width: auto !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* Docked state */
+.expander.docked .expander-content {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.expander.docked.left .expander-content,
+.expander.docked.right .expander-content {
+  width: 0;
+}
+
+.expander.docked.top .expander-content,
+.expander.docked.bottom .expander-content {
+  height: 0;
+}
+
+/* Toggle button */
+.expander-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  opacity: 0.7;
+}
+
+.expander-toggle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.expander-toggle:hover::before {
+  opacity: 1;
+}
+
+.expander-toggle:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+/* Toggle button positioning and sizing */
+.expander.left .expander-toggle,
+.expander.right .expander-toggle {
+  width: 40px;
+  height: auto;
+  min-height: 40px;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+.expander.top .expander-toggle,
+.expander.bottom .expander-toggle {
+  height: 40px;
+  width: 100%;
+}
+
+/* Title styling */
+.expander-title {
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  z-index: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vertical-text {
+  transform: rotate(180deg);
+  white-space: nowrap;
+}
+
+/* Arrow styling */
+.expander-arrow {
+  font-size: 12px;
+  font-weight: bold;
+  z-index: 1;
+  position: relative;
+  transition: transform 0.3s ease;
+}
+
+.expander-toggle:hover .expander-arrow {
+  transform: scale(1.2);
+}
+
+/* Expanded state styling */
+.expander.expanded {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .expander-toggle {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .expander.left .expander-toggle,
+  .expander.right .expander-toggle {
+    width: 44px;
+  }
+
+  .expander.top .expander-toggle,
+  .expander.bottom .expander-toggle {
+    height: 44px;
+  }
+
+  .expander-title {
+    font-size: 12px;
+  }
+}
+
+/* Focus styles for accessibility */
+.expander-toggle:focus {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* Animation keyframes */
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInTop {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInBottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Apply animations on expand */
+.expander.expanded.left .expander-content {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+.expander.expanded.right .expander-content {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.expander.expanded.top .expander-content {
+  animation: slideInTop 0.3s ease-out;
+}
+
+.expander.expanded.bottom .expander-content {
+  animation: slideInBottom 0.3s ease-out;
+}

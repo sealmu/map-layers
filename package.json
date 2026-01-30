@@ -5,10 +5,13 @@
   "workspaces": [
     "mprest-map-core",
     "mprest-map-cesium",
-    "mprest-app"
+    "mprest-map-maplibre",
+    "mprest-app",
+    "mprest-app-libre"
   ],
   "scripts": {
     "dev": "npm run dev --workspace mprest-app",
+    "dev:libre": "npm run dev --workspace mprest-app-libre",
     "build": "npm run build --workspaces",
     "lint": "npm run lint --workspaces",
     "test": "npm test --workspaces"

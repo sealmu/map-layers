@@ -1,0 +1,273 @@
+.layer-control {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 15px 20px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  box-sizing: border-box;
+}
+
+/* Docked Layers Bar */
+.docked-layers-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 15px;
+  flex: 1;
+}
+
+.docked-layer-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #333;
+  max-width: 100px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.docked-layer-item:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.docked-layer-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.expand-button {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.expand-button:hover {
+  background: #e9ecef;
+  color: #333;
+}
+
+.layer-control-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex: 1;
+}
+
+.layer-control h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.bulk-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.bulk-button {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #2196f3;
+  background: white;
+  border: 1px solid #2196f3;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.bulk-button:hover {
+  background: #2196f3;
+  color: white;
+}
+
+.layer-list {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  background: transparent;
+}
+
+.layer-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1.2px solid #b0b8c1;
+  position: relative;
+}
+
+.layer-controls {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.switch-label,
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.control-name {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+  min-width: 50px;
+}
+
+/* Toggle Switch Styles */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.3s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+.switch input:checked + .slider {
+  background-color: #2196f3;
+}
+
+.switch input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+/* Checkbox Styles */
+.checkbox-label input[type="checkbox"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  accent-color: #2196f3;
+}
+
+.layer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.layer-name {
+  font-size: 14px;
+  color: #333;
+  font-weight: 600;
+}
+
+.layer-description {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+}
+
+/* Group Styles */
+.layer-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: #f0f2f5;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  position: relative;
+}
+
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: #e8f4fd;
+  border-radius: 6px;
+  border: 1px solid #b3d9ff;
+}
+
+.group-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e40af;
+  flex: 1;
+}
+
+.group-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.group-layers {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}

@@ -47,8 +47,9 @@ export interface IMapAccessors {
 
   /**
    * Set entity visibility
+   * @param triggerUpdate - If false, skips source update (for batch operations)
    */
-  setEntityVisibility(id: string, visible: boolean, layerName?: string): boolean;
+  setEntityVisibility(id: string, visible: boolean, layerName?: string, triggerUpdate?: boolean): boolean;
 
   /**
    * Get native entity (for provider-specific operations)
