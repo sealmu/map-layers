@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useMemo } from "react";
-import { Cartesian3, Cartographic, Entity } from "cesium";
+import { Cartesian3, Cartographic, ConstantPositionProperty, type Entity } from "cesium";
 import type { EntityChangeStatus } from "@mprest/map-core";
 import { DataManager, type ViewerWithConfigs } from "@mprest/map-cesium";
 import type { DroneAnimationConfig } from "../types";
@@ -40,8 +40,8 @@ export function useDroneAnimation(
 
     const step = (time: number) => {
       // Always ensure we have a live entity (layer might have been toggled)
-      const currentEntity = dataManager.getItem(droneId);
-      if (!currentEntity) {
+      const mapEntity = dataManager.getItem(droneId);
+      if (!mapEntity) {
         rafId = requestAnimationFrame(step);
         return;
       }
@@ -60,10 +60,11 @@ export function useDroneAnimation(
       const lat = lat1 + (lat2 - lat1) * t;
       const alt = alt1 + (alt2 - alt1) * t;
 
-      // Update drone position using DataManager with entity instance
-      dataManager.updateItem(currentEntity, {
-        position: Cartesian3.fromDegrees(lon, lat, alt),
-      });
+      // Update drone position directly on native entity
+      const entity = mapEntity.getNativeEntity<Entity>();
+      entity.position = new ConstantPositionProperty(
+        Cartesian3.fromDegrees(lon, lat, alt)
+      );
 
       rafId = requestAnimationFrame(step);
     };
@@ -104,14 +105,18 @@ export function useDroneAnimation2(viewer: ViewerWithConfigs | null) {
       if (entity.id !== "drone2" || status !== "changed") return;
 
       // Get current positions of both drones
-      const drone1Entity = dataManager.getItem("drone1");
-      const drone2Entity = dataManager.getItem("drone2");
+      const drone1MapEntity = dataManager.getItem("drone1");
+      const drone2MapEntity = dataManager.getItem("drone2");
 
-      if (!drone1Entity || !drone2Entity) return;
+      if (!drone1MapEntity || !drone2MapEntity) return;
+
+      // Get native entities for position access
+      const drone1Entity = drone1MapEntity.getNativeEntity<Entity>();
+      const drone2Entity = drone2MapEntity.getNativeEntity<Entity>();
 
       // Get current positions
-      const drone1Position = drone1Entity.position?.getValue();
-      const drone2Position = drone2Entity.position?.getValue();
+      const drone1Position = drone1Entity.position?.getValue(undefined as never);
+      const drone2Position = drone2Entity.position?.getValue(undefined as never);
 
       if (!drone1Position || !drone2Position) return;
 
@@ -153,10 +158,10 @@ export function useDroneAnimation2(viewer: ViewerWithConfigs | null) {
       const newLat = drone1Cartographic.latitude + directionLat * moveDistance;
       const newAlt = drone1Cartographic.height + directionAlt * moveDistance;
 
-      // Update drone1 position
-      dataManager.updateItem(drone1Entity, {
-        position: Cartesian3.fromRadians(newLon, newLat, newAlt),
-      });
+      // Update drone1 position directly on native entity
+      drone1Entity.position = new ConstantPositionProperty(
+        Cartesian3.fromRadians(newLon, newLat, newAlt)
+      );
     },
     [dataManager],
   );

@@ -3,7 +3,7 @@ import type { IMapCamera } from "./IMapCamera";
 import type { IMapAccessors } from "./IMapAccessors";
 import type { IDataManager } from "./IDataManager";
 import type { IRendererRegistry, ILayerData, ILayerProps } from "../types/layer";
-import type { IMapApi } from "../types/features";
+import type { IMapApi } from "../types/extensions";
 
 /**
  * Provider initialization options

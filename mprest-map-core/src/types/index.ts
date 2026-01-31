@@ -86,9 +86,9 @@ export type {
   ISearchResult,
   ISearchPanelApi,
   IEntitiesApi,
-  IFeatureState,
-  IFeatureContext,
-  IFeatureExtensionModule,
+  IExtensionState,
+  IExtensionContext,
+  IExtensionModule,
   IMapApi,
   IExtendedMapApi,
   ILayersPanelProps,
@@ -96,7 +96,7 @@ export type {
   ISearchPanelProps,
   IDataConnectorConfig,
   IViewerProviderProps,
-} from "./core/types/features";
+} from "./core/types/extensions";
 
 // ============================================
 // Backward Compatibility Type Aliases
@@ -112,10 +112,10 @@ export type {
   IFilterData as FilterData,
   ISearchData as SearchData,
   ISearchResult as SearchResult,
-  IFeatureExtensionModule as FeatureExtensionModule,
-  IFeatureContext as FeatureContext,
+  IExtensionModule as ExtensionModule,
+  IExtensionContext as ExtensionContext,
   IViewerProviderProps as ViewerProviderProps,
-} from "./core/types/features";
+} from "./core/types/extensions";
 
 export type {
   IViewerWithConfigs as ViewerWithConfigs,
@@ -131,7 +131,7 @@ export type {
   IFiltersPanelApi as FiltersPanelApi,
   ISearchPanelApi as SearchPanelApi,
   IEntitiesApi as EntitiesApi,
-} from "./core/types/features";
+} from "./core/types/extensions";
 
 export type {
   ICollectedLayerData as CollectedLayerData,

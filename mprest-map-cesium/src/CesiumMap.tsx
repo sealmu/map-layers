@@ -19,13 +19,14 @@ import type {
   LayerData,
   ViewerWithConfigs,
   MapApi,
-} from "../types";
+} from "./types";
 import { useViewer, createEventHandler, type IViewerWithConfigs } from "@mprest/map-core";
-import { extractLayersFromChildren, hasLayersChanged } from "../utils";
-import { useFeatures } from "../features/useFeatures";
-import { useFeatureChangeEvent } from "../features/useFeatureChangeEvent";
-import { useBindHandlers } from "../handlers/bindHandlers";
-import { createCesiumMapAccessors } from "../CesiumMapAccessors";
+import { extractLayersFromChildren, hasLayersChanged } from "./utils";
+import { useExtensions } from "./extensions/useExtensions";
+import { useExtensionChangeEvent } from "./extensions/useExtensionChangeEvent";
+import { useBindHandlers } from "./handlers/bindHandlers";
+import { createCesiumMapAccessors } from "./CesiumMapAccessors";
+import { createCesiumDataManager } from "./CesiumDataManager";
 
 // Module-level variable to hold current API
 let currentViewerApi: MapApi | null = null;
@@ -45,7 +46,7 @@ const CesiumMap = <R extends RendererRegistry>({
   onClickPrevented,
   onSelected,
   onChangePosition,
-  onFeatureStateChanged,
+  onExtensionStateChanged,
   plugins = {},
 }: CesiumMapProps<R>) => {
   const { setViewer: setContextViewer } = useViewer();
@@ -63,7 +64,7 @@ const CesiumMap = <R extends RendererRegistry>({
     return layersRef.current;
   }, [children]);
 
-  const featuresApi = useFeatures(layers) as MapApi;
+  const featuresApi = useExtensions(layers) as MapApi;
   const { layers: layersApi, filters: filtersApi, search: searchApi, entities: entitiesApi } = featuresApi;
 
   // Initialize Cesium Viewer
@@ -112,6 +113,9 @@ const CesiumMap = <R extends RendererRegistry>({
 
     // Set up provider-agnostic accessors
     newViewer.accessors = createCesiumMapAccessors(newViewer);
+
+    // Set up data manager for entity CRUD operations
+    newViewer.dataManager = createCesiumDataManager(newViewer);
 
     // Set provider type for component delegation
     newViewer.providerType = 'cesium';
@@ -200,8 +204,8 @@ const CesiumMap = <R extends RendererRegistry>({
     }
   }, [viewer, layers, renderers, featuresApi, plugins, onApiChange]);
 
-  // Handle feature state changes
-  useFeatureChangeEvent(layersApi, filtersApi, searchApi, entitiesApi, onFeatureStateChanged);
+  // Handle extension state changes
+  useExtensionChangeEvent(layersApi, filtersApi, searchApi, entitiesApi, onExtensionStateChanged);
 
   // Handle street map visibility
   useEffect(() => {

@@ -5,7 +5,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { useViewer } from "@mprest/map-core";
 import type { ICoordinate, IMapCamera } from "@mprest/map-core";
-import type { FeatureExtensionModule, FeatureContext } from "../../types";
+import type { ExtensionModule, ExtensionContext } from "../../types";
 
 export interface Bookmark {
   id: string;
@@ -44,7 +44,7 @@ const saveBookmarks = (bookmarks: Bookmark[]) => {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const useBookmarks = (_ctx: FeatureContext): BookmarksApi => {
+const useBookmarks = (_ctx: ExtensionContext): BookmarksApi => {
   const { viewer } = useViewer();
   const [bookmarks, setBookmarks] = useState<Bookmark[]>(loadBookmarks);
 
@@ -157,9 +157,9 @@ const useBookmarks = (_ctx: FeatureContext): BookmarksApi => {
 };
 
 // Extension definition - this is what the extension loader discovers
-const bookmarksExtension: FeatureExtensionModule<BookmarksApi> = {
+const bookmarksExtension: ExtensionModule<BookmarksApi> = {
   name: "bookmarks",
-  useFeature: useBookmarks,
+  useExtension: useBookmarks,
   priority: 0, // default priority
 };
 

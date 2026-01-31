@@ -55,7 +55,8 @@ export { default as SearchPanel } from "./components/map/panels/SearchPanel";
 export { default as FilterModal } from "./components/map/panels/FilterModal";
 export { default as SearchModal } from "./components/map/panels/SearchModal";
 
-// Note: DataConnector is provider-specific and exported from @mprest/map-cesium
+// Data connector (provider-agnostic)
+export { DataConnector, type DataConnectorProps } from "./components/DataConnector";
 
 // ============================================
 // Context & Hooks
@@ -64,27 +65,27 @@ export { ViewerProvider } from "./context/providers/ViewerProvider";
 export { useViewer } from "./hooks/useViewer";
 
 // ============================================
-// Features
+// Extensions
 // ============================================
-export { useFeatures } from "./features/useFeatures";
-export { useFeatureChangeEvent } from "./features/useFeatureChangeEvent";
+export { useExtensions } from "./extensions/useExtensions";
+export { useExtensionChangeEvent } from "./extensions/useExtensionChangeEvent";
 
-// Core feature hooks (provider-agnostic)
-export { useLayers } from "./features/core/useLayers";
-export { useFilters } from "./features/core/useFilters";
-export { useSearch } from "./features/core/useSearch";
-export { useEntities } from "./features/core/useEntities";
+// Core extension hooks (provider-agnostic)
+export { useLayers } from "./extensions/core/useLayers";
+export { useFilters } from "./extensions/core/useFilters";
+export { useSearch } from "./extensions/core/useSearch";
+export { useEntities } from "./extensions/core/useEntities";
 
-// Extension factories (for provider-specific configuration)
+// Feature factories (for provider-specific configuration)
 export {
   default as bookmarksExtension,
   createBookmarksExtension,
   createUseBookmarks,
-} from "./features/extensions/useBookmarks";
-export type { BookmarksApi, Bookmark, BookmarksConfig } from "./features/extensions/useBookmarks";
+} from "./extensions/features/useBookmarks";
+export type { BookmarksApi, Bookmark, BookmarksConfig } from "./extensions/features/useBookmarks";
 
-export { default as locationsExtension } from "./features/extensions/useLocations";
-export type { LocationsApi, Coordinates, GotoOptions, PlaceResult } from "./features/extensions/useLocations";
+export { default as locationsExtension } from "./extensions/features/useLocations";
+export type { LocationsApi, Coordinates, GotoOptions, PlaceResult } from "./extensions/features/useLocations";
 
 // ============================================
 // Utilities

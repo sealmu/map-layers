@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { useViewer } from "@mprest/map-core";
-import type { FeatureExtensionModule, FeatureContext, ViewerWithConfigs } from "../../types";
+import type { ExtensionModule, ExtensionContext, ViewerWithConfigs } from "../../types";
 
 export interface Coordinates {
   longitude: number;
@@ -37,7 +37,7 @@ export interface LocationsApi {
 const DEFAULT_ZOOM = 10;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const useLocations = (_ctx: FeatureContext): LocationsApi => {
+const useLocations = (_ctx: ExtensionContext): LocationsApi => {
   const { viewer } = useViewer();
 
   const gotoLocation = useCallback(
@@ -163,9 +163,9 @@ const useLocations = (_ctx: FeatureContext): LocationsApi => {
 };
 
 // Extension definition
-const locationsExtension: FeatureExtensionModule<LocationsApi> = {
+const locationsExtension: ExtensionModule<LocationsApi> = {
   name: "locations",
-  useFeature: useLocations,
+  useExtension: useLocations,
   priority: 10,
 };
 

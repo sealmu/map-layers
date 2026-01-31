@@ -1,6 +1,5 @@
 import {
   Cartesian3,
-  Color,
   ConstantPositionProperty,
   CallbackPositionProperty,
   PointGraphics,
@@ -17,22 +16,23 @@ import type {
   IMapEntity,
   IEntityOptions,
   IDataSource,
-  ILayerData,
 } from "@mprest/map-core";
 import type { ViewerWithConfigs, LayerData, RenderTypeFromRegistry } from "./types";
 import { CesiumMapEntity, toCesiumEntityOptions, updateCesiumEntity } from "./CesiumMapEntity";
 import { CesiumDataSource } from "./CesiumDataSource";
-import { enrichEntity, createEntityFromData } from "./helpers/pipeline";
+import { enrichEntity, createEntityFromData } from "./pipeline";
 import { createRenderTypes } from "./types";
 
 /**
  * Cesium implementation of IDataManager
- * Provides provider-agnostic data management for Cesium maps
+ * Accepts Cesium-native LayerData (with Cartesian3 positions, Cesium Color, etc.)
  */
-export class CesiumDataManager implements IDataManager {
-  private viewer: ViewerWithConfigs;
+export class CesiumDataManager implements IDataManager<LayerData> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private viewer: ViewerWithConfigs<any>;
 
-  constructor(viewer: ViewerWithConfigs) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  constructor(viewer: ViewerWithConfigs<any>) {
     this.viewer = viewer;
   }
 
@@ -168,10 +168,8 @@ export class CesiumDataManager implements IDataManager {
   // Data-Driven Operations (with renderer resolution)
   // ============================================
 
-  addDataItem(data: ILayerData, layerId: string): IMapEntity | null {
-    // Convert ILayerData to LayerData for backwards compatibility
-    const layerData = this.toLayerData(data);
-    const resolved = this.resolveRenderer(layerData, layerId);
+  addDataItem(data: LayerData, layerId: string): IMapEntity | null {
+    const resolved = this.resolveRenderer(data, layerId);
     if (!resolved) return null;
 
     const { entityOptions, rendererType } = resolved;
@@ -179,24 +177,23 @@ export class CesiumDataManager implements IDataManager {
   }
 
   addDataItems(
-    dataItems: ILayerData[],
+    dataItems: LayerData[],
     layerId: string,
   ): (IMapEntity | null)[] {
     return dataItems.map((data) => this.addDataItem(data, layerId));
   }
 
-  updateDataItem(data: ILayerData, layerId: string): boolean {
+  updateDataItem(data: LayerData, layerId: string): boolean {
     const entity = this.getCesiumEntity(data.id, layerId);
     if (!entity) return false;
 
-    const layerData = this.toLayerData(data);
-    const resolved = this.resolveRenderer(layerData, layerId);
+    const resolved = this.resolveRenderer(data, layerId);
     if (!resolved) return false;
 
     return this.updateCesiumEntityProperties(entity, resolved.entityOptions);
   }
 
-  updateOrInsertDataItem(data: ILayerData, layerId: string): IMapEntity | null {
+  updateOrInsertDataItem(data: LayerData, layerId: string): IMapEntity | null {
     const existingEntity = this.getCesiumEntity(data.id, layerId);
     if (existingEntity) {
       this.updateDataItem(data, layerId);
@@ -317,28 +314,6 @@ export class CesiumDataManager implements IDataManager {
       );
     }
     return null;
-  }
-
-  private toLayerData(data: ILayerData): LayerData {
-    // Convert ILayerData to Cesium-specific LayerData
-    // This bridges the abstract type to the existing renderer system
-    return {
-      id: data.id,
-      name: data.name,
-      color: Color.fromBytes(
-        Math.round(data.color.red * 255),
-        Math.round(data.color.green * 255),
-        Math.round(data.color.blue * 255),
-        Math.round(data.color.alpha * 255),
-      ),
-      positions: data.positions.map((p) =>
-        Cartesian3.fromDegrees(p.longitude, p.latitude, p.height ?? 0),
-      ),
-      view: data.view,
-      renderType: data.renderType,
-      customRenderer: data.customRenderer as LayerData["customRenderer"],
-      data: data.data,
-    };
   }
 
   private resolveRenderer(
@@ -507,7 +482,8 @@ export class CesiumDataManager implements IDataManager {
  * Create a CesiumDataManager instance
  */
 export function createCesiumDataManager(
-  viewer: ViewerWithConfigs,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  viewer: ViewerWithConfigs<any>,
 ): CesiumDataManager {
   return new CesiumDataManager(viewer);
 }

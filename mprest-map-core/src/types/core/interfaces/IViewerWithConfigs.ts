@@ -1,5 +1,6 @@
 import type { IMapAccessors } from "./IMapAccessors";
 import type { IMapCamera } from "./IMapCamera";
+import type { IDataManager } from "./IDataManager";
 import type {
   IMapApi,
   ILayerProps,
@@ -67,6 +68,10 @@ export interface IViewerWithConfigs<
 
   /** Map accessors for entity/layer queries */
   readonly accessors: IMapAccessors;
+
+  /** Data manager for entity CRUD operations */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  readonly dataManager?: IDataManager<any>;
 
   /**
    * Provider-agnostic camera control.

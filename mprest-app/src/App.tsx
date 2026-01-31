@@ -6,10 +6,11 @@ import { useDroneAnimation, useDroneAnimation2 } from "./hooks/useDroneAnimation
 import { useRadarAnimation } from "./hooks/useRadarAnimation";
 import { useDroneTargetAnimation } from "./hooks/useDroneTargetAnimation";
 
-import { Mmap, ViewerProvider } from "@mprest/map-core";
+import { Mmap } from "@mprest/map-core";
 import {
-  useCesiumViewer,
+  ViewerProvider,
   DataConnector,
+  useCesiumViewer,
   EntitySelectionPlugin,
   type AppContentProps,
   type LayeredDataWithPayload,

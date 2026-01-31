@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useMemo } from "react";
-import { Cartesian3, Color, Math as CesiumMath, JulianDate } from "cesium";
+import { Cartesian3, Color, Math as CesiumMath, JulianDate, ConstantPositionProperty, type Entity } from "cesium";
 import { useViewer } from "@mprest/map-core";
 import { DataManager, type RendererRegistry, type ViewerWithConfigs } from "@mprest/map-cesium";
 
@@ -56,11 +56,12 @@ const DynamicPanel = ({ renderers }: DynamicPanelProps) => {
 
       if (!entities) return;
 
-      entities.forEach((entity) => {
+      entities.forEach((mapEntity) => {
+        const entity = mapEntity.getNativeEntity<Entity>();
         if (!entity.position) return;
 
         // Get original position for this entity (stored in a custom property or calculate from ID)
-        const entityId = entity.id as string;
+        const entityId = mapEntity.id;
         const match = entityId.match(/dynamic-point-(\d+)/);
         if (!match) return;
 
@@ -87,9 +88,9 @@ const DynamicPanel = ({ renderers }: DynamicPanelProps) => {
               CesiumMath.toDegrees(cartographic.latitude) + offsetLat;
             const newAlt = cartographic.height;
 
-            dataManager.updateItem(entity, {
-              position: Cartesian3.fromDegrees(newLon, newLat, newAlt),
-            });
+            entity.position = new ConstantPositionProperty(
+              Cartesian3.fromDegrees(newLon, newLat, newAlt)
+            );
           }
         }
       });
@@ -183,7 +184,7 @@ const DynamicPanel = ({ renderers }: DynamicPanelProps) => {
     //   pixelOffset: new Cartesian2(0, -30), // Higher offset for larger point
     // };
 
-    dataManager.addItem(entityOptions, "dynamic", layerData.renderType);
+    dataManager.addCesiumItem(entityOptions, "dynamic", layerData.renderType);
   };
 
   return (

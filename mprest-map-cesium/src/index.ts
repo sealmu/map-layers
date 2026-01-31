@@ -12,9 +12,20 @@ export { PROVIDER_TYPE } from "./register";
 // ============================================
 // Components
 // ============================================
-export { default as CesiumMap } from "./components/CesiumMap";
-export { default as CesiumDataSourceLayer } from "./components/CesiumDataSourceLayer";
-export { DataConnector } from "./components/data/DataConnector";
+export { default as CesiumMap } from "./CesiumMap";
+export { default as CesiumDataSourceLayer } from "./CesiumDataSourceLayer";
+
+// Re-export commonly used components from core for convenience
+// This allows Cesium apps to import everything from @mprest/map-cesium
+export {
+  DataConnector,
+  ViewerProvider,
+  useViewer,
+  Layer,
+  LayersPanel,
+  FiltersPanel,
+  SearchPanel,
+} from "@mprest/map-core";
 
 // ============================================
 // Adapters
@@ -57,10 +68,10 @@ export { CesiumDataSource } from "./CesiumDataSource";
 export { CesiumDataManager } from "./CesiumDataManager";
 
 // ============================================
-// Helpers
+// Data
 // ============================================
-export { DataManager } from "./helpers/data/DataManager";
-export { createEntityFromData, enrichEntity } from "./helpers/pipeline";
+export { CesiumDataManager as DataManager } from "./CesiumDataManager";
+export { createEntityFromData, enrichEntity } from "./pipeline";
 
 // ============================================
 // Hooks
@@ -122,11 +133,11 @@ export type {
   FiltersPanelApi,
   SearchPanelApi,
   EntitiesApi,
-  FeatureState,
+  ExtensionState,
 
-  // Feature System
-  FeatureContext,
-  FeatureExtensionModule,
+  // Extension System
+  ExtensionContext,
+  ExtensionModule,
   ExtendedMapApi,
   MapApi,
   MapInstance,

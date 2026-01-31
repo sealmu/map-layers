@@ -430,7 +430,7 @@ export class TracerPlugin extends BasePlugin<TracerActions, TracerEvents> {
       return color;
     }, false);
 
-    const addedEntity = this.dataManager.addItem({
+    const addedEntity = this.dataManager.addCesiumItem({
       id: coordId,
       position: coordinate.position, // Use the cloned position, not the original reference
       point: {
@@ -488,7 +488,7 @@ export class TracerPlugin extends BasePlugin<TracerActions, TracerEvents> {
       const sizeRatio = options.tailSizeRatio + (options.headSizeRatio - options.tailSizeRatio) * progress;
       const size = baseSize * sizeRatio;
 
-      const traceEntity = this.dataManager.getItem(coord.id);
+      const traceEntity = this.dataManager.getCesiumEntity(coord.id);
       if (traceEntity?.point?.pixelSize) {
         (traceEntity.point.pixelSize as ConstantProperty).setValue(size);
       }

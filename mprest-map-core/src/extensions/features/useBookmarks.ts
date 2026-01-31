@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { useViewer } from "../../hooks/useViewer";
-import type { FeatureExtensionModule, FeatureContext, ICoordinate, IMapCamera, IViewerWithConfigs } from "../../types";
+import type { ExtensionModule, ExtensionContext, ICoordinate, IMapCamera, IViewerWithConfigs } from "../../types";
 
 export interface Bookmark {
   id: string;
@@ -55,7 +55,7 @@ export const createUseBookmarks = (config: BookmarksConfig = {}) => {
   const storageKey = config.storageKey ?? DEFAULT_STORAGE_KEY;
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  return (_ctx: FeatureContext): BookmarksApi => {
+  return (_ctx: ExtensionContext): BookmarksApi => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const { viewer } = useViewer();
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -183,9 +183,9 @@ export const createUseBookmarks = (config: BookmarksConfig = {}) => {
 /**
  * Create a bookmarks extension with provider-specific configuration
  */
-export const createBookmarksExtension = (config: BookmarksConfig = {}): FeatureExtensionModule<BookmarksApi> => ({
+export const createBookmarksExtension = (config: BookmarksConfig = {}): ExtensionModule<BookmarksApi> => ({
   name: "bookmarks",
-  useFeature: createUseBookmarks(config),
+  useExtension: createUseBookmarks(config),
   priority: 0,
 });
 

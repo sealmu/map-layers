@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useState, useRef } from "react";
-import { Cartesian3, Cartographic, Entity } from "cesium";
+import { Cartesian3, Cartographic, ConstantPositionProperty, Entity } from "cesium";
 import { DataManager, type ViewerWithConfigs } from "@mprest/map-cesium";
 
 export interface DroneTargetAnimationState {
@@ -129,10 +129,9 @@ export function useDroneTargetAnimation(
         // Check distance to target
         const distance = Cartesian3.distance(newPosition, animationRef.current.targetPosition);
 
-        // Update entity position
-        dataManager.updateItem(currentSource, {
-          position: newPosition,
-        });
+        // Update entity position directly on native entity
+        const entity = currentSource.getNativeEntity<Entity>();
+        entity.position = new ConstantPositionProperty(newPosition);
 
         // Update state
         setState((prev) => ({

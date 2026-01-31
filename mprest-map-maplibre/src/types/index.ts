@@ -28,9 +28,9 @@ export type {
   IFilterData,
   ISearchData,
   ISearchResult,
-  IFeatureState,
-  IFeatureContext,
-  IFeatureExtensionModule,
+  IExtensionState,
+  IExtensionContext,
+  IExtensionModule,
   IMapApi,
   IExtendedMapApi,
   ILayersPanelProps,
@@ -320,9 +320,9 @@ export interface MapLibreMapProps<R extends RendererRegistry = RendererRegistry>
     location?: MapClickLocation,
   ) => boolean | void;
   onChangePosition?: (location: MapClickLocation | null) => boolean | void;
-  onFeatureStateChanged?: (
+  onExtensionStateChanged?: (
     name: "layers" | "filters" | "search" | "entities",
-    state: FeatureState,
+    state: ExtensionState,
   ) => void;
   plugins?: Record<string, PluginClass>;
 }
@@ -429,18 +429,18 @@ export type EntitiesApi = {
   ) => boolean;
 };
 
-export type FeatureState =
+export type ExtensionState =
   | LayersPanelApi
   | FiltersPanelApi
   | SearchPanelApi
   | EntitiesApi;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type FeatureContext = Record<string, any>;
+export type ExtensionContext = Record<string, any>;
 
-export interface FeatureExtensionModule<T = unknown> {
+export interface ExtensionModule<T = unknown> {
   name: string;
-  useFeature: (ctx: FeatureContext) => T;
+  useExtension: (ctx: ExtensionContext) => T;
   dependencies?: string[];
   priority?: number;
 }

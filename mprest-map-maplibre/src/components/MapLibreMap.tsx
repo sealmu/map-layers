@@ -19,8 +19,8 @@ import type {
 } from "../types";
 import { useViewer, createEventHandler, type IViewerWithConfigs } from "@mprest/map-core";
 import { extractLayersFromChildren, hasLayersChanged } from "../utils";
-import { useFeatures } from "../features/useFeatures";
-import { useFeatureChangeEvent } from "../features/useFeatureChangeEvent";
+import { useExtensions } from "../extensions/useExtensions";
+import { useExtensionChangeEvent } from "../extensions/useExtensionChangeEvent";
 import { createMapLibreMapAccessors } from "../MapLibreMapAccessors";
 
 // Module-level variable to hold current API
@@ -41,7 +41,7 @@ const MapLibreMap = <R extends RendererRegistry>({
   onClickPrevented,
   onSelected,
   onChangePosition,
-  onFeatureStateChanged,
+  onExtensionStateChanged,
   plugins = {},
 }: MapLibreMapProps<R>) => {
   const { setViewer: setContextViewer } = useViewer();
@@ -60,7 +60,7 @@ const MapLibreMap = <R extends RendererRegistry>({
     return layersRef.current;
   }, [children]);
 
-  const featuresApi = useFeatures(layers) as MapApi;
+  const featuresApi = useExtensions(layers) as MapApi;
   const { layers: layersApi, filters: filtersApi, search: searchApi, entities: entitiesApi } = featuresApi;
 
   // Initialize MapLibre Map
@@ -344,8 +344,8 @@ const MapLibreMap = <R extends RendererRegistry>({
     }
   }, [viewer, layers, renderers, featuresApi, plugins, onApiChange]);
 
-  // Handle feature state changes
-  useFeatureChangeEvent(layersApi, filtersApi, searchApi, entitiesApi, onFeatureStateChanged);
+  // Handle extension state changes
+  useExtensionChangeEvent(layersApi, filtersApi, searchApi, entitiesApi, onExtensionStateChanged);
 
   return (
     <div className="maplibre-map-container" style={{ width: "100%", height: "100%", position: "relative" }}>

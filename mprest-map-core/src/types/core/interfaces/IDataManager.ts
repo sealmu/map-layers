@@ -5,8 +5,11 @@ import type { ILayerData } from "../types/layer";
 /**
  * Provider-agnostic data manager interface
  * Each map provider implements this interface
+ *
+ * @template T - The layer data type (defaults to ILayerData for provider-agnostic usage,
+ *               but providers can use their own types like Cesium's LayerData)
  */
-export interface IDataManager {
+export interface IDataManager<T = ILayerData> {
   // ============================================
   // Single Item Operations
   // ============================================
@@ -103,20 +106,20 @@ export interface IDataManager {
   /**
    * Add a data item with automatic renderer resolution
    */
-  addDataItem(data: ILayerData, layerId: string): IMapEntity | null;
+  addDataItem(data: T, layerId: string): IMapEntity | null;
 
   /**
    * Add multiple data items with automatic renderer resolution
    */
-  addDataItems(dataItems: ILayerData[], layerId: string): (IMapEntity | null)[];
+  addDataItems(dataItems: T[], layerId: string): (IMapEntity | null)[];
 
   /**
    * Update a data item with automatic renderer resolution
    */
-  updateDataItem(data: ILayerData, layerId: string): boolean;
+  updateDataItem(data: T, layerId: string): boolean;
 
   /**
    * Update or insert a data item
    */
-  updateOrInsertDataItem(data: ILayerData, layerId: string): IMapEntity | null;
+  updateOrInsertDataItem(data: T, layerId: string): IMapEntity | null;
 }

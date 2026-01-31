@@ -7,10 +7,10 @@ import {
   useEntities,
   type Bookmark,
 } from "@mprest/map-core";
-import type { LayerProps, LayerData, RendererRegistry, FeatureContext, ViewerWithConfigs } from "../types";
-import locationsExtension from "./extensions/useLocations";
+import type { LayerProps, LayerData, RendererRegistry, ExtensionContext, ViewerWithConfigs } from "../types";
+import locationsExtension from "./features/useLocations";
 
-const useWithCtx = <T>(ctx: FeatureContext, hook: (ctx: FeatureContext) => T): T => {
+const useWithCtx = <T>(ctx: ExtensionContext, hook: (ctx: ExtensionContext) => T): T => {
   const api = hook(ctx);
   Object.assign(ctx, api);
   return api;
@@ -42,10 +42,10 @@ const maplibreBookmarksExtension = createBookmarksExtension({
   },
 });
 
-export const useFeatures = <R extends RendererRegistry>(
+export const useExtensions = <R extends RendererRegistry>(
   layerProps: LayerProps<LayerData, R>[],
 ) => {
-  const ctx: FeatureContext = { layers: layerProps };
+  const ctx: ExtensionContext = { layers: layerProps };
 
   // Core features
   const layers = useWithCtx(ctx, useLayers);
@@ -54,8 +54,8 @@ export const useFeatures = <R extends RendererRegistry>(
   const entities = useWithCtx(ctx, useEntities);
 
   // Extensions (locations before bookmarks as it may be used as dependency)
-  const locations = useWithCtx(ctx, locationsExtension.useFeature);
-  const bookmarks = useWithCtx(ctx, maplibreBookmarksExtension.useFeature);
+  const locations = useWithCtx(ctx, locationsExtension.useExtension);
+  const bookmarks = useWithCtx(ctx, maplibreBookmarksExtension.useExtension);
 
   return useMemo(
     () => ({ layers, filters, search, entities, locations, bookmarks }),

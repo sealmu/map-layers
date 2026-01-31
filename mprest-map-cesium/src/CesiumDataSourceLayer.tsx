@@ -1,13 +1,13 @@
 import { useEffect, useRef, useCallback } from "react";
 import { CustomDataSource as CesiumCustomDataSource, Entity, EntityCollection } from "cesium";
-import { createEntityFromData } from "../helpers/pipeline";
-import { useLayerAnimations } from "../hooks/useLayerAnimations";
+import { createEntityFromData } from "./pipeline";
+import { useLayerAnimations } from "./hooks/useLayerAnimations";
 import type {
   DataSourceLayerProps,
   RendererRegistry,
   LayerData,
   EntityChangeStatus,
-} from "../types";
+} from "./types";
 
 const CesiumDataSourceLayer = <R extends RendererRegistry>({
   viewer,

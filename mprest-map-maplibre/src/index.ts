@@ -66,14 +66,14 @@ export { EntitySelectionPlugin } from "./plugins";
 export { useLayerAnimations, useLayerAnimationsWithMap } from "./hooks";
 
 // ============================================
-// Features
-// ============================================
-export { useFeatures } from "./features/useFeatures";
-export { useFeatureChangeEvent } from "./features/useFeatureChangeEvent";
-
 // Extensions
-export { default as locationsExtension } from "./features/extensions/useLocations";
-export type { Coordinates, GotoOptions, PlaceResult, LocationsApi } from "./features/extensions/useLocations";
+// ============================================
+export { useExtensions } from "./extensions/useExtensions";
+export { useExtensionChangeEvent } from "./extensions/useExtensionChangeEvent";
+
+// Features (plugin-like extensions)
+export { default as locationsExtension } from "./extensions/features/useLocations";
+export type { Coordinates, GotoOptions, PlaceResult, LocationsApi } from "./extensions/features/useLocations";
 
 // Re-export bookmarks from core (MapLibre uses core with config)
 export { bookmarksExtension, createBookmarksExtension } from "@mprest/map-core";
@@ -132,11 +132,11 @@ export type {
   FiltersPanelApi,
   SearchPanelApi,
   EntitiesApi,
-  FeatureState,
+  ExtensionState,
 
-  // Feature System
-  FeatureContext,
-  FeatureExtensionModule,
+  // Extension System
+  ExtensionContext,
+  ExtensionModule,
   ExtendedMapApi,
   MapApi,
   MapInstance,

@@ -121,30 +121,30 @@ export interface IEntitiesApi {
 }
 
 // ============================================
-// Feature System
+// Extension System
 // ============================================
 
 /**
- * Feature state union type
+ * Extension state union type
  */
-export type IFeatureState =
+export type IExtensionState =
   | ILayersPanelApi
   | IFiltersPanelApi
   | ISearchPanelApi
   | IEntitiesApi;
 
 /**
- * Feature context (flexible record for feature composition)
+ * Extension context (flexible record for extension composition)
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type IFeatureContext = Record<string, any>;
+export type IExtensionContext = Record<string, any>;
 
 /**
- * Feature extension module interface
+ * Extension module interface
  */
-export interface IFeatureExtensionModule<T = unknown> {
+export interface IExtensionModule<T = unknown> {
   name: string;
-  useFeature: (ctx: IFeatureContext) => T;
+  useExtension: (ctx: IExtensionContext) => T;
   dependencies?: string[];
   priority?: number;
 }

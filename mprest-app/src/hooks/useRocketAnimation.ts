@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Cartesian3 } from "cesium";
+import { Cartesian3, ConstantPositionProperty, type Entity } from "cesium";
 import { DataManager, type ViewerWithConfigs } from "@mprest/map-cesium";
 
 export interface RocketAnimationConfig {
@@ -53,8 +53,8 @@ export function useRocketAnimation(
 
     const step = (time: number) => {
       // Always ensure we have a live entity (layer might have been toggled)
-      const currentEntity = dataManager.getItem(rocketId);
-      if (!currentEntity) {
+      const mapEntity = dataManager.getItem(rocketId);
+      if (!mapEntity) {
         rafId = requestAnimationFrame(step);
         return;
       }
@@ -74,10 +74,11 @@ export function useRocketAnimation(
       const lat = lat1 + (lat2 - lat1) * t;
       const alt = alt1 + (alt2 - alt1) * t;
 
-      // Update rocket position using DataManager with entity instance
-      dataManager.updateItem(currentEntity, {
-        position: Cartesian3.fromDegrees(lon, lat, alt),
-      });
+      // Update rocket position directly on native entity
+      const entity = mapEntity.getNativeEntity<Entity>();
+      entity.position = new ConstantPositionProperty(
+        Cartesian3.fromDegrees(lon, lat, alt)
+      );
 
       rafId = requestAnimationFrame(step);
     };

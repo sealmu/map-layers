@@ -16,7 +16,7 @@ import {
   Viewer as CesiumViewer,
   CustomDataSource,
 } from "cesium";
-import type { IMapAccessors, EntityChangeStatus } from "@mprest/map-core";
+import type { IMapAccessors, IDataManager, EntityChangeStatus } from "@mprest/map-core";
 
 // Re-export core types for convenience (these are provider-agnostic)
 export type {
@@ -37,9 +37,9 @@ export type {
   IFilterData,
   ISearchData,
   ISearchResult,
-  IFeatureState,
-  IFeatureContext,
-  IFeatureExtensionModule,
+  IExtensionState,
+  IExtensionContext,
+  IExtensionModule,
   IMapApi,
   IExtendedMapApi,
   ILayersPanelProps,
@@ -365,9 +365,9 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
     screenPosition?: Cartesian2,
   ) => boolean | void;
   onChangePosition?: (location: MapClickLocation | null) => boolean | void;
-  onFeatureStateChanged?: (
+  onExtensionStateChanged?: (
     name: "layers" | "filters" | "search" | "entities",
-    state: FeatureState,
+    state: ExtensionState,
   ) => void;
   plugins?: Record<string, PluginClass>;
 }
@@ -481,18 +481,18 @@ export type EntitiesApi = {
   ) => boolean;
 };
 
-export type FeatureState =
+export type ExtensionState =
   | LayersPanelApi
   | FiltersPanelApi
   | SearchPanelApi
   | EntitiesApi;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type FeatureContext = Record<string, any>;
+export type ExtensionContext = Record<string, any>;
 
-export interface FeatureExtensionModule<T = unknown> {
+export interface ExtensionModule<T = unknown> {
   name: string;
-  useFeature: (ctx: FeatureContext) => T;
+  useExtension: (ctx: ExtensionContext) => T;
   dependencies?: string[];
   priority?: number;
 }
@@ -618,6 +618,7 @@ export interface ViewerWithConfigs<
   };
   plugins: Record<string, BasePlugin>;
   accessors: IMapAccessors;
+  dataManager: IDataManager<LayerData>;
   providerType: "cesium" | "leaflet" | "mapbox" | string;
 
   /** Access the native Cesium viewer */

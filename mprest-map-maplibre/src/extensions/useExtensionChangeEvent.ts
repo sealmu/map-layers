@@ -1,14 +1,14 @@
 import { useEffect, useRef } from "react";
-import type { LayersPanelApi, FiltersPanelApi, SearchPanelApi, EntitiesApi, FeatureState } from "../types";
+import type { LayersPanelApi, FiltersPanelApi, SearchPanelApi, EntitiesApi, ExtensionState } from "../types";
 
-export const useFeatureChangeEvent = (
+export const useExtensionChangeEvent = (
   layersApi: LayersPanelApi,
   filtersApi: FiltersPanelApi,
   searchApi: SearchPanelApi,
   entitiesApi: EntitiesApi,
-  onFeatureStateChanged?: (
+  onExtensionStateChanged?: (
     name: "layers" | "filters" | "search" | "entities",
-    state: FeatureState,
+    state: ExtensionState,
   ) => void,
 ) => {
   const prevLayersRef = useRef<LayersPanelApi | null>(null);
@@ -19,28 +19,28 @@ export const useFeatureChangeEvent = (
   useEffect(() => {
     if (prevLayersRef.current !== layersApi) {
       prevLayersRef.current = layersApi;
-      onFeatureStateChanged?.("layers", layersApi);
+      onExtensionStateChanged?.("layers", layersApi);
     }
-  }, [layersApi, onFeatureStateChanged]);
+  }, [layersApi, onExtensionStateChanged]);
 
   useEffect(() => {
     if (prevFiltersRef.current !== filtersApi) {
       prevFiltersRef.current = filtersApi;
-      onFeatureStateChanged?.("filters", filtersApi);
+      onExtensionStateChanged?.("filters", filtersApi);
     }
-  }, [filtersApi, onFeatureStateChanged]);
+  }, [filtersApi, onExtensionStateChanged]);
 
   useEffect(() => {
     if (prevSearchRef.current !== searchApi) {
       prevSearchRef.current = searchApi;
-      onFeatureStateChanged?.("search", searchApi);
+      onExtensionStateChanged?.("search", searchApi);
     }
-  }, [searchApi, onFeatureStateChanged]);
+  }, [searchApi, onExtensionStateChanged]);
 
   useEffect(() => {
     if (prevEntitiesRef.current !== entitiesApi) {
       prevEntitiesRef.current = entitiesApi;
-      onFeatureStateChanged?.("entities", entitiesApi);
+      onExtensionStateChanged?.("entities", entitiesApi);
     }
-  }, [entitiesApi, onFeatureStateChanged]);
+  }, [entitiesApi, onExtensionStateChanged]);
 };

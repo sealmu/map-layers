@@ -4,6 +4,7 @@ import {
   Cartographic,
   PolygonHierarchy,
   CallbackProperty,
+  type Entity,
 } from "cesium";
 import { DataManager, type ViewerWithConfigs } from "@mprest/map-cesium";
 
@@ -36,11 +37,12 @@ export function useRadarAnimation(
 
     // Find the entity first to get config
     const initialDataManager = new DataManager(viewer);
-    const entity = initialDataManager.getItem(radarId);
+    const mapEntity = initialDataManager.getItem(radarId);
+    const entity = mapEntity?.getNativeEntity<Entity>();
 
     // Read config from entity data if available
     if (entity) {
-      const entityData = (entity as RadarEntityData).data;
+      const entityData = (entity as unknown as RadarEntityData).data;
       if (entityData?.config) {
         const config = entityData.config;
         if (config.center) {
@@ -100,12 +102,13 @@ export function useRadarAnimation(
       const dataManager = new DataManager(viewer);
 
       // Always ensure we have a live entity (layer might have been toggled)
-      const entity = dataManager.getItem(radarId);
+      const mapEntity = dataManager.getItem(radarId);
+      const entity = mapEntity?.getNativeEntity<Entity>();
 
       // If we haven't set up the callback yet and now we can, do it
       if (!callbackSet && entity && entity.polygon) {
         // Read coneAngle from entity data if available
-        const entityData = (entity as RadarEntityData).data;
+        const entityData = (entity as unknown as RadarEntityData).data;
         if (entityData?.config?.coneAngle) {
           coneAngleRadians = entityData.config.coneAngle; // semi-angle
         }

@@ -6,8 +6,10 @@ import {
   Math as CesiumMath,
   JulianDate,
   ConstantProperty,
+  ConstantPositionProperty,
   Cartesian2,
   LabelGraphics,
+  type Entity,
 } from "cesium";
 import { useViewer } from "@mprest/map-core";
 import { DataManager, type ViewerWithConfigs } from "@mprest/map-cesium";
@@ -63,11 +65,12 @@ const DynamicRawDataPanel = () => {
 
       if (!entities) return;
 
-      entities.forEach((entity) => {
+      entities.forEach((mapEntity) => {
+        const entity = mapEntity.getNativeEntity<Entity>();
         if (!entity.position && !entity.polygon) return;
 
         // Get original position for this entity (stored in a custom property or calculate from ID)
-        const entityId = entity.id as string;
+        const entityId = mapEntity.id;
         const isPoint = entityId.includes("point");
         const isRocket = entityId.includes("rocket");
 
@@ -103,9 +106,9 @@ const DynamicRawDataPanel = () => {
                 CesiumMath.toDegrees(cartographic.latitude) + offsetLat;
               const newAlt = cartographic.height;
 
-              dataManager.updateItem(entity, {
-                position: Cartesian3.fromDegrees(newLon, newLat, newAlt),
-              });
+              entity.position = new ConstantPositionProperty(
+                Cartesian3.fromDegrees(newLon, newLat, newAlt)
+              );
             }
           }
         } else if (isRocket) {
@@ -146,9 +149,9 @@ const DynamicRawDataPanel = () => {
                 const newLat =
                   CesiumMath.toDegrees(cartographic.latitude) + rocketOffsetLat;
 
-                dataManager.updateItem(entity, {
-                  position: Cartesian3.fromDegrees(newLon, newLat, newAlt),
-                });
+                entity.position = new ConstantPositionProperty(
+                  Cartesian3.fromDegrees(newLon, newLat, newAlt)
+                );
               }
             }
           }
@@ -241,9 +244,12 @@ const DynamicRawDataPanel = () => {
     }
 
     // Use DataManager's addDataItem for automatic renderer resolution
-    const entity = dataManager.addDataItem(layerData, "dynamic-raw");
+    const mapEntity = dataManager.addDataItem(layerData, "dynamic-raw");
 
-    if (!entity) return;
+    if (!mapEntity) return;
+
+    // Get native Cesium entity for direct property access
+    const entity = mapEntity.getNativeEntity<Entity>();
 
     // Make points bigger after creation, rockets even bigger
     if (currentType === "points" && entity.point) {

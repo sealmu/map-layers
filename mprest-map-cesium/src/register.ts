@@ -3,7 +3,7 @@
  * Importing this module (or the main index) registers Cesium components with the core registry.
  */
 import { registerMapComponent } from "@mprest/map-core";
-import CesiumMap from "./components/CesiumMap";
+import CesiumMap from "./CesiumMap";
 
 // Register CesiumMap as the "cesium" provider
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

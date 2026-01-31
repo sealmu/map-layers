@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { useViewer } from "../../hooks/useViewer";
-import type { FeatureExtensionModule, FeatureContext } from "../../types";
+import type { ExtensionModule, ExtensionContext } from "../../types";
 
 export interface Coordinates {
   longitude: number;
@@ -40,7 +40,7 @@ const DEFAULT_OPTIONS: GotoOptions = {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const useLocations = (_ctx: FeatureContext): LocationsApi => {
+const useLocations = (_ctx: ExtensionContext): LocationsApi => {
   const { viewer } = useViewer();
 
   const gotoLocation = useCallback(
@@ -139,9 +139,9 @@ const useLocations = (_ctx: FeatureContext): LocationsApi => {
 };
 
 // Extension definition - this is what the extension loader discovers
-const locationsExtension: FeatureExtensionModule<LocationsApi> = {
+const locationsExtension: ExtensionModule<LocationsApi> = {
   name: "locations",
-  useFeature: useLocations,
+  useExtension: useLocations,
   priority: 10, // Load before bookmarks so it can be used as dependency
 };
 
