@@ -8,7 +8,7 @@ export const collectLayerData = <R extends IRendererRegistry>(
   layers: ILayerProps<ILayerData, R>[],
   viewer: IViewerWithConfigs<R> | null,
 ): Record<string, ICollectedLayerData> => {
-  if (!viewer?.accessors) return {};
+  if (!viewer) return {};
 
   const layerData: Record<string, ICollectedLayerData> = {};
 

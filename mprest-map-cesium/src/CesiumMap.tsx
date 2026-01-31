@@ -57,7 +57,7 @@ const CesiumMap = <R extends RendererRegistry>({
   // Extract layer props from children
   const layersRef = useRef<LayerProps<LayerData, R>[]>([]);
   const layers = useMemo(() => {
-    const layerArray = extractLayersFromChildren<R>(children);
+    const layerArray = extractLayersFromChildren<LayerProps<LayerData, R>>(children);
     if (hasLayersChanged(layerArray, layersRef.current)) {
       layersRef.current = layerArray;
     }

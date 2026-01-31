@@ -1,2 +1,2 @@
-export { extractLayersFromChildren } from "./extractLayersFromChildren";
-export { hasLayersChanged } from "./hasLayersChanged";
+// Re-export utilities from core
+export { extractLayersFromChildren, hasLayersChanged } from "@mprest/map-core";

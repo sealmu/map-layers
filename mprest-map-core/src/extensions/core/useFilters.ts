@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
-import { collectLayerData } from "../../helpers/collectLayerData";
+import { collectLayerData } from "../../utils/collectLayerData";
 import { useViewer } from "../../hooks/useViewer";
 import type {
   ILayerProps,

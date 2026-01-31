@@ -1,4 +1,15 @@
-import type { LayerProps, LayerData, RendererRegistry } from "../types";
+/**
+ * Minimal interface for layer comparison
+ */
+interface ComparableLayer {
+    id: string;
+    name?: string;
+    type?: string;
+    data?: unknown;
+    isDocked?: boolean;
+    isActive?: boolean;
+    isVisible?: boolean;
+}
 
 /**
  * Compares two layer arrays to check if they have changed
@@ -6,9 +17,9 @@ import type { LayerProps, LayerData, RendererRegistry } from "../types";
  * @param prevLayers - Previous layer array
  * @returns true if layers have changed, false otherwise
  */
-export default function hasLayersChanged<R extends RendererRegistry = RendererRegistry>(
-    newLayers: LayerProps<LayerData, R>[],
-    prevLayers: LayerProps<LayerData, R>[]
+export default function hasLayersChanged<T extends ComparableLayer>(
+    newLayers: T[],
+    prevLayers: T[]
 ): boolean {
     if (newLayers.length !== prevLayers.length) return true;
 
@@ -19,7 +30,10 @@ export default function hasLayersChanged<R extends RendererRegistry = RendererRe
             layer.id !== prev.id ||
             layer.name !== prev.name ||
             layer.type !== prev.type ||
-            layer.isDocked !== prev.isDocked
+            layer.data !== prev.data ||
+            layer.isDocked !== prev.isDocked ||
+            layer.isActive !== prev.isActive ||
+            layer.isVisible !== prev.isVisible
         );
     });
 }

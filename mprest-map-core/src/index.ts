@@ -90,5 +90,5 @@ export type { LocationsApi, Coordinates, GotoOptions, PlaceResult } from "./exte
 // ============================================
 // Utilities
 // ============================================
-export { createEventHandler, callAllSubscribers, extractLayersFromChildren, hasLayersChanged } from "./utils";
+export { createEventHandler, callAllSubscribers, extractLayersFromChildren, hasLayersChanged, collectLayerData } from "./utils";
 export { applyExtractor } from "./helpers/extractors/byPathValue.extractor";
