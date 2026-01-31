@@ -68,7 +68,16 @@ export { useViewer } from "./hooks/useViewer";
 // ============================================
 export { useFeatures } from "./features/useFeatures";
 export { useFeatureChangeEvent } from "./features/useFeatureChangeEvent";
-export type { BookmarksApi, Bookmark } from "./features/extensions/useBookmarks";
+
+// Extension factories (for provider-specific configuration)
+export {
+  default as bookmarksExtension,
+  createBookmarksExtension,
+  createUseBookmarks,
+} from "./features/extensions/useBookmarks";
+export type { BookmarksApi, Bookmark, BookmarksConfig } from "./features/extensions/useBookmarks";
+
+export { default as locationsExtension } from "./features/extensions/useLocations";
 export type { LocationsApi, Coordinates, GotoOptions, PlaceResult } from "./features/extensions/useLocations";
 
 // ============================================

@@ -2,8 +2,9 @@ import type { FeatureExtensionModule } from "../../types";
 
 // Auto-discover all feature plugins from this folder
 // Files must export a default FeatureExtensionModule
+// Excludes: index.ts and files starting with _ (reference files)
 const pluginModules = import.meta.glob<{ default: FeatureExtensionModule }>(
-  ["./*.ts", "!./index.ts"],
+  ["./*.ts", "!./index.ts", "!./_*.ts"],
   { eager: true }
 );
 

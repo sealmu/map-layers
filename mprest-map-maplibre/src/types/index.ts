@@ -89,6 +89,14 @@ export abstract class BasePlugin<
     feature: MapLibreFeature | null,
     location: MapClickLocation,
   ) => boolean | void;
+  onSelecting?: (
+    feature: MapLibreFeature,
+    location: MapClickLocation,
+  ) => boolean | void;
+  onClickPrevented?: (
+    feature: MapLibreFeature,
+    location: MapClickLocation,
+  ) => boolean | void;
   onSelected?: (
     feature: MapLibreFeature | null,
     location?: MapClickLocation,

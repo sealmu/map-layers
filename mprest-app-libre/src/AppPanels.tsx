@@ -1,15 +1,16 @@
 import { useState, useLayoutEffect } from "react";
 
 import { useViewer, FiltersPanel, SearchPanel, LayersPanel, type IMapApi } from "@mprest/map-core";
-import type { MapApi } from "@mprest/map-maplibre";
+import type { MapApi, BookmarksApi, LocationsApi } from "@mprest/map-maplibre";
 
-import { Expander } from "./components";
+import { Expander, BookmarksPanel } from "./components";
 
 export function AppPanels() {
   const { viewer } = useViewer();
   const [api, setApi] = useState<IMapApi | undefined>(undefined);
 
   const [layersPanelDocked, setLayersPanelDocked] = useState(true);
+  const [bookmarksPanelDocked, setBookmarksPanelDocked] = useState(true);
 
   // Subscribe to API changes from viewer and read initial value
   useLayoutEffect(() => {
@@ -51,6 +52,18 @@ export function AppPanels() {
           <LayersPanel api={api.layers} onFilter={handleFilter} onSearch={handleSearch} />
         </div>
       </Expander>
+
+      {(api as MapApi & { bookmarks?: BookmarksApi }).bookmarks && (
+        <Expander
+          title="Bookmarks"
+          position="left"
+          size="content"
+          isDocked={bookmarksPanelDocked}
+          onToggle={setBookmarksPanelDocked}
+        >
+          <BookmarksPanel api={api as MapApi & { bookmarks?: BookmarksApi; locations?: LocationsApi }} />
+        </Expander>
+      )}
     </>
   );
 }

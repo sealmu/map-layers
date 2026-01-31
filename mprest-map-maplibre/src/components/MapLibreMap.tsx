@@ -156,14 +156,27 @@ const MapLibreMap = <R extends RendererRegistry>({
           f.source && viewerRef.current!.featureStore.has(f.source as string)
         );
         if (appFeature) {
-          feature = {
-            type: "Feature",
-            id: String(appFeature.id || appFeature.properties?.id || ""),
-            geometry: appFeature.geometry as MapLibreFeature["geometry"],
-            properties: appFeature.properties || {},
-            layerId: appFeature.source,
-            renderType: appFeature.properties?.rendererType,
-          };
+          // Get the feature ID - try properties.id first (our ID), then MapLibre's id
+          const featureId = String(appFeature.properties?.id || appFeature.id || "");
+          const layerId = appFeature.source as string;
+
+          // Look up the actual feature from featureStore for complete data
+          const storedFeature = viewerRef.current.featureStore.get(layerId)?.get(featureId);
+
+          if (storedFeature) {
+            // Use the stored feature which has all our metadata
+            feature = storedFeature;
+          } else {
+            // Fallback to constructing from queryRenderedFeatures result
+            feature = {
+              type: "Feature",
+              id: featureId,
+              geometry: appFeature.geometry as MapLibreFeature["geometry"],
+              properties: appFeature.properties || {},
+              layerId: layerId,
+              renderType: appFeature.properties?.rendererType,
+            };
+          }
         }
       }
 
@@ -240,30 +253,37 @@ const MapLibreMap = <R extends RendererRegistry>({
   useEffect(() => {
     if (!viewer) return;
 
+    const unsubscribers: (() => void)[] = [];
+
     if (onClick) {
-      viewer.handlers.onClick.subscribe(onClick);
+      unsubscribers.push(viewer.handlers.onClick.subscribe(onClick));
     }
     if (onSelecting) {
-      viewer.handlers.onSelecting.subscribe(onSelecting);
+      unsubscribers.push(viewer.handlers.onSelecting.subscribe(onSelecting));
     }
     if (onClickPrevented) {
-      viewer.handlers.onClickPrevented.subscribe(onClickPrevented);
+      unsubscribers.push(viewer.handlers.onClickPrevented.subscribe(onClickPrevented));
     }
     if (onSelected) {
-      viewer.handlers.onSelected.subscribe(onSelected);
+      unsubscribers.push(viewer.handlers.onSelected.subscribe(onSelected));
     }
     if (onChangePosition) {
-      viewer.handlers.onChangePosition.subscribe(onChangePosition);
+      unsubscribers.push(viewer.handlers.onChangePosition.subscribe(onChangePosition));
     }
     if (onEntityChange) {
-      viewer.handlers.onEntityChange.subscribe(onEntityChange);
+      unsubscribers.push(viewer.handlers.onEntityChange.subscribe(onEntityChange));
     }
     if (onEntityCreating) {
-      viewer.handlers.onEntityCreating.subscribe(onEntityCreating);
+      unsubscribers.push(viewer.handlers.onEntityCreating.subscribe(onEntityCreating));
     }
     if (onEntityCreate) {
-      viewer.handlers.onEntityCreate.subscribe(onEntityCreate);
+      unsubscribers.push(viewer.handlers.onEntityCreate.subscribe(onEntityCreate));
     }
+
+    // Cleanup: unsubscribe all when callbacks change
+    return () => {
+      unsubscribers.forEach(unsubscribe => unsubscribe());
+    };
   }, [viewer, onClick, onSelecting, onClickPrevented, onSelected, onChangePosition, onEntityChange, onEntityCreating, onEntityCreate]);
 
   // Update layers and renderers on viewer when they change
@@ -293,12 +313,32 @@ const MapLibreMap = <R extends RendererRegistry>({
         callback(featuresApi);
       });
 
-      // Instantiate plugins
+      // Instantiate plugins and subscribe their handlers
       if (Object.keys(viewer.plugins).length === 0 && Object.keys(plugins).length > 0) {
         const mapInstance = { viewer };
         for (const [name, PluginClass] of Object.entries(plugins)) {
           const instance = new PluginClass(mapInstance);
           viewer.plugins[name] = instance;
+
+          // Subscribe plugin handlers to viewer events
+          if (instance.onClick) {
+            viewer.handlers.onClick.subscribe(instance.onClick.bind(instance));
+          }
+          if (instance.onSelecting) {
+            viewer.handlers.onSelecting.subscribe(instance.onSelecting.bind(instance));
+          }
+          if (instance.onClickPrevented) {
+            viewer.handlers.onClickPrevented.subscribe(instance.onClickPrevented.bind(instance));
+          }
+          if (instance.onSelected) {
+            viewer.handlers.onSelected.subscribe(instance.onSelected.bind(instance));
+          }
+          if (instance.onChangePosition) {
+            viewer.handlers.onChangePosition.subscribe(instance.onChangePosition.bind(instance));
+          }
+          if (instance.onEntityChange) {
+            viewer.handlers.onEntityChange.subscribe(instance.onEntityChange.bind(instance));
+          }
         }
       }
     }

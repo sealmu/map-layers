@@ -1,2 +1,1 @@
-// Overlays - can be expanded later
-export {};
+export { SelectionOverlay } from "./SelectionOverlay";

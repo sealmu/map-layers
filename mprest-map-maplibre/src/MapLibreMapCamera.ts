@@ -29,7 +29,7 @@ export class MapLibreMapCamera implements IMapCamera {
     return {
       latitude: center.lat,
       longitude: center.lng,
-      height: this.map.getZoom() * 10000, // Approximate altitude based on zoom
+      height: this.zoomToAltitude(this.map.getZoom()),
     };
   }
 
@@ -177,10 +177,14 @@ export class MapLibreMapCamera implements IMapCamera {
 
   private altitudeToZoom(altitude: number): number {
     // Approximate conversion from altitude (meters) to zoom level
-    // This is a rough approximation
     if (altitude <= 0) return 20;
     const zoom = Math.log2(40000000 / altitude);
     return Math.max(0, Math.min(20, zoom));
+  }
+
+  private zoomToAltitude(zoom: number): number {
+    // Inverse of altitudeToZoom: altitude = 40000000 / 2^zoom
+    return 40000000 / Math.pow(2, zoom);
   }
 }
 

@@ -223,6 +223,73 @@ export class MapLibreMapAccessors implements IMapAccessors {
   }
 
   // ============================================
+  // Direct Entity Mutation (like Cesium)
+  // ============================================
+
+  /**
+   * Set entity position directly (like Cesium entity.position = ...)
+   * Marks the entity as animated so React won't overwrite it
+   */
+  setEntityPosition(
+    id: string,
+    longitude: number,
+    latitude: number,
+    height?: number,
+    layerName?: string,
+  ): boolean {
+    const feature = this.getNativeEntity<MapLibreFeature>(id, layerName);
+    if (!feature) return false;
+
+    if (feature.geometry.type === "Point") {
+      feature.geometry.coordinates = height !== undefined
+        ? [longitude, latitude, height]
+        : [longitude, latitude];
+
+      // Mark as animated so React preserves this feature
+      if (feature.properties) {
+        feature.properties.__animated = true;
+      }
+
+      // Update the source
+      const layer = layerName || feature.layerId;
+      if (layer) {
+        this.updateSourceForLayer(layer);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Clear animated flag - call when animation ends
+   */
+  clearAnimatedFlag(id: string, layerName?: string): void {
+    const feature = this.getNativeEntity<MapLibreFeature>(id, layerName);
+    if (feature?.properties) {
+      delete feature.properties.__animated;
+    }
+  }
+
+  /**
+   * Update the map source from featureStore for a layer
+   * Call this after direct entity mutations
+   */
+  updateSourceForLayer(layerName: string): void {
+    const map = this.viewer.map;
+    const source = map.getSource(layerName);
+    if (source && source.type === "geojson") {
+      const layerFeatures = this.viewer.featureStore.get(layerName);
+      if (layerFeatures) {
+        const featureCollection = {
+          type: "FeatureCollection" as const,
+          features: Array.from(layerFeatures.values()),
+        };
+        (source as import("maplibre-gl").GeoJSONSource).setData(featureCollection);
+      }
+    }
+  }
+
+  // ============================================
   // Private Helpers
   // ============================================
 
@@ -261,20 +328,6 @@ export class MapLibreMapAccessors implements IMapAccessors {
     return null;
   }
 
-  private updateSourceForLayer(layerName: string): void {
-    const map = this.viewer.map;
-    const source = map.getSource(layerName);
-    if (source && source.type === "geojson") {
-      const layerFeatures = this.viewer.featureStore.get(layerName);
-      if (layerFeatures) {
-        const featureCollection = {
-          type: "FeatureCollection" as const,
-          features: Array.from(layerFeatures.values()),
-        };
-        (source as import("maplibre-gl").GeoJSONSource).setData(featureCollection);
-      }
-    }
-  }
 }
 
 /**

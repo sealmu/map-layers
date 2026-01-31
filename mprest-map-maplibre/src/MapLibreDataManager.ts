@@ -27,6 +27,11 @@ import { createRenderTypes } from "./types";
 export class MapLibreDataManager implements IDataManager {
   private viewer: ViewerWithConfigs;
   private dataSources: Map<string, MapLibreDataSource> = new Map();
+  // Throttle source updates to reduce label flickering during animation
+  private pendingUpdates: Set<string> = new Set();
+  private updateScheduled = false;
+  private lastUpdateTime: Map<string, number> = new Map();
+  private readonly UPDATE_THROTTLE_MS = 33; // ~30fps for source updates
 
   constructor(viewer: ViewerWithConfigs) {
     this.viewer = viewer;
@@ -284,6 +289,109 @@ export class MapLibreDataManager implements IDataManager {
 
   unregisterDataSource(name: string): void {
     this.dataSources.delete(name);
+  }
+
+  // ============================================
+  // Animation Support (like Cesium entity.position = ...)
+  // ============================================
+
+  /**
+   * Set entity position directly - for animation use
+   * Marks the entity as animated so React won't overwrite it
+   * Uses throttled updates to reduce label flickering
+   */
+  setEntityPosition(
+    id: string,
+    longitude: number,
+    latitude: number,
+    height?: number,
+    layerName?: string,
+  ): boolean {
+    const feature = this.getMapLibreFeature(id, layerName);
+    if (!feature) return false;
+
+    if (feature.geometry.type === "Point") {
+      feature.geometry.coordinates = height !== undefined
+        ? [longitude, latitude, height]
+        : [longitude, latitude];
+
+      // Mark as animated so React preserves this feature
+      if (feature.properties) {
+        feature.properties.__animated = true;
+      }
+
+      // Update the source with throttling to reduce label flickering
+      const layer = layerName || feature.layerId;
+      if (layer) {
+        this.scheduleSourceUpdate(layer);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Schedule a throttled source update to reduce flickering
+   */
+  private scheduleSourceUpdate(layerName: string): void {
+    const now = performance.now();
+    const lastUpdate = this.lastUpdateTime.get(layerName) || 0;
+
+    // If enough time has passed, update immediately
+    if (now - lastUpdate >= this.UPDATE_THROTTLE_MS) {
+      this.updateSourceForLayer(layerName);
+      this.lastUpdateTime.set(layerName, now);
+      return;
+    }
+
+    // Otherwise, schedule an update
+    this.pendingUpdates.add(layerName);
+    if (!this.updateScheduled) {
+      this.updateScheduled = true;
+      const delay = this.UPDATE_THROTTLE_MS - (now - lastUpdate);
+      setTimeout(() => {
+        this.updateScheduled = false;
+        const updateTime = performance.now();
+        for (const layer of this.pendingUpdates) {
+          this.updateSourceForLayer(layer);
+          this.lastUpdateTime.set(layer, updateTime);
+        }
+        this.pendingUpdates.clear();
+      }, delay);
+    }
+  }
+
+  /**
+   * Start animation on an entity - marks it so React won't overwrite
+   */
+  startAnimation(id: string, layerName?: string): boolean {
+    const feature = this.getMapLibreFeature(id, layerName);
+    if (!feature) return false;
+
+    if (feature.properties) {
+      feature.properties.__animated = true;
+    }
+    return true;
+  }
+
+  /**
+   * Stop animation on an entity - removes the animated flag
+   */
+  stopAnimation(id: string, layerName?: string): boolean {
+    const feature = this.getMapLibreFeature(id, layerName);
+    if (!feature) return false;
+
+    if (feature.properties) {
+      delete feature.properties.__animated;
+    }
+    return true;
+  }
+
+  /**
+   * Update the map source from featureStore - public for animation use
+   */
+  updateSource(layerName: string): void {
+    this.updateSourceForLayer(layerName);
   }
 
   // ============================================

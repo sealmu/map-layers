@@ -56,10 +56,28 @@ export { MapLibreDataSource } from "./MapLibreDataSource";
 export { MapLibreDataManager, createMapLibreDataManager } from "./MapLibreDataManager";
 
 // ============================================
+// Plugins
+// ============================================
+export { EntitySelectionPlugin } from "./plugins";
+
+// ============================================
+// Hooks
+// ============================================
+export { useLayerAnimations, useLayerAnimationsWithMap } from "./hooks";
+
+// ============================================
 // Features
 // ============================================
 export { useFeatures } from "./features/useFeatures";
 export { useFeatureChangeEvent } from "./features/useFeatureChangeEvent";
+
+// Extensions
+export { default as locationsExtension } from "./features/extensions/useLocations";
+export type { Coordinates, GotoOptions, PlaceResult, LocationsApi } from "./features/extensions/useLocations";
+
+// Re-export bookmarks from core (MapLibre uses core with config)
+export { bookmarksExtension, createBookmarksExtension } from "@mprest/map-core";
+export type { Bookmark, BookmarksApi, BookmarksConfig } from "@mprest/map-core";
 
 // ============================================
 // Types

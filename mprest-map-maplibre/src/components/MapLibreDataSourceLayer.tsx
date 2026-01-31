@@ -87,6 +87,9 @@ const MapLibreDataSourceLayer = <R extends RendererRegistry>({
             type: "FeatureCollection",
             features: [],
           },
+          // promoteId helps MapLibre track feature identity across updates,
+          // reducing flickering during animations
+          promoteId: "id",
         });
         sourceAddedRef.current = true;
         setSourceReady(true); // Trigger re-render to update data
@@ -140,11 +143,24 @@ const MapLibreDataSourceLayer = <R extends RendererRegistry>({
     const previousIds = new Set(layerFeatures.keys());
     const currentIds = new Set<string>();
 
-    // Clear and repopulate
+    // Process data items
     const features: MapLibreFeature[] = [];
 
     if (data && data.length > 0) {
       data.forEach((item: LayerData) => {
+        currentIds.add(item.id);
+
+        // Check if feature already exists in featureStore
+        const existingFeature = layerFeatures!.get(item.id);
+
+        // If feature exists and is being animated externally, preserve it
+        // This allows direct entity mutation like Cesium
+        if (existingFeature && existingFeature.properties?.__animated) {
+          features.push(existingFeature);
+          return;
+        }
+
+        // Create new feature or update existing one
         const feature = createFeature(item);
         if (feature) {
           feature.layerId = id;
@@ -152,6 +168,7 @@ const MapLibreDataSourceLayer = <R extends RendererRegistry>({
           const effectiveRenderType = feature.properties?.rendererType || item.renderType || type;
           feature.renderType = effectiveRenderType;
           if (feature.properties) {
+            feature.properties.id = feature.id; // Ensure ID is in properties for queryRenderedFeatures
             feature.properties.layerId = id;
             feature.properties.rendererType = effectiveRenderType;
           }
@@ -168,7 +185,6 @@ const MapLibreDataSourceLayer = <R extends RendererRegistry>({
 
           features.push(feature);
           layerFeatures!.set(feature.id, feature);
-          currentIds.add(feature.id);
 
           // Check if this is a new feature
           if (!previousIds.has(feature.id)) {
@@ -189,12 +205,13 @@ const MapLibreDataSourceLayer = <R extends RendererRegistry>({
       }
     }
 
-    // Update source data
+    // Update source data from featureStore (not from newly created features)
+    // This ensures animated features retain their current coordinates
     const source = nativeMap.getSource(id);
     if (source && source.type === "geojson") {
       const featureCollection: FeatureCollection = {
         type: "FeatureCollection",
-        features: features,
+        features: Array.from(layerFeatures.values()),
       };
       (source as GeoJSONSource).setData(featureCollection);
     }

@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { useViewer } from "../../hooks/useViewer";
-import type { FeatureExtensionModule, FeatureContext, ICoordinate, IMapCamera } from "../../types";
+import type { FeatureExtensionModule, FeatureContext, ICoordinate, IMapCamera, IViewerWithConfigs } from "../../types";
 
 export interface Bookmark {
   id: string;
@@ -11,6 +11,7 @@ export interface Bookmark {
     pitch: number;
     roll: number;
   };
+  zoom?: number; // Optional: for providers that use zoom instead of altitude
   createdAt: number;
 }
 
@@ -23,135 +24,175 @@ export interface BookmarksApi {
   clearBookmarks: () => void;
 }
 
-const STORAGE_KEY = "map-bookmarks";
+export interface BookmarksConfig {
+  /** Storage key for localStorage */
+  storageKey?: string;
+  /** Get current zoom level (for 2D map providers) */
+  getZoom?: (viewer: IViewerWithConfigs) => number | undefined;
+  /** Fly to bookmark with zoom (for 2D map providers) */
+  flyToWithZoom?: (viewer: IViewerWithConfigs, bookmark: Bookmark) => boolean;
+}
 
-const loadBookmarks = (): Bookmark[] => {
+const DEFAULT_STORAGE_KEY = "map-bookmarks";
+
+const loadBookmarks = (storageKey: string): Bookmark[] => {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(storageKey);
     return stored ? JSON.parse(stored) : [];
   } catch {
     return [];
   }
 };
 
-const saveBookmarks = (bookmarks: Bookmark[]) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(bookmarks));
+const saveBookmarks = (storageKey: string, bookmarks: Bookmark[]) => {
+  localStorage.setItem(storageKey, JSON.stringify(bookmarks));
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const useBookmarks = (_ctx: FeatureContext): BookmarksApi => {
-  const { viewer } = useViewer();
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>(loadBookmarks);
+/**
+ * Create a bookmarks hook with provider-specific configuration
+ */
+export const createUseBookmarks = (config: BookmarksConfig = {}) => {
+  const storageKey = config.storageKey ?? DEFAULT_STORAGE_KEY;
 
-  // Get camera interface - prefer accessors.camera if available
-  const getCamera = useCallback((): IMapCamera | null => {
-    if (!viewer) return null;
-    // Use accessors.camera if available (provider-agnostic)
-    if (viewer.accessors && "camera" in viewer.accessors) {
-      return (viewer.accessors as { camera: IMapCamera }).camera;
-    }
-    return null;
-  }, [viewer]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  return (_ctx: FeatureContext): BookmarksApi => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const { viewer } = useViewer();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [bookmarks, setBookmarks] = useState<Bookmark[]>(() => loadBookmarks(storageKey));
 
-  const addBookmark = useCallback(
-    (name: string): Bookmark | null => {
-      const camera = getCamera();
-      if (!camera) return null;
+    // Get camera interface
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const getCamera = useCallback((): IMapCamera | null => {
+      if (!viewer) return null;
+      if (viewer.accessors && "camera" in viewer.accessors) {
+        return (viewer.accessors as { camera: IMapCamera }).camera;
+      }
+      return null;
+    }, [viewer]);
 
-      const position = camera.getPosition();
-      const orientation = camera.getOrientation();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const addBookmark = useCallback(
+      (name: string): Bookmark | null => {
+        const camera = getCamera();
+        if (!camera || !viewer) return null;
 
-      const bookmark: Bookmark = {
-        id: crypto.randomUUID(),
-        name,
-        position: {
-          longitude: position.longitude,
-          latitude: position.latitude,
-          height: position.height,
-        },
-        camera: {
-          heading: orientation.heading,
-          pitch: orientation.pitch,
-          roll: orientation.roll,
-        },
-        createdAt: Date.now(),
-      };
+        const position = camera.getPosition();
+        const orientation = camera.getOrientation();
 
+        // Get zoom if provider supports it
+        const zoom = config.getZoom?.(viewer);
+
+        const bookmark: Bookmark = {
+          id: crypto.randomUUID(),
+          name,
+          position: {
+            longitude: position.longitude,
+            latitude: position.latitude,
+            height: position.height,
+          },
+          camera: {
+            heading: orientation.heading,
+            pitch: orientation.pitch,
+            roll: orientation.roll,
+          },
+          zoom,
+          createdAt: Date.now(),
+        };
+
+        setBookmarks((prev) => {
+          const updated = [...prev, bookmark];
+          saveBookmarks(storageKey, updated);
+          return updated;
+        });
+
+        return bookmark;
+      },
+      [getCamera, viewer],
+    );
+
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const removeBookmark = useCallback((id: string) => {
       setBookmarks((prev) => {
-        const updated = [...prev, bookmark];
-        saveBookmarks(updated);
+        const updated = prev.filter((b) => b.id !== id);
+        saveBookmarks(storageKey, updated);
         return updated;
       });
+    }, []);
 
-      return bookmark;
-    },
-    [getCamera],
-  );
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const goToBookmark = useCallback(
+      (id: string): boolean => {
+        if (!viewer) return false;
 
-  const removeBookmark = useCallback((id: string) => {
-    setBookmarks((prev) => {
-      const updated = prev.filter((b) => b.id !== id);
-      saveBookmarks(updated);
-      return updated;
-    });
-  }, []);
+        const bookmark = bookmarks.find((b) => b.id === id);
+        if (!bookmark) return false;
 
-  const goToBookmark = useCallback(
-    (id: string): boolean => {
-      const camera = getCamera();
-      if (!camera) return false;
+        // Use provider-specific flyTo if available
+        if (config.flyToWithZoom) {
+          return config.flyToWithZoom(viewer, bookmark);
+        }
 
-      const bookmark = bookmarks.find((b) => b.id === id);
-      if (!bookmark) return false;
+        // Fall back to camera.flyTo
+        const camera = getCamera();
+        if (!camera) return false;
 
-      // Use provider-agnostic flyTo
-      camera.flyTo(
-        {
-          position: bookmark.position,
-          orientation: bookmark.camera,
-        },
-        { duration: 1.5 },
-      );
+        camera.flyTo(
+          {
+            position: bookmark.position,
+            orientation: bookmark.camera,
+          },
+          { duration: 1.5 },
+        );
 
-      return true;
-    },
-    [getCamera, bookmarks],
-  );
+        return true;
+      },
+      [viewer, bookmarks, getCamera],
+    );
 
-  const renameBookmark = useCallback((id: string, name: string) => {
-    setBookmarks((prev) => {
-      const updated = prev.map((b) => (b.id === id ? { ...b, name } : b));
-      saveBookmarks(updated);
-      return updated;
-    });
-  }, []);
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const renameBookmark = useCallback((id: string, name: string) => {
+      setBookmarks((prev) => {
+        const updated = prev.map((b) => (b.id === id ? { ...b, name } : b));
+        saveBookmarks(storageKey, updated);
+        return updated;
+      });
+    }, []);
 
-  const clearBookmarks = useCallback(() => {
-    setBookmarks([]);
-    saveBookmarks([]);
-  }, []);
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const clearBookmarks = useCallback(() => {
+      setBookmarks([]);
+      saveBookmarks(storageKey, []);
+    }, []);
 
-  return useMemo(
-    () => ({
-      bookmarks,
-      addBookmark,
-      removeBookmark,
-      goToBookmark,
-      renameBookmark,
-      clearBookmarks,
-    }),
-    [bookmarks, addBookmark, removeBookmark, goToBookmark, renameBookmark, clearBookmarks],
-  );
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useMemo(
+      () => ({
+        bookmarks,
+        addBookmark,
+        removeBookmark,
+        goToBookmark,
+        renameBookmark,
+        clearBookmarks,
+      }),
+      [bookmarks, addBookmark, removeBookmark, goToBookmark, renameBookmark, clearBookmarks],
+    );
+  };
 };
 
-// Extension definition - this is what the extension loader discovers
-const bookmarksExtension: FeatureExtensionModule<BookmarksApi> = {
+/**
+ * Create a bookmarks extension with provider-specific configuration
+ */
+export const createBookmarksExtension = (config: BookmarksConfig = {}): FeatureExtensionModule<BookmarksApi> => ({
   name: "bookmarks",
-  useFeature: useBookmarks,
-  priority: 0, // default priority
-};
+  useFeature: createUseBookmarks(config),
+  priority: 0,
+});
 
-// Type augmentation - makes api.bookmarks fully typed
+// Default extension (for backward compatibility)
+const bookmarksExtension = createBookmarksExtension();
+
+// Type augmentation
 declare module "../../types" {
   interface MapApi {
     bookmarks?: BookmarksApi;
