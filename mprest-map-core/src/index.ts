@@ -55,6 +55,9 @@ export { default as SearchPanel } from "./components/map/panels/SearchPanel";
 export { default as FilterModal } from "./components/map/panels/FilterModal";
 export { default as SearchModal } from "./components/map/panels/SearchModal";
 
+// Base maps components
+export { BaseMapsCard, BaseMapsPanel } from "./components/basemaps";
+
 // Data connector (provider-agnostic)
 export { DataConnector, type DataConnectorProps } from "./components/DataConnector";
 
@@ -86,6 +89,13 @@ export type { BookmarksApi, Bookmark, BookmarksConfig } from "./extensions/featu
 
 export { default as locationsExtension } from "./extensions/features/useLocations";
 export type { LocationsApi, Coordinates, GotoOptions, PlaceResult } from "./extensions/features/useLocations";
+
+export {
+  default as baseMapsExtension,
+  createBaseMapsExtension,
+  createUseBaseMaps,
+} from "./extensions/features/useBaseMaps";
+export type { BaseMapsConfig } from "./extensions/features/useBaseMaps";
 
 // ============================================
 // Utilities

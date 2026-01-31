@@ -15,8 +15,10 @@ import {
   Entity,
   Viewer as CesiumViewer,
   CustomDataSource,
+  ImageryProvider,
+  ImageryLayer,
 } from "cesium";
-import type { IMapAccessors, IDataManager, EntityChangeStatus, LogEntry, IMapConfig } from "@mprest/map-core";
+import type { IMapAccessors, IDataManager, EntityChangeStatus, LogEntry, IMapConfig, IBaseMapsApi } from "@mprest/map-core";
 
 // Re-export core types for convenience (these are provider-agnostic)
 export type {
@@ -294,6 +296,62 @@ export interface AppContentProps<
 }
 
 // ============================================
+// Cesium Base Map Provider Configuration
+// ============================================
+
+/**
+ * Cesium-specific base map provider configuration.
+ * Supports both direct provider instance and factory callback for lazy initialization.
+ */
+export interface BaseMapProviderConfig {
+  /** Unique identifier for the base map */
+  id: string;
+  /** Display name for UI */
+  name: string;
+  /** Direct Cesium ImageryProvider instance */
+  provider?: ImageryProvider;
+  /** Factory callback for lazy provider initialization */
+  createProvider?: () => ImageryProvider;
+  /** Whether this base map is enabled by default (default: false) */
+  isEnabled?: boolean;
+  /** Whether this base map appears in the layers panel list (default: true) */
+  isListed?: boolean;
+  /** Optional description */
+  description?: string;
+  /** Optional thumbnail URL for UI */
+  thumbnailUrl?: string;
+  /**
+   * Called before the base map is enabled.
+   * Return a modified provider to use instead, or false to cancel enabling.
+   */
+  onEnabling?: (
+    config: BaseMapProviderConfig,
+    viewer: CesiumViewer,
+  ) => ImageryProvider | false | void;
+  /**
+   * Called after the base map layer is enabled and visible.
+   */
+  onEnabled?: (
+    config: BaseMapProviderConfig,
+    layer: ImageryLayer,
+    viewer: CesiumViewer,
+  ) => void;
+  /**
+   * Called before the base map is disabled.
+   * Return false to cancel disabling.
+   */
+  onDisabling?: (
+    config: BaseMapProviderConfig,
+    layer: ImageryLayer,
+    viewer: CesiumViewer,
+  ) => boolean | void;
+  /**
+   * Called after the base map layer is disabled (hidden).
+   */
+  onDisabled?: (config: BaseMapProviderConfig, viewer: CesiumViewer) => void;
+}
+
+// ============================================
 // Cesium Component Props
 // ============================================
 
@@ -332,6 +390,8 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
   defaultToken?: string;
   renderers: R;
   mapConfig?: IMapConfig;
+  /** Base map providers configuration - replaces hardcoded OpenStreetMap */
+  baseMapProviders?: BaseMapProviderConfig[];
   animateActivation?: boolean;
   animateVisibility?: boolean;
   onApiChange?: (api: MapApi) => void;
@@ -518,6 +578,7 @@ export interface MapApi {
       flyTo?: boolean | number,
     ) => boolean;
   };
+  baseMaps?: IBaseMapsApi;
   [key: string]: unknown;
 }
 

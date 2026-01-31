@@ -6,9 +6,7 @@ import {
 } from "react";
 import {
   Ion,
-  OpenStreetMapImageryProvider,
   Cartesian3,
-  ImageryLayer,
   Viewer as CesiumViewer,
 } from "cesium";
 import CesiumDataSourceLayer from "./CesiumDataSourceLayer";
@@ -42,6 +40,7 @@ const CesiumMap = <R extends RendererRegistry>({
   defaultToken,
   renderers,
   mapConfig,
+  baseMapProviders,
   animateActivation = false,
   animateVisibility = false,
   onApiChange,
@@ -61,7 +60,6 @@ const CesiumMap = <R extends RendererRegistry>({
   const { setViewer: setContextViewer } = useViewer();
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewer, setViewer] = useState<ViewerWithConfigs<R> | null>(null);
-  const imageryLayerRef = useRef<ImageryLayer | null>(null);
 
   // Track map ready states
   const mapReadyFired = useRef(false);
@@ -86,7 +84,8 @@ const CesiumMap = <R extends RendererRegistry>({
     return layersRef.current;
   }, [children]);
 
-  const featuresApi = useExtensions(layers) as MapApi;
+  const extensionContext = useMemo(() => ({ baseMapProviders }), [baseMapProviders]);
+  const featuresApi = useExtensions(layers, extensionContext) as MapApi;
   const { layers: layersApi, filters: filtersApi, search: searchApi, entities: entitiesApi } = featuresApi;
 
   // Initialize Cesium Viewer
@@ -109,6 +108,12 @@ const CesiumMap = <R extends RendererRegistry>({
       navigationHelpButton: false,
       fullscreenButton: false,
     }) as ViewerWithConfigs<R>;
+
+    // Remove default imagery layer if baseMapProviders is used
+    // This allows our managed base maps to be visible
+    if (baseMapProviders && baseMapProviders.length > 0) {
+      newViewer.imageryLayers.removeAll();
+    }
 
     // Define getter for viewer.api to always return current API
     Object.defineProperty(newViewer, 'api', {
@@ -174,14 +179,6 @@ const CesiumMap = <R extends RendererRegistry>({
         callback(initialApi);
       });
     });
-
-    // Add OpenStreetMap imagery layer
-    const imageryProvider = new OpenStreetMapImageryProvider({
-      url: "https://tile.openstreetmap.org/",
-    });
-    const imageryLayer =
-      newViewer.imageryLayers.addImageryProvider(imageryProvider);
-    imageryLayerRef.current = imageryLayer;
 
     // Mark viewer as ready
     readyState.current.viewer = true;
@@ -275,14 +272,6 @@ const CesiumMap = <R extends RendererRegistry>({
 
   // Handle extension state changes
   useExtensionChangeEvent(layersApi, filtersApi, searchApi, entitiesApi, onExtensionStateChanged);
-
-  // Handle street map visibility
-  useEffect(() => {
-    if (imageryLayerRef.current) {
-      imageryLayerRef.current.show =
-        layersApi.layerStates["street-map"]?.isVisible ?? true;
-    }
-  }, [layersApi.layerStates]);
 
   // Handle click and position callbacks via handlers
   const { processEntityChange, processEntityCreating, processEntityCreate } = useBindHandlers({

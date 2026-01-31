@@ -86,6 +86,11 @@ export type {
   ISearchResult,
   ISearchPanelApi,
   IEntitiesApi,
+  IBaseMapConfig,
+  IBaseMapState,
+  IBaseMapsApi,
+  IBaseMapsCardProps,
+  IBaseMapsPanelProps,
   IExtensionState,
   IExtensionContext,
   IExtensionModule,
@@ -131,6 +136,9 @@ export type {
   IFiltersPanelApi as FiltersPanelApi,
   ISearchPanelApi as SearchPanelApi,
   IEntitiesApi as EntitiesApi,
+  IBaseMapsApi as BaseMapsApi,
+  IBaseMapConfig as BaseMapConfig,
+  IBaseMapState as BaseMapState,
 } from "./core/types/extensions";
 
 export type {

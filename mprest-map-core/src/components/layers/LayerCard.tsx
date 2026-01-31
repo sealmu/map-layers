@@ -53,7 +53,7 @@ const LayerCard = ({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      {layer.id !== "street-map" && !hidePin && (
+      {!hidePin && (
         <button
           className="dock-handle"
           onClick={onToggleDocked}
@@ -64,26 +64,24 @@ const LayerCard = ({
         </button>
       )}
       <div className="layer-controls">
-        {layer.id !== "street-map" && (
-          <label className="switch-label">
-            <span className="control-name">Active</span>
-            <label className="switch">
-              <input
-                type="checkbox"
-                checked={isActive}
-                onChange={onToggleActive}
-              />
-              <span className="slider"></span>
-            </label>
+        <label className="switch-label">
+          <span className="control-name">Active</span>
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={isActive}
+              onChange={onToggleActive}
+            />
+            <span className="slider"></span>
           </label>
-        )}
+        </label>
         <label className="checkbox-label">
           <span className="control-name">Visible</span>
           <input
             type="checkbox"
             checked={isVisible}
             onChange={onToggleVisible}
-            disabled={layer.id !== "street-map" && !isActive}
+            disabled={!isActive}
           />
         </label>
       </div>

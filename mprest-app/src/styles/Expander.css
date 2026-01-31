@@ -70,7 +70,15 @@
   max-height: 70vh; /* Limit max height to 70% of viewport */
 }
 
-.expander.content.left.docked,
+.expander.content.left.docked {
+  width: 40px;
+  height: 25vh; /* Quarter viewport height when collapsed */
+  min-height: 40px; /* Minimum height */
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+}
+
 .expander.content.right.docked {
   width: 40px;
   height: auto; /* Let height fit toggle content */

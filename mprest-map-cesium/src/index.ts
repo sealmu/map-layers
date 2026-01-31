@@ -25,6 +25,8 @@ export {
   LayersPanel,
   FiltersPanel,
   SearchPanel,
+  BaseMapsCard,
+  BaseMapsPanel,
 } from "@mprest/map-core";
 
 // ============================================
@@ -165,6 +167,9 @@ export type {
   DataConnectorConfig,
   DataConnectorProps,
   ViewerContextType,
+
+  // Base Map Types
+  BaseMapProviderConfig,
 } from "./types";
 
 export { BasePlugin, createRenderTypes } from "./types";

@@ -26,8 +26,9 @@ const usePlugins = (ctx: ExtensionContext) => {
 
 export const useExtensions = <R extends RendererRegistry>(
   layerProps: LayerProps<LayerData, R>[],
+  additionalContext?: Record<string, unknown>,
 ) => {
-  const ctx: ExtensionContext = { layers: layerProps };
+  const ctx: ExtensionContext = { layers: layerProps, ...additionalContext };
 
   // Core features
   const layers = useWithCtx(ctx, useLayers);

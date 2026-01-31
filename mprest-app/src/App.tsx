@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 
-import { Cartesian2, Entity } from "cesium";
+import { Cartesian2, Entity, OpenStreetMapImageryProvider, UrlTemplateImageryProvider } from "cesium";
 
 import { useDroneAnimation, useDroneAnimation2 } from "./hooks/useDroneAnimation";
 import { useRadarAnimation } from "./hooks/useRadarAnimation";
@@ -15,6 +15,7 @@ import {
   type AppContentProps,
   type LayeredDataWithPayload,
   type MapClickLocation,
+  type BaseMapProviderConfig,
 } from "@mprest/map-cesium";
 
 import { EntityPopup, type EntityPopupInfo, StickyPopups, usePopupPosition } from "./components/popups";
@@ -67,6 +68,59 @@ const mapConfig: IMapConfig = {
   },
   animationDuration: 2,
 };
+
+// Base map providers configuration
+const baseMapProviders: BaseMapProviderConfig[] = [
+  {
+    id: "osm",
+    name: "OpenStreetMap",
+    provider: new OpenStreetMapImageryProvider({
+      url: "https://tile.openstreetmap.org/",
+    }),
+    isEnabled: true,
+    isListed: true,
+    description: "Standard OpenStreetMap tiles",
+    onEnabling: (config, viewer) => {
+      console.log("About to enable:", config.id, viewer);
+    },
+  },
+  {
+    id: "opentopomap",
+    name: "OpenTopoMap",
+    provider: new UrlTemplateImageryProvider({
+      url: "https://tile.opentopomap.org/{z}/{x}/{y}.png",
+      credit: "OpenTopoMap",
+    }),
+    isEnabled: false,
+    isListed: true,
+    description: "Topographic map tiles",
+    onEnabling: (config, viewer) => {
+      console.log("About to enable:", config.id, viewer);
+    },
+  },
+  {
+    id: "stamen-terrain",
+    name: "Stamen Terrain",
+    provider: new UrlTemplateImageryProvider({
+      url: "https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}.png",
+      credit: "Stamen Terrain via Stadia Maps",
+    }),
+    isEnabled: false,
+    isListed: true,
+    description: "Terrain with labels and shading",
+  },
+  {
+    id: "nasa-modis",
+    name: "NASA MODIS",
+    provider: new UrlTemplateImageryProvider({
+      url: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2024-01-01/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg",
+      credit: "NASA EOSDIS GIBS",
+    }),
+    isEnabled: false,
+    isListed: true,
+    description: "NASA satellite true color imagery",
+  },
+];
 
 
 function App() {
@@ -455,6 +509,7 @@ function AppContent({
           // onEntityCreate={onEntityCreate}
           renderers={AppRenderers}
           mapConfig={mapConfig}
+          baseMapProviders={baseMapProviders}
           animateActivation={true}
           animateVisibility={true}
           // onApiReady={handleApiReady}

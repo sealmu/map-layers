@@ -263,3 +263,35 @@ body {
   width: 100%;
   height: auto;
 }
+
+/* Base Maps Panel */
+.basemaps-panel-container {
+  position: absolute;
+  top: 10px;
+  left: 60px;
+  z-index: 1000;
+  background-color: rgba(255, 255, 255, 1);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  backdrop-filter: blur(4px);
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+  opacity: 0.1;
+}
+
+.basemaps-panel-container:hover {
+  background-color: rgba(255, 255, 255, 1);
+  opacity: 1;
+}
+
+/* Base Maps Panel Labels */
+.basemaps-panel {
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+  pointer-events: auto !important;
+  user-select: none;
+}
+
+.basemaps-panel:hover {
+  opacity: 1;
+}

@@ -38,18 +38,14 @@ const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
     return { groups, ungrouped };
   }, [layerConfigs]);
   const activeCount = layerConfigs.filter(
-    (layer: LayerConfig) =>
-      layer.id !== "street-map" && (layerStates[layer.id]?.isActive ?? false),
+    (layer: LayerConfig) => layerStates[layer.id]?.isActive ?? false,
   ).length;
-  const allActive =
-    activeCount === layerConfigs.filter((layer: LayerConfig) => layer.id !== "street-map").length;
+  const allActive = activeCount === layerConfigs.length;
   const someActive = activeCount > 0 && !allActive;
   const visibleCount = layerConfigs.filter(
-    (layer: LayerConfig) =>
-      layer.id !== "street-map" && (layerStates[layer.id]?.isVisible ?? false),
+    (layer: LayerConfig) => layerStates[layer.id]?.isVisible ?? false,
   ).length;
-  const allVisible =
-    visibleCount === layerConfigs.filter((layer: LayerConfig) => layer.id !== "street-map").length;
+  const allVisible = visibleCount === layerConfigs.length;
 
   return (
     <div className="layer-control">

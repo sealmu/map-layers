@@ -121,6 +121,62 @@ export interface IEntitiesApi {
 }
 
 // ============================================
+// Base Maps API
+// ============================================
+
+/**
+ * Base map configuration (provider-agnostic)
+ */
+export interface IBaseMapConfig {
+  /** Unique identifier for the base map */
+  id: string;
+  /** Display name for UI */
+  name: string;
+  /** Whether this base map is currently enabled/visible on the map */
+  isEnabled: boolean;
+  /** Whether this base map appears in the layers panel list */
+  isListed: boolean;
+  /** Optional description */
+  description?: string;
+  /** Optional thumbnail URL for UI */
+  thumbnailUrl?: string;
+}
+
+/**
+ * Base maps state tracking
+ */
+export interface IBaseMapState {
+  isEnabled: boolean;
+  isListed: boolean;
+}
+
+/**
+ * Base maps panel API (provider-agnostic)
+ */
+export interface IBaseMapsApi {
+  /** All registered base maps */
+  baseMaps: IBaseMapConfig[];
+  /** Map of base map states by ID */
+  baseMapStates: Record<string, IBaseMapState>;
+  /** List of currently enabled base maps */
+  enabledBaseMaps: IBaseMapConfig[];
+  /** Current order of base map IDs (first = back/bottom, last = front/top) */
+  baseMapOrder: string[];
+  /** Toggle a base map's enabled state */
+  toggleBaseMap: (id: string) => void;
+  /** Explicitly set a base map's enabled state */
+  setBaseMapEnabled: (id: string, enabled: boolean) => void;
+  /** Set whether a base map is listed in panels */
+  setBaseMapListed: (id: string, listed: boolean) => void;
+  /** Enable only a specific base map (radio button behavior) */
+  enableOnlyBaseMap: (id: string) => void;
+  /** Reorder base maps (first = back/bottom, last = front/top) */
+  reorderBaseMaps: (orderedIds: string[]) => void;
+  /** Move a base map to a specific index */
+  moveBaseMap: (id: string, toIndex: number) => void;
+}
+
+// ============================================
 // Extension System
 // ============================================
 
@@ -131,7 +187,8 @@ export type IExtensionState =
   | ILayersPanelApi
   | IFiltersPanelApi
   | ISearchPanelApi
-  | IEntitiesApi;
+  | IEntitiesApi
+  | IBaseMapsApi;
 
 /**
  * Extension context (flexible record for extension composition)
@@ -161,6 +218,7 @@ export interface IMapApi {
   filters: IFiltersPanelApi;
   search: ISearchPanelApi;
   entities: IEntitiesApi;
+  baseMaps?: IBaseMapsApi;
   [key: string]: unknown;
 }
 
@@ -198,6 +256,30 @@ export interface ISearchPanelProps {
   api: ISearchPanelApi;
   filters: IFiltersPanelApi;
   entities: IEntitiesApi;
+}
+
+/**
+ * Base maps card component props
+ */
+export interface IBaseMapsCardProps {
+  api: IBaseMapsApi;
+  /** Custom header text (default: "Base Maps") */
+  header?: string;
+  /** Custom render function for each base map item */
+  renderItem?: (
+    baseMap: IBaseMapConfig,
+    toggleFn: () => void,
+    isEnabled: boolean,
+  ) => React.ReactNode;
+}
+
+/**
+ * Base maps panel component props (floating panel with enabled labels)
+ */
+export interface IBaseMapsPanelProps {
+  api: IBaseMapsApi;
+  /** Custom render function for each enabled base map label */
+  renderLabel?: (baseMap: IBaseMapConfig) => React.ReactNode;
 }
 
 // ============================================

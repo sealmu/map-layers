@@ -12,9 +12,7 @@ export const useLayers = (ctx: Record<string, any>) => {
     const initial: Record<
       string,
       { isActive: boolean; isVisible: boolean; isDocked: boolean }
-    > = {
-      "street-map": { isActive: true, isVisible: true, isDocked: false },
-    };
+    > = {};
     layers.forEach((layer) => {
       initial[layer.id] = {
         isActive: layer.isActive ?? true,
@@ -47,17 +45,13 @@ export const useLayers = (ctx: Record<string, any>) => {
 
   const toggleActiveAll = useCallback(() => {
     setLayerStates((prev) => {
-      const allActive = layers
-        .filter((layer) => layer.id !== "street-map")
-        .every((layer) => prev[layer.id]?.isActive ?? false);
+      const allActive = layers.every((layer) => prev[layer.id]?.isActive ?? false);
       const newStates = { ...prev };
       layers.forEach((layer) => {
-        if (layer.id !== "street-map") {
-          newStates[layer.id] = {
-            ...newStates[layer.id],
-            isActive: !allActive,
-          };
-        }
+        newStates[layer.id] = {
+          ...newStates[layer.id],
+          isActive: !allActive,
+        };
       });
       return newStates;
     });
@@ -65,17 +59,13 @@ export const useLayers = (ctx: Record<string, any>) => {
 
   const toggleVisibleAll = useCallback(() => {
     setLayerStates((prev) => {
-      const allVisible = layers
-        .filter((layer) => layer.id !== "street-map")
-        .every((layer) => prev[layer.id]?.isVisible ?? false);
+      const allVisible = layers.every((layer) => prev[layer.id]?.isVisible ?? false);
       const newStates = { ...prev };
       layers.forEach((layer) => {
-        if (layer.id !== "street-map") {
-          newStates[layer.id] = {
-            ...newStates[layer.id],
-            isVisible: !allVisible,
-          };
-        }
+        newStates[layer.id] = {
+          ...newStates[layer.id],
+          isVisible: !allVisible,
+        };
       });
       return newStates;
     });
@@ -162,15 +152,8 @@ export const useLayers = (ctx: Record<string, any>) => {
   );
 
   const layerConfigs = useMemo(
-    () => [
-      {
-        id: "street-map",
-        name: "Street Map",
-        isActive: layerStates["street-map"]?.isActive ?? true,
-        isVisible: layerStates["street-map"]?.isVisible ?? true,
-        description: "OpenStreetMap base layer",
-      },
-      ...layers.map((layer) => ({
+    () =>
+      layers.map((layer) => ({
         id: layer.id,
         name: layer.name,
         isActive: layerStates[layer.id]?.isActive ?? true,
@@ -181,7 +164,6 @@ export const useLayers = (ctx: Record<string, any>) => {
         groupName: layer.groupName,
         groupIsDocked: layer.groupIsDocked,
       })),
-    ],
     [layerStates, layers],
   );
 

@@ -1,6 +1,6 @@
 import { useState, useLayoutEffect } from "react";
 
-import { useViewer, FiltersPanel, SearchPanel, LayersPanel, type IMapApi } from "@mprest/map-core";
+import { useViewer, FiltersPanel, SearchPanel, LayersPanel, BaseMapsPanel, BaseMapsCard, type IMapApi } from "@mprest/map-core";
 import type { MapApi } from "@mprest/map-cesium";
 
 import { Expander } from "./components";
@@ -43,6 +43,7 @@ export function AppPanels() {
   if (!viewer || !api) return null;
   return (
     <>
+      {api.baseMaps && <BaseMapsPanel api={api.baseMaps} />}
       <FiltersPanel api={api.filters} />
       <SearchPanel api={api.search} filters={api.filters} entities={(api as MapApi).entities} />
       <Expander
@@ -61,6 +62,12 @@ export function AppPanels() {
           </div>
         </div>
       </Expander>
+
+      {api.baseMaps && (
+        <div className="basemaps-panel-container">
+          <BaseMapsCard api={api.baseMaps} initialSingleSelect={true} />
+        </div>
+      )}
 
       <Expander
         title="Layers"
