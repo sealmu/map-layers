@@ -163,6 +163,23 @@ export class CesiumMapAccessors implements IMapAccessors {
     return false;
   }
 
+  batchSetEntityVisibility(updates: Array<{id: string, visible: boolean}>, layerName: string): void {
+    // Find the data source
+    for (let i = 0; i < this.viewer.dataSources.length; i++) {
+      const ds = this.viewer.dataSources.get(i);
+      if (ds.name === layerName) {
+        // Apply all visibility updates - Cesium auto-renders
+        for (const { id, visible } of updates) {
+          const entity = ds.entities.getById(id);
+          if (entity) {
+            entity.show = visible;
+          }
+        }
+        return;
+      }
+    }
+  }
+
   getNativeEntity<T = unknown>(id: string, layerName?: string): T | null {
     // Search in specific layer
     if (layerName) {

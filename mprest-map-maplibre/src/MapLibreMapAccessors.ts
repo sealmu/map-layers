@@ -129,6 +129,22 @@ export class MapLibreMapAccessors implements IMapAccessors {
     return false;
   }
 
+  batchSetEntityVisibility(updates: Array<{id: string, visible: boolean}>, layerName: string): void {
+    const layerFeatures = this.viewer.featureStore.get(layerName);
+    if (!layerFeatures) return;
+
+    // Update all features without triggering source updates
+    for (const { id, visible } of updates) {
+      const feature = layerFeatures.get(id);
+      if (feature?.properties) {
+        feature.properties.show = visible;
+      }
+    }
+
+    // Single source update at the end
+    this.updateSourceForLayer(layerName);
+  }
+
   getNativeEntity<T = unknown>(id: string, layerName?: string): T | null {
     if (layerName) {
       const layerFeatures = this.viewer.featureStore.get(layerName);

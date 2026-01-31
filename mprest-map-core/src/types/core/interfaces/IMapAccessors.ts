@@ -52,6 +52,12 @@ export interface IMapAccessors {
   setEntityVisibility(id: string, visible: boolean, layerName?: string, triggerUpdate?: boolean): boolean;
 
   /**
+   * Batch set entity visibility - updates multiple entities with a single source refresh
+   * More efficient than calling setEntityVisibility multiple times
+   */
+  batchSetEntityVisibility(updates: Array<{id: string, visible: boolean}>, layerName: string): void;
+
+  /**
    * Get native entity (for provider-specific operations)
    */
   getNativeEntity<T = unknown>(id: string, layerName?: string): T | null;

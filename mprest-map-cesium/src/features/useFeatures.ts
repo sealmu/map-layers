@@ -1,9 +1,6 @@
 import { useMemo } from "react";
+import { useLayers, useFilters, useSearch, useEntities } from "@mprest/map-core";
 import type { LayerProps, LayerData, RendererRegistry, FeatureContext } from "../types";
-import { useLayers } from "./core/useLayers";
-import { useFilters } from "./core/useFilters";
-import { useSearch } from "./core/useSearch";
-import { useEntities } from "./core/useEntities";
 import { featureExtensions } from "./extensions";
 
 const useWithCtx = <T>(ctx: FeatureContext, hook: (ctx: FeatureContext) => T): T => {

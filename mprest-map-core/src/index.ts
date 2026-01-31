@@ -69,6 +69,12 @@ export { useViewer } from "./hooks/useViewer";
 export { useFeatures } from "./features/useFeatures";
 export { useFeatureChangeEvent } from "./features/useFeatureChangeEvent";
 
+// Core feature hooks (provider-agnostic)
+export { useLayers } from "./features/core/useLayers";
+export { useFilters } from "./features/core/useFilters";
+export { useSearch } from "./features/core/useSearch";
+export { useEntities } from "./features/core/useEntities";
+
 // Extension factories (for provider-specific configuration)
 export {
   default as bookmarksExtension,

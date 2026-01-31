@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { collectLayerData } from "../../helpers/collectLayerData";
 import { useViewer } from "../../hooks/useViewer";
 import type {
@@ -21,10 +21,11 @@ export const useFilters = (ctx: Record<string, any>) => {
   const handleFilterChange = useCallback(
     (
       layerName: string,
-      displayName: string,
+      _displayName: string,
       type: string,
       visible: boolean,
     ) => {
+      // Only update state - useEffect will sync to map
       setFilterData((prev) => ({
         ...prev,
         [layerName]: {
@@ -35,28 +36,38 @@ export const useFilters = (ctx: Record<string, any>) => {
           },
         },
       }));
+    },
+    [],
+  );
 
-      // Apply the filter to actually hide/show entities based on type
-      if (viewer?.accessors) {
-        const layerNames = viewer.accessors.getLayerNames();
-        const matchingLayer = layerNames.find(
-          (name) =>
-            name.toLowerCase() === layerName.toLowerCase() ||
-            name.toLowerCase() === displayName?.toLowerCase(),
-        );
+  // Sync filterData changes to map in real-time while modal is open
+  useEffect(() => {
+    if (!viewer?.accessors || !isFilterModalOpen) return;
 
-        if (matchingLayer) {
-          const entities = viewer.accessors.getLayerEntities(matchingLayer);
-          entities.forEach((entity) => {
-            if (entity.renderType === type) {
-              viewer.accessors!.setEntityVisibility(entity.id, visible, matchingLayer);
-            }
+    // Apply all filter states to the map
+    Object.entries(filterData).forEach(([layerName, layerData]) => {
+      const layerNames = viewer.accessors!.getLayerNames();
+      const matchingLayer = layerNames.find(
+        (name) => name.toLowerCase() === layerName.toLowerCase(),
+      );
+
+      if (matchingLayer && layerData.types) {
+        const entities = viewer.accessors!.getLayerEntities(matchingLayer);
+        const updates: Array<{id: string, visible: boolean}> = [];
+
+        Object.entries(layerData.types).forEach(([type, visible]) => {
+          const matchingEntities = entities.filter((e) => e.renderType === type);
+          matchingEntities.forEach((entity) => {
+            updates.push({ id: entity.id, visible });
           });
+        });
+
+        if (updates.length > 0) {
+          viewer.accessors!.batchSetEntityVisibility(updates, matchingLayer);
         }
       }
-    },
-    [viewer],
-  );
+    });
+  }, [filterData, viewer, isFilterModalOpen]);
 
   const collectFilterData = useCallback(() => {
     if (!layers || !viewer) return {};

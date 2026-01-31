@@ -1,10 +1,13 @@
 import { useMemo } from "react";
-import { createBookmarksExtension, type Bookmark } from "@mprest/map-core";
+import {
+  createBookmarksExtension,
+  useLayers,
+  useFilters,
+  useSearch,
+  useEntities,
+  type Bookmark,
+} from "@mprest/map-core";
 import type { LayerProps, LayerData, RendererRegistry, FeatureContext, ViewerWithConfigs } from "../types";
-import { useLayers } from "./core/useLayers";
-import { useFilters } from "./core/useFilters";
-import { useSearch } from "./core/useSearch";
-import { useEntities } from "./core/useEntities";
 import locationsExtension from "./extensions/useLocations";
 
 const useWithCtx = <T>(ctx: FeatureContext, hook: (ctx: FeatureContext) => T): T => {
