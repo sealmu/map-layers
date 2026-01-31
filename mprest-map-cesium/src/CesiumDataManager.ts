@@ -10,6 +10,8 @@ import {
   ModelGraphics,
   type Entity,
   type DataSource,
+  type DataSourceCollection,
+  type EntityCollection,
 } from "cesium";
 import type {
   IDataManager,
@@ -30,10 +32,14 @@ import { createRenderTypes } from "./types";
 export class CesiumDataManager implements IDataManager<LayerData> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private viewer: ViewerWithConfigs<any>;
+  private dataSources: DataSourceCollection;
+  private defaultEntities: EntityCollection;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(viewer: ViewerWithConfigs<any>) {
     this.viewer = viewer;
+    this.dataSources = viewer.dataSources;
+    this.defaultEntities = viewer.entities;
   }
 
   // ============================================
@@ -68,26 +74,21 @@ export class CesiumDataManager implements IDataManager<LayerData> {
   removeItem(id: string, layerName?: string): boolean {
     // Handle default entity collection explicitly
     if (layerName === "__default__") {
-      return this.viewer.entities.removeById(id);
+      return this.defaultEntities.removeById(id);
     }
 
     if (layerName) {
-      const dataSource = this.getDataSourceByName(layerName);
-      if (!dataSource) return false;
-      const entity = dataSource.entities.getById(id);
-      if (!entity) return false;
-      dataSource.entities.remove(entity);
-      return true;
+      const layer = this.getLayerByName(layerName);
+      if (!layer) return false;
+      return layer.removeById(id);
     }
 
     // Search all data sources first
     try {
-      for (let i = 0; i < this.viewer.dataSources.length; i++) {
-        const dataSource = this.viewer.dataSources.get(i);
-        const entity = dataSource.entities.getById(id);
-        if (entity) {
-          dataSource.entities.remove(entity);
-          return true;
+      const layers = this.getAllLayers();
+      for (const layer of layers) {
+        if (layer.getById(id)) {
+          return layer.removeById(id);
         }
       }
     } catch {
@@ -96,7 +97,7 @@ export class CesiumDataManager implements IDataManager<LayerData> {
 
     // Fallback: try default entity collection
     try {
-      return this.viewer.entities.removeById(id);
+      return this.defaultEntities.removeById(id);
     } catch {
       return false;
     }
@@ -121,21 +122,21 @@ export class CesiumDataManager implements IDataManager<LayerData> {
   // ============================================
 
   getLayerItems(layerName: string): IMapEntity[] | null {
-    const dataSource = this.getDataSourceByName(layerName);
-    if (!dataSource) return null;
-    return dataSource.entities.values.map((e) => new CesiumMapEntity(e));
+    const layer = this.getLayerByName(layerName);
+    if (!layer) return null;
+    return layer.getAll();
   }
 
   getLayerItemCount(layerName: string): number | null {
-    const dataSource = this.getDataSourceByName(layerName);
-    if (!dataSource) return null;
-    return dataSource.entities.values.length;
+    const layer = this.getLayerByName(layerName);
+    if (!layer) return null;
+    return layer.length;
   }
 
   clearLayer(layerName: string): void {
-    const dataSource = this.getDataSourceByName(layerName);
-    if (!dataSource) return;
-    dataSource.entities.removeAll();
+    const layer = this.getLayerByName(layerName);
+    if (!layer) return;
+    layer.removeAll();
   }
 
   // ============================================
@@ -154,8 +155,8 @@ export class CesiumDataManager implements IDataManager<LayerData> {
   getAllLayers(): IDataSource[] {
     const layers: IDataSource[] = [];
     try {
-      for (let i = 0; i < this.viewer.dataSources.length; i++) {
-        const ds = this.viewer.dataSources.get(i);
+      for (let i = 0; i < this.dataSources.length; i++) {
+        const ds = this.dataSources.get(i);
         layers.push(new CesiumDataSource(ds));
       }
     } catch {
@@ -217,21 +218,21 @@ export class CesiumDataManager implements IDataManager<LayerData> {
     // Handle default entity collection
     if (!layerName || layerName === "__default__") {
       try {
-        const entity = this.viewer.entities.add(item);
+        const entity = this.defaultEntities.add(item);
         return new CesiumMapEntity(entity);
       } catch {
         return null;
       }
     }
 
-    const dataSource = this.getDataSourceByName(layerName);
-    if (!dataSource) return null;
+    const nativeDataSource = this.getNativeDataSourceByName(layerName);
+    if (!nativeDataSource) return null;
 
     // Enrich the entity with metadata properties
     const finalRenderType = renderType || "custom";
     enrichEntity(item, finalRenderType, layerName);
 
-    const entity = dataSource.entities.add(item);
+    const entity = nativeDataSource.entities.add(item);
 
     // Apply current filter state to the new entity
     if (entity) {
@@ -249,21 +250,23 @@ export class CesiumDataManager implements IDataManager<LayerData> {
   getCesiumEntity(id: string, layerName?: string): Entity | undefined {
     // Handle default entity collection explicitly
     if (layerName === "__default__") {
-      return this.viewer.entities.getById(id);
+      return this.defaultEntities.getById(id);
     }
 
     if (layerName) {
-      const dataSource = this.getDataSourceByName(layerName);
-      if (!dataSource) return undefined;
-      return dataSource.entities.getById(id);
+      const nativeDataSource = this.getNativeDataSourceByName(layerName);
+      if (!nativeDataSource) return undefined;
+      return nativeDataSource.entities.getById(id);
     }
 
-    // Search all data sources first
+    // Search all layers first
     try {
-      for (let i = 0; i < this.viewer.dataSources.length; i++) {
-        const dataSource = this.viewer.dataSources.get(i);
-        const entity = dataSource.entities.getById(id);
-        if (entity) return entity;
+      const layers = this.getAllLayers();
+      for (const layer of layers) {
+        const mapEntity = layer.getById(id);
+        if (mapEntity) {
+          return mapEntity.getNativeEntity<Entity>();
+        }
       }
     } catch {
       // Ignore errors
@@ -271,7 +274,7 @@ export class CesiumDataManager implements IDataManager<LayerData> {
 
     // Fallback: try default entity collection
     try {
-      return this.viewer.entities.getById(id);
+      return this.defaultEntities.getById(id);
     } catch {
       return undefined;
     }
@@ -299,21 +302,15 @@ export class CesiumDataManager implements IDataManager<LayerData> {
   // Private Helpers
   // ============================================
 
-  private getDataSourceByName(name: string): DataSource | null {
-    try {
-      for (let i = 0; i < this.viewer.dataSources.length; i++) {
-        const dataSource = this.viewer.dataSources.get(i);
-        if (dataSource.name === name) {
-          return dataSource;
-        }
-      }
-    } catch (e) {
-      console.error(
-        "Error accessing viewer.dataSources in getDataSourceByName:",
-        e,
-      );
-    }
-    return null;
+  private getLayerByName(name: string): CesiumDataSource | null {
+    const layers = this.getAllLayers();
+    const layer = layers.find((l) => l.name === name);
+    return layer ? (layer as CesiumDataSource) : null;
+  }
+
+  private getNativeDataSourceByName(name: string): DataSource | null {
+    const layer = this.getLayerByName(name);
+    return layer ? layer.getNativeDataSource<DataSource>() : null;
   }
 
   private resolveRenderer(
