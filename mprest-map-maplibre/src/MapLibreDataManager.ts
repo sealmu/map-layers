@@ -1,10 +1,13 @@
-import type {
-  IDataManager,
-  IMapEntity,
-  IEntityOptions,
-  IDataSource,
-  ILayerData,
+import {
+  createLogger,
+  type IDataManager,
+  type IMapEntity,
+  type IEntityOptions,
+  type IDataSource,
+  type ILayerData,
 } from "@mprest/map-core";
+
+const logger = createLogger("MapLibreDataManager");
 import type {
   ViewerWithConfigs,
   LayerData,
@@ -421,13 +424,13 @@ export class MapLibreDataManager implements IDataManager {
   } | null {
     const layerConfig = this.viewer.layersConfig?.getLayerConfig(layerId);
     if (!layerConfig) {
-      console.warn(`Layer configuration not found for layer: ${layerId}`);
+      logger.warn(`Layer configuration not found for layer: ${layerId}`, { layerId });
       return null;
     }
 
     const renderers = this.viewer.renderers?.getRenderers();
     if (!renderers) {
-      console.warn("No renderers available");
+      logger.warn("No renderers available", { layerId });
       return null;
     }
 
@@ -449,7 +452,7 @@ export class MapLibreDataManager implements IDataManager {
     } else if (data.renderType) {
       rendererType = data.renderType;
     } else {
-      console.warn(`No renderer type found for layer ${layerId} or item`);
+      logger.warn(`No renderer type found for layer ${layerId} or item`, { layerId, itemId: data.id });
       return null;
     }
 
@@ -484,8 +487,9 @@ export class MapLibreDataManager implements IDataManager {
     }
 
     if (!feature) {
-      console.warn(
+      logger.warn(
         `Failed to create feature for data item ${data.id} in layer ${layerId}`,
+        { layerId, itemId: data.id }
       );
       return null;
     }

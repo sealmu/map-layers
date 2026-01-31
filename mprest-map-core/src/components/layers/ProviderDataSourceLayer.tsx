@@ -1,5 +1,8 @@
 import type { IRendererRegistry } from "../../types";
 import { getDataSourceLayer, type IDataSourceLayerProps } from "../../providers/registry";
+import { createLogger } from "../../utils/Logger";
+
+const logger = createLogger("ProviderDataSourceLayer");
 
 /**
  * Provider-agnostic DataSourceLayer
@@ -20,9 +23,9 @@ const ProviderDataSourceLayer = <R extends IRendererRegistry>(
   const DataSourceLayerComponent = getDataSourceLayer<R>(providerType);
 
   if (!DataSourceLayerComponent) {
-    console.warn(
-      `No DataSourceLayer component registered for provider type "${providerType}". ` +
-        `Register one using registerDataSourceLayer().`
+    logger.warn(
+      `No DataSourceLayer component registered for provider type "${providerType}". Register one using registerDataSourceLayer().`,
+      { providerType }
     );
     return null;
   }

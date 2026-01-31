@@ -1,6 +1,9 @@
 import { useCallback, useMemo } from "react";
 import { useViewer } from "../../hooks/useViewer";
+import { createLogger } from "../../utils/Logger";
 import type { ExtensionModule, ExtensionContext } from "../../types";
+
+const logger = createLogger("useLocations");
 
 export interface Coordinates {
   longitude: number;
@@ -108,7 +111,7 @@ const useLocations = (_ctx: ExtensionContext): LocationsApi => {
             : undefined,
         }));
       } catch (error) {
-        console.error("Place search failed:", error);
+        logger.error("Place search failed", error instanceof Error ? error : undefined);
         return [];
       }
     },

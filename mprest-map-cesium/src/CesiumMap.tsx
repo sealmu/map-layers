@@ -20,7 +20,7 @@ import type {
   ViewerWithConfigs,
   MapApi,
 } from "./types";
-import { useViewer, createEventHandler, callAllSubscribers, type IViewerWithConfigs } from "@mprest/map-core";
+import { useViewer, createEventHandler, callAllSubscribers, setLogHandler, type IViewerWithConfigs } from "@mprest/map-core";
 import { extractLayersFromChildren, hasLayersChanged } from "./utils";
 import { useExtensions } from "./extensions/useExtensions";
 import { useExtensionChangeEvent } from "./extensions/useExtensionChangeEvent";
@@ -39,6 +39,7 @@ const CesiumMap = <R extends RendererRegistry>({
   animateVisibility = false,
   onApiChange,
   onMapReady,
+  onLog,
   onEntityCreating,
   onEntityCreate,
   onEntityChange,
@@ -121,12 +122,21 @@ const CesiumMap = <R extends RendererRegistry>({
       onEntityCreating: createEventHandler(),
       onEntityCreate: createEventHandler(),
       onMapReady: createEventHandler(),
+      onLog: createEventHandler(),
     };
 
-    // Subscribe prop callback as first subscriber
+    // Subscribe prop callbacks as first subscribers
     if (onMapReady) {
       newViewer.handlers.onMapReady.subscribe(onMapReady);
     }
+    if (onLog) {
+      newViewer.handlers.onLog.subscribe(onLog);
+    }
+
+    // Wire up global logger to route through onLog handler
+    setLogHandler((entry) => {
+      callAllSubscribers(newViewer.handlers.onLog, entry);
+    });
 
     // Set up plugins
     newViewer.plugins = {};
@@ -192,6 +202,7 @@ const CesiumMap = <R extends RendererRegistry>({
     // Cleanup on unmount
     return () => {
       tileLoadListener();
+      setLogHandler(null);
       if (newViewer && !newViewer.isDestroyed()) {
         newViewer.destroy();
       }

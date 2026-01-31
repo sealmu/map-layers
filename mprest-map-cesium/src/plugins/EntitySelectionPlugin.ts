@@ -1,6 +1,8 @@
 import { Entity, Cartesian2 } from "cesium";
-import { createEventHandler } from "@mprest/map-core";
+import { createEventHandler, createLogger } from "@mprest/map-core";
 import { BasePlugin, type MapInstance, type MapClickLocation, type EventHandler } from "../types";
+
+const logger = createLogger("EntitySelectionPlugin");
 
 interface EntitySelectionActions {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -45,7 +47,7 @@ export class EntitySelectionPlugin extends BasePlugin<
   }
 
   onMessage(message: string) {
-    console.log("EntitySelectionPlugin:", message);
+    logger.debug(message);
     // In a real app, this could show a toast or update UI
   }
 

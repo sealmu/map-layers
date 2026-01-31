@@ -1,6 +1,8 @@
 import { useCallback, useMemo } from "react";
-import { useViewer } from "@mprest/map-core";
+import { useViewer, createLogger } from "@mprest/map-core";
 import type { ExtensionModule, ExtensionContext, ViewerWithConfigs } from "../../types";
+
+const logger = createLogger("useLocations");
 
 export interface Coordinates {
   longitude: number;
@@ -101,7 +103,7 @@ const useLocations = (_ctx: ExtensionContext): LocationsApi => {
             : undefined,
         }));
       } catch (error) {
-        console.error("Place search failed:", error);
+        logger.error("Place search failed", error instanceof Error ? error : undefined);
         return [];
       }
     },

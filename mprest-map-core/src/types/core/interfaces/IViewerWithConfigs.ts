@@ -7,6 +7,7 @@ import type {
   ILayerData,
   IRendererRegistry,
   IEventHandler,
+  LogEntry,
 } from "../types";
 import type { IMapEntity, EntityChangeStatus } from "./IMapEntity";
 import type { ICoordinate, IScreenPosition } from "../types/coordinates";
@@ -37,6 +38,7 @@ export interface IViewerHandlers {
     (entity: IMapEntity, status: EntityChangeStatus, layerName: string) => void
   >;
   onApiChange: IEventHandler<(api: IMapApi) => void>;
+  onLog: IEventHandler<(entry: LogEntry) => void>;
 }
 
 /**

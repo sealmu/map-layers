@@ -13,12 +13,15 @@ import {
   type DataSourceCollection,
   type EntityCollection,
 } from "cesium";
-import type {
-  IDataManager,
-  IMapEntity,
-  IEntityOptions,
-  IDataSource,
+import {
+  createLogger,
+  type IDataManager,
+  type IMapEntity,
+  type IEntityOptions,
+  type IDataSource,
 } from "@mprest/map-core";
+
+const logger = createLogger("CesiumDataManager");
 import type { ViewerWithConfigs, LayerData, RenderTypeFromRegistry } from "./types";
 import { CesiumMapEntity, toCesiumEntityOptions, updateCesiumEntity } from "./CesiumMapEntity";
 import { CesiumDataSource } from "./CesiumDataSource";
@@ -324,14 +327,14 @@ export class CesiumDataManager implements IDataManager<LayerData> {
     // Get layer configuration
     const layerConfig = this.viewer.layersConfig?.getLayerConfig(layerId);
     if (!layerConfig) {
-      console.warn(`Layer configuration not found for layer: ${layerId}`);
+      logger.warn(`Layer configuration not found for layer: ${layerId}`, { layerId });
       return null;
     }
 
     // Get renderers from viewer
     const renderers = this.viewer.renderers?.getRenderers();
     if (!renderers) {
-      console.warn("No renderers available");
+      logger.warn("No renderers available", { layerId });
       return null;
     }
 
@@ -354,7 +357,7 @@ export class CesiumDataManager implements IDataManager<LayerData> {
     } else if (data.renderType) {
       rendererType = data.renderType;
     } else {
-      console.warn(`No renderer type found for layer ${layerId} or item`);
+      logger.warn(`No renderer type found for layer ${layerId} or item`, { layerId, itemId: data.id });
       return null;
     }
 
@@ -408,8 +411,9 @@ export class CesiumDataManager implements IDataManager<LayerData> {
     }
 
     if (!entityOptions) {
-      console.warn(
+      logger.warn(
         `Failed to create entity options for data item ${data.id} in layer ${layerId}`,
+        { layerId, itemId: data.id }
       );
       return null;
     }

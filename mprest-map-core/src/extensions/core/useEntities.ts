@@ -1,5 +1,8 @@
 import { useCallback, useMemo } from "react";
 import { useViewer } from "../../hooks/useViewer";
+import { createLogger } from "../../utils/Logger";
+
+const logger = createLogger("useEntities");
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const useEntities = (_ctx: Record<string, unknown>) => {
@@ -40,8 +43,9 @@ export const useEntities = (_ctx: Record<string, unknown>) => {
         }
       }
       if (!success) {
-        console.warn(
+        logger.warn(
           `Entity with id "${entityId}" not found${layerId ? ` in layer "${layerId}"` : ""}`,
+          { entityId, layerId }
         );
       }
       return success;

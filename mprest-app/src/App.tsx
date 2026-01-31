@@ -6,7 +6,7 @@ import { useDroneAnimation, useDroneAnimation2 } from "./hooks/useDroneAnimation
 import { useRadarAnimation } from "./hooks/useRadarAnimation";
 import { useDroneTargetAnimation } from "./hooks/useDroneTargetAnimation";
 
-import { Mmap } from "@mprest/map-core";
+import { Mmap, type LogEntry } from "@mprest/map-core";
 import {
   ViewerProvider,
   DataConnector,
@@ -408,6 +408,30 @@ function AppContent({
 
   const layers = useMemo(() => AppLayers(data, renderers), [data, renderers]);
 
+  const handleLog = useCallback((entry: LogEntry) => {
+    const timestamp = new Date(entry.timestamp).toISOString().slice(11, 23);
+    const prefix = `[${timestamp}] [${entry.origin}]`;
+
+    switch (entry.level) {
+      case 'debug':
+        console.log(prefix, entry.message, entry.data ?? '');
+        break;
+      case 'info':
+        console.info(prefix, entry.message, entry.data ?? '');
+        break;
+      case 'warn':
+        console.warn(prefix, entry.message, entry.data ?? '');
+        break;
+      case 'error':
+        if (entry.error) {
+          console.error(prefix, entry.message, entry.error, entry.data ?? '');
+        } else {
+          console.error(prefix, entry.message, entry.data ?? '');
+        }
+        break;
+    }
+  }, []);
+
   // const handleFeatureStateChanged = useCallback((name: 'layersPanel' | 'filtersPanel' | 'searchPanel' | 'entities', state: FeatureState) => {
   //   console.log(`Feature ${name} changed:`, state);
   // }, []);
@@ -429,6 +453,7 @@ function AppContent({
           onClickPrevented={handleClickPrevented}
           onSelected={handleSelected}
           onChangePosition={handleChangePosition}
+          onLog={handleLog}
           // onFeatureStateChanged={handleFeatureStateChanged}
           plugins={plugins}
         >

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { CustomDataSource as CesiumCustomDataSource, Entity, EntityCollection } from "cesium";
+import { createLogger } from "@mprest/map-core";
 import { createEntityFromData } from "./pipeline";
 import { useLayerAnimations } from "./hooks/useLayerAnimations";
 import type {
@@ -8,6 +9,8 @@ import type {
   LayerData,
   EntityChangeStatus,
 } from "./types";
+
+const logger = createLogger("CesiumDataSourceLayer");
 
 const CesiumDataSourceLayer = <R extends RendererRegistry>({
   viewer,
@@ -151,7 +154,7 @@ const CesiumDataSourceLayer = <R extends RendererRegistry>({
             await viewer.dataSources.add(dataSourceInstance);
           } catch (error) {
             if (!cancelled) {
-              console.error("Failed to add dataSource:", error);
+              logger.error("Failed to add dataSource", error instanceof Error ? error : undefined, { layerId: id });
             }
           }
         }

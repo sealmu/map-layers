@@ -16,7 +16,7 @@ import {
   Viewer as CesiumViewer,
   CustomDataSource,
 } from "cesium";
-import type { IMapAccessors, IDataManager, EntityChangeStatus } from "@mprest/map-core";
+import type { IMapAccessors, IDataManager, EntityChangeStatus, LogEntry } from "@mprest/map-core";
 
 // Re-export core types for convenience (these are provider-agnostic)
 export type {
@@ -335,6 +335,7 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
   animateVisibility?: boolean;
   onApiChange?: (api: MapApi) => void;
   onMapReady?: () => void;
+  onLog?: (entry: LogEntry) => void;
   onEntityCreating?: (
     options: Entity.ConstructorOptions,
     item: LayerData,
@@ -617,6 +618,7 @@ export interface ViewerWithConfigs<
       ) => Entity.ConstructorOptions | null
     >;
     onMapReady: EventHandler<() => void>;
+    onLog: EventHandler<(entry: LogEntry) => void>;
   };
   plugins: Record<string, BasePlugin>;
   accessors: IMapAccessors;
