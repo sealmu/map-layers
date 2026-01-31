@@ -334,6 +334,7 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
   animateActivation?: boolean;
   animateVisibility?: boolean;
   onApiChange?: (api: MapApi) => void;
+  onMapReady?: () => void;
   onEntityCreating?: (
     options: Entity.ConstructorOptions,
     item: LayerData,
@@ -615,6 +616,7 @@ export interface ViewerWithConfigs<
         layerId?: string,
       ) => Entity.ConstructorOptions | null
     >;
+    onMapReady: EventHandler<() => void>;
   };
   plugins: Record<string, BasePlugin>;
   accessors: IMapAccessors;

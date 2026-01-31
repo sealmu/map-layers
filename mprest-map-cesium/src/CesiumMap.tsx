@@ -20,7 +20,7 @@ import type {
   ViewerWithConfigs,
   MapApi,
 } from "./types";
-import { useViewer, createEventHandler, type IViewerWithConfigs } from "@mprest/map-core";
+import { useViewer, createEventHandler, callAllSubscribers, type IViewerWithConfigs } from "@mprest/map-core";
 import { extractLayersFromChildren, hasLayersChanged } from "./utils";
 import { useExtensions } from "./extensions/useExtensions";
 import { useExtensionChangeEvent } from "./extensions/useExtensionChangeEvent";
@@ -38,6 +38,7 @@ const CesiumMap = <R extends RendererRegistry>({
   animateActivation = false,
   animateVisibility = false,
   onApiChange,
+  onMapReady,
   onEntityCreating,
   onEntityCreate,
   onEntityChange,
@@ -53,6 +54,19 @@ const CesiumMap = <R extends RendererRegistry>({
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewer, setViewer] = useState<ViewerWithConfigs<R> | null>(null);
   const imageryLayerRef = useRef<ImageryLayer | null>(null);
+
+  // Track map ready states
+  const mapReadyFired = useRef(false);
+  const readyState = useRef({ viewer: false, tiles: false, camera: false });
+
+  // Helper to check and fire map ready event
+  const checkAndFireMapReady = (newViewer: ViewerWithConfigs<R>) => {
+    const { viewer: viewerReady, tiles, camera } = readyState.current;
+    if (viewerReady && tiles && camera && !mapReadyFired.current) {
+      mapReadyFired.current = true;
+      callAllSubscribers(newViewer.handlers.onMapReady);
+    }
+  };
 
   // Extract layer props from children
   const layersRef = useRef<LayerProps<LayerData, R>[]>([]);
@@ -106,7 +120,13 @@ const CesiumMap = <R extends RendererRegistry>({
       onApiChange: createEventHandler(),
       onEntityCreating: createEventHandler(),
       onEntityCreate: createEventHandler(),
+      onMapReady: createEventHandler(),
     };
+
+    // Subscribe prop callback as first subscriber
+    if (onMapReady) {
+      newViewer.handlers.onMapReady.subscribe(onMapReady);
+    }
 
     // Set up plugins
     newViewer.plugins = {};
@@ -146,14 +166,32 @@ const CesiumMap = <R extends RendererRegistry>({
       newViewer.imageryLayers.addImageryProvider(imageryProvider);
     imageryLayerRef.current = imageryLayer;
 
-    // Set initial camera position
+    // Mark viewer as ready
+    readyState.current.viewer = true;
+
+    // Track tiles loaded state
+    const tileLoadListener = newViewer.scene.globe.tileLoadProgressEvent.addEventListener(
+      (queueLength: number) => {
+        if (queueLength === 0 && !readyState.current.tiles) {
+          readyState.current.tiles = true;
+          checkAndFireMapReady(newViewer);
+        }
+      }
+    );
+
+    // Set initial camera position and track completion
     newViewer.camera.flyTo({
       destination: Cartesian3.fromDegrees(-98.5795, 39.8283, 8000000),
       duration: 2,
+      complete: () => {
+        readyState.current.camera = true;
+        checkAndFireMapReady(newViewer);
+      },
     });
 
     // Cleanup on unmount
     return () => {
+      tileLoadListener();
       if (newViewer && !newViewer.isDestroyed()) {
         newViewer.destroy();
       }
