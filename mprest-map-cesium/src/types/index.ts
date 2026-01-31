@@ -16,7 +16,7 @@ import {
   Viewer as CesiumViewer,
   CustomDataSource,
 } from "cesium";
-import type { IMapAccessors, IDataManager, EntityChangeStatus, LogEntry } from "@mprest/map-core";
+import type { IMapAccessors, IDataManager, EntityChangeStatus, LogEntry, IMapConfig } from "@mprest/map-core";
 
 // Re-export core types for convenience (these are provider-agnostic)
 export type {
@@ -331,6 +331,7 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
   children: ReactNode;
   defaultToken?: string;
   renderers: R;
+  mapConfig?: IMapConfig;
   animateActivation?: boolean;
   animateVisibility?: boolean;
   onApiChange?: (api: MapApi) => void;

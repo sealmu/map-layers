@@ -17,7 +17,7 @@ import type {
   MapLibreFeature,
   MapClickLocation,
 } from "../types";
-import { useViewer, createEventHandler, type IViewerWithConfigs } from "@mprest/map-core";
+import { useViewer, createEventHandler, type IViewerWithConfigs, type IMapConfig } from "@mprest/map-core";
 import { extractLayersFromChildren, hasLayersChanged } from "../utils";
 import { useExtensions } from "../extensions/useExtensions";
 import { useExtensionChangeEvent } from "../extensions/useExtensionChangeEvent";
@@ -26,12 +26,19 @@ import { createMapLibreMapAccessors } from "../MapLibreMapAccessors";
 // Module-level variable to hold current API
 let currentViewerApi: MapApi | null = null;
 
+// Default map configuration
+const DEFAULT_MAP_CONFIG: IMapConfig = {
+  center: { longitude: -98.5795, latitude: 39.8283 },
+  zoom: 3,
+};
+
 const MapLibreMap = <R extends RendererRegistry>({
   children,
   renderers,
   style = "https://demotiles.maplibre.org/style.json",
-  center = [-98.5795, 39.8283],
-  zoom = 3,
+  mapConfig,
+  center,
+  zoom,
   onApiChange,
   onEntityCreating,
   onEntityCreate,
@@ -67,12 +74,22 @@ const MapLibreMap = <R extends RendererRegistry>({
   useEffect(() => {
     if (!containerRef.current) return;
 
+    // Resolve config values: mapConfig > direct props > defaults
+    const resolvedCenter: [number, number] = mapConfig?.center
+      ? [mapConfig.center.longitude, mapConfig.center.latitude]
+      : center ?? [DEFAULT_MAP_CONFIG.center!.longitude, DEFAULT_MAP_CONFIG.center!.latitude];
+    const resolvedZoom = mapConfig?.zoom ?? zoom ?? DEFAULT_MAP_CONFIG.zoom!;
+    const resolvedPitch = mapConfig?.orientation?.pitch ?? 0;
+    const resolvedBearing = mapConfig?.orientation?.heading ?? 0;
+
     // Create map
     const map = new maplibregl.Map({
       container: containerRef.current,
       style,
-      center,
-      zoom,
+      center: resolvedCenter,
+      zoom: resolvedZoom,
+      pitch: resolvedPitch,
+      bearing: resolvedBearing,
     });
 
     mapRef.current = map;

@@ -4,3 +4,4 @@ export * from "./layer";
 export * from "./events";
 export * from "./extensions";
 export * from "./logging";
+export * from "./mapConfig";

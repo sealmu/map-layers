@@ -6,7 +6,7 @@
  */
 import type { ReactNode, RefObject } from "react";
 import type { Map as MapLibreMap, LngLat, GeoJSONSource } from "maplibre-gl";
-import type { IMapAccessors, EntityChangeStatus, IColor } from "@mprest/map-core";
+import type { IMapAccessors, EntityChangeStatus, IColor, IMapConfig } from "@mprest/map-core";
 import type { Feature, Point, Polygon, LineString, GeoJsonProperties } from "geojson";
 
 // Re-export core types for convenience
@@ -285,7 +285,10 @@ export interface MapLibreMapProps<R extends RendererRegistry = RendererRegistry>
   children: ReactNode;
   renderers: R;
   style?: string;
+  mapConfig?: IMapConfig;
+  /** @deprecated Use mapConfig.center instead */
   center?: [number, number];
+  /** @deprecated Use mapConfig.zoom instead */
   zoom?: number;
   onApiChange?: (api: MapApi) => void;
   onEntityCreating?: (

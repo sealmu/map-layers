@@ -20,7 +20,7 @@ import type {
   ViewerWithConfigs,
   MapApi,
 } from "./types";
-import { useViewer, createEventHandler, callAllSubscribers, setLogHandler, type IViewerWithConfigs } from "@mprest/map-core";
+import { useViewer, createEventHandler, callAllSubscribers, setLogHandler, type IViewerWithConfigs, type IMapConfig } from "@mprest/map-core";
 import { extractLayersFromChildren, hasLayersChanged } from "./utils";
 import { useExtensions } from "./extensions/useExtensions";
 import { useExtensionChangeEvent } from "./extensions/useExtensionChangeEvent";
@@ -31,10 +31,17 @@ import { createCesiumDataManager } from "./CesiumDataManager";
 // Module-level variable to hold current API
 let currentViewerApi: MapApi | null = null;
 
+// Default map configuration
+const DEFAULT_MAP_CONFIG: IMapConfig = {
+  center: { longitude: -98.5795, latitude: 39.8283, height: 8000000 },
+  animationDuration: 2,
+};
+
 const CesiumMap = <R extends RendererRegistry>({
   children,
   defaultToken,
   renderers,
+  mapConfig,
   animateActivation = false,
   animateVisibility = false,
   onApiChange,
@@ -190,9 +197,22 @@ const CesiumMap = <R extends RendererRegistry>({
     );
 
     // Set initial camera position and track completion
+    const center = mapConfig?.center ?? DEFAULT_MAP_CONFIG.center!;
+    const duration = mapConfig?.animationDuration ?? DEFAULT_MAP_CONFIG.animationDuration;
+    const orientation = mapConfig?.orientation;
+
     newViewer.camera.flyTo({
-      destination: Cartesian3.fromDegrees(-98.5795, 39.8283, 8000000),
-      duration: 2,
+      destination: Cartesian3.fromDegrees(
+        center.longitude,
+        center.latitude,
+        center.height ?? 8000000
+      ),
+      duration,
+      orientation: orientation ? {
+        heading: orientation.heading ?? 0,
+        pitch: orientation.pitch ?? -90,
+        roll: orientation.roll ?? 0,
+      } : undefined,
       complete: () => {
         readyState.current.camera = true;
         checkAndFireMapReady(newViewer);

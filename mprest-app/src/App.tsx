@@ -6,7 +6,7 @@ import { useDroneAnimation, useDroneAnimation2 } from "./hooks/useDroneAnimation
 import { useRadarAnimation } from "./hooks/useRadarAnimation";
 import { useDroneTargetAnimation } from "./hooks/useDroneTargetAnimation";
 
-import { Mmap, type LogEntry } from "@mprest/map-core";
+import { Mmap, type LogEntry, type IMapConfig } from "@mprest/map-core";
 import {
   ViewerProvider,
   DataConnector,
@@ -56,6 +56,16 @@ const DataConnectorConfig = {
   fetchIntervals: {
     "dynamic-raw": 1000,
   },
+};
+
+// Initial map view configuration (centered on US where entities are located)
+const mapConfig: IMapConfig = {
+  center: {
+    longitude: -98.5795,
+    latitude: 39.8283,
+    height: 8000000,
+  },
+  animationDuration: 2,
 };
 
 
@@ -444,6 +454,7 @@ function AppContent({
           // onEntityCreating={enrichEntity}
           // onEntityCreate={onEntityCreate}
           renderers={AppRenderers}
+          mapConfig={mapConfig}
           animateActivation={true}
           animateVisibility={true}
           // onApiReady={handleApiReady}

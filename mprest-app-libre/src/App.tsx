@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 
-import { ViewerProvider, Mmap, useViewer } from "@mprest/map-core";
+import { ViewerProvider, Mmap, useViewer, type IMapConfig } from "@mprest/map-core";
 // Importing from @mprest/map-maplibre auto-registers the "maplibre" provider
 import {
   EntitySelectionPlugin,
@@ -48,6 +48,12 @@ function App() {
     </ViewerProvider>
   );
 }
+
+// Map configuration
+const mapConfig: IMapConfig = {
+  center: { longitude: -98.5795, latitude: 39.8283 },
+  zoom: 4,
+};
 
 function AppContent({
   data,
@@ -223,8 +229,7 @@ function AppContent({
           provider="maplibre"
           renderers={AppRenderers}
           style="https://demotiles.maplibre.org/style.json"
-          center={[-98.5795, 39.8283]}
-          zoom={4}
+          mapConfig={mapConfig}
           onClick={handleMapClick}
           onSelecting={handleSelecting}
           onClickPrevented={handleClickPrevented}
