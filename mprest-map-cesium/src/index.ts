@@ -84,6 +84,23 @@ export { useCesiumViewer } from "./hooks/useCesiumViewer";
 export { EntitySelectionPlugin } from "./plugins";
 
 // ============================================
+// Extension APIs
+// ============================================
+export type {
+  ZoomApi,
+  ZoomOptions,
+  ZoomTarget,
+  ZoomCoordinates,
+  ZoomBoundingBox,
+  ZoomToEntityTarget,
+  ZoomToCoordinatesTarget,
+  ZoomToBoundingBoxTarget,
+  ZoomToEntitiesTarget,
+  ZoomInOutOptions,
+  ZoomToLocationOptions,
+} from "./extensions/features/useMap";
+
+// ============================================
 // Types
 // ============================================
 export type {

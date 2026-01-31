@@ -1,9 +1,9 @@
 import { useState } from "react";
 import type { BookmarksApi, LocationsApi, PlaceResult } from "@mprest/map-core";
-import type { MapApi } from "@mprest/map-cesium";
+import type { MapApi, ZoomApi } from "@mprest/map-cesium";
 
 interface BookmarksPanelProps {
-  api: MapApi & { bookmarks?: BookmarksApi; locations?: LocationsApi };
+  api: MapApi & { bookmarks?: BookmarksApi; locations?: LocationsApi; zoom?: ZoomApi };
 }
 
 export function BookmarksPanel({ api }: BookmarksPanelProps) {
@@ -11,6 +11,8 @@ export function BookmarksPanel({ api }: BookmarksPanelProps) {
   const [placeQuery, setPlaceQuery] = useState("");
   const [placeResults, setPlaceResults] = useState<PlaceResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [longitude, setLongitude] = useState("");
+  const [latitude, setLatitude] = useState("");
 
   const bookmarks = api.bookmarks?.bookmarks ?? [];
 
@@ -48,6 +50,28 @@ export function BookmarksPanel({ api }: BookmarksPanelProps) {
     api.locations?.gotoLocation(place.coordinates, { range: 1000000 });
     setPlaceResults([]);
     setPlaceQuery("");
+  };
+
+  const handleGotoCoordinates = () => {
+    const lon = parseFloat(longitude);
+    const lat = parseFloat(latitude);
+    if (isNaN(lon) || isNaN(lat)) return;
+
+    api.zoom?.zoomToCoordinates({ longitude: lon, latitude: lat }, { range: 50000 });
+    setLongitude("");
+    setLatitude("");
+  };
+
+  const handleCoordinatesKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleGotoCoordinates();
+    }
+  };
+
+  const isValidCoordinates = () => {
+    const lon = parseFloat(longitude);
+    const lat = parseFloat(latitude);
+    return !isNaN(lon) && !isNaN(lat) && lon >= -180 && lon <= 180 && lat >= -90 && lat <= 90;
   };
 
   const handleGotoBookmark = (bookmarkId: string) => {
@@ -134,6 +158,60 @@ export function BookmarksPanel({ api }: BookmarksPanelProps) {
           </ul>
         )}
       </div>
+
+      {/* Go to Coordinates Section */}
+      {api.zoom && (
+        <div style={{ marginBottom: "16px" }}>
+          <div style={{ fontSize: "12px", fontWeight: "bold", marginBottom: "6px", color: "#666" }}>
+            Go to Coordinates
+          </div>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <input
+              type="text"
+              value={longitude}
+              onChange={(e) => setLongitude(e.target.value)}
+              onKeyDown={handleCoordinatesKeyDown}
+              placeholder="Longitude"
+              style={{
+                flex: 1,
+                padding: "6px 10px",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+              }}
+            />
+            <input
+              type="text"
+              value={latitude}
+              onChange={(e) => setLatitude(e.target.value)}
+              onKeyDown={handleCoordinatesKeyDown}
+              placeholder="Latitude"
+              style={{
+                flex: 1,
+                padding: "6px 10px",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+              }}
+            />
+            <button
+              onClick={handleGotoCoordinates}
+              disabled={!isValidCoordinates()}
+              style={{
+                padding: "6px 12px",
+                background: isValidCoordinates() ? "#4a90d9" : "#ccc",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: isValidCoordinates() ? "pointer" : "not-allowed",
+              }}
+            >
+              Go
+            </button>
+          </div>
+          <div style={{ fontSize: "10px", color: "#999", marginTop: "4px" }}>
+            Lon: -180 to 180, Lat: -90 to 90
+          </div>
+        </div>
+      )}
 
       {/* Bookmarks Section */}
       <div style={{ fontSize: "12px", fontWeight: "bold", marginBottom: "6px", color: "#666" }}>
