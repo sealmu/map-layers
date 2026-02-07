@@ -179,6 +179,9 @@ export type {
 
   // Multi-Select Types
   MultiSelectConfig,
+
+  // Clustering Types
+  ClusteringConfig,
 } from "./types";
 
 export { BasePlugin, createRenderTypes } from "./types";

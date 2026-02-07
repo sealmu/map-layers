@@ -63,6 +63,7 @@ export type {
   IRenderTypeFromRegistry,
   IFilterTypeConfig,
   IFilterConfig,
+  IClusteringConfig,
   ILayerConfig,
   ILayersConfigItem,
   IExtractorSpec,

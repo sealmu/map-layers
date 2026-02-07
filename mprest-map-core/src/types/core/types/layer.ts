@@ -89,6 +89,19 @@ export interface IFilterConfig {
 }
 
 // ============================================
+// Clustering Configuration Types
+// ============================================
+
+/**
+ * Provider-agnostic clustering configuration
+ */
+export interface IClusteringConfig {
+  enabled: boolean;
+  pixelRange?: number;
+  minimumClusterSize?: number;
+}
+
+// ============================================
 // Layer Configuration Types
 // ============================================
 
@@ -148,6 +161,7 @@ export interface ILayerProps<
   groupName?: string;
   groupIsDocked?: boolean;
   filterConfig?: IFilterConfig;
+  clusteringConfig?: IClusteringConfig;
 }
 
 /**

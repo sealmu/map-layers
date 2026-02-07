@@ -23,6 +23,8 @@ import { EntityPopup, type EntityPopupInfo, StickyPopups, usePopupPosition } fro
 import { SelectionOverlay, FlightOverlay } from "./components/overlays";
 import { PositionInfoBar } from "./components/PositionInfoBar";
 import { SelectionPanel } from "./components/SelectionPanel";
+import { ClusterTooltip } from "./components/ClusterTooltip";
+import { createClusterCanvas, type ClusterBillboardId } from "./utils/clusterCanvas";
 import { AppLayers } from "./AppLayers";
 import { AppRenderers } from "./AppRenderers";
 import { AppPanels } from "./AppPanels";
@@ -63,6 +65,11 @@ const DataConnectorConfig = {
 
 // Multi-select configuration (module-level constant for referential stability)
 const multiSelectConfig = { isEnabled: true, selectionTool: true };
+
+// Clustering configuration (global for all layers)
+const clusteringConfig = {
+  global: { enabled: true, pixelRange: 40, minimumClusterSize: 2 },
+};
 
 // Initial map view configuration (centered on US where entities are located)
 const mapConfig: IMapConfig = {
@@ -375,6 +382,30 @@ function AppContent({
     setSelectionVersion((v) => v + 1);
   }, []);
 
+  const handleCluster = useCallback((
+    layerId: string,
+    clusteredEntities: Entity[],
+    cluster: { billboard: unknown; label: unknown; point: unknown },
+  ) => {
+    const billboard = cluster.billboard as { show: boolean; image: unknown; id: unknown };
+    const label = cluster.label as { show: boolean };
+    const point = cluster.point as { show: boolean };
+
+    billboard.show = true;
+    billboard.image = createClusterCanvas(clusteredEntities.length);
+    billboard.id = {
+      isCluster: true,
+      layerId,
+      entities: clusteredEntities.map((e) => ({
+        id: String(e.id),
+        name: e.name ?? String(e.id),
+      })),
+    } as ClusterBillboardId;
+
+    label.show = false;
+    point.show = false;
+  }, []);
+
   // const handleRenderMultiSelection = useCallback((entity: Entity): Entity.ConstructorOptions | null => {
   //   // Custom render: use a larger yellow circle for drones, default for others
   //   if (entity.id?.toString().includes('drone')) {
@@ -577,6 +608,8 @@ function AppContent({
           infoBox={false}
           multiSelect={multiSelectConfig}
           onMultiSelect={handleMultiSelect}
+          clusteringConfig={clusteringConfig}
+          onCluster={handleCluster}
           // onRenderMultiSelection={handleRenderMultiSelection}
           // onFeatureStateChanged={handleFeatureStateChanged}
           plugins={plugins}
@@ -603,6 +636,7 @@ function AppContent({
         <StickyPopups stickyInfoMap={stickyInfoMap} onClose={handleCloseStickyInfo} />
 
         <SelectionPanel />
+        <ClusterTooltip />
         <PositionInfoBar position={currentPosition} />
 
         {viewer && <DataConnector

@@ -18,7 +18,7 @@ import {
   ImageryProvider,
   ImageryLayer,
 } from "cesium";
-import type { IMapAccessors, IDataManager, EntityChangeStatus, LogEntry, IMapConfig, IBaseMapsApi, IFilterConfig } from "@mprest/map-core";
+import type { IMapAccessors, IDataManager, EntityChangeStatus, LogEntry, IMapConfig, IBaseMapsApi, IFilterConfig, IClusteringConfig } from "@mprest/map-core";
 
 // Re-export core types for convenience (these are provider-agnostic)
 export type {
@@ -309,6 +309,7 @@ export interface LayerProps<
   group?: string;
   groupName?: string;
   groupIsDocked?: boolean;
+  clusteringConfig?: ClusteringConfig;
 }
 
 export interface LayerDefinition<T = LayerData> {
@@ -414,6 +415,12 @@ export interface DataSourceLayerProps<
     renderers: R,
     layerId?: string,
   ) => Entity.ConstructorOptions | null;
+  clusteringConfig?: ClusteringConfig;
+  onCluster?: (
+    layerId: string,
+    clusteredEntities: Entity[],
+    cluster: { billboard: unknown; label: unknown; point: unknown },
+  ) => void;
 }
 
 export interface MultiSelectConfig {
@@ -422,6 +429,12 @@ export interface MultiSelectConfig {
   mapClickDeselect?: boolean;
   /** Enable rubber-band rectangle selection tool. When active, click-and-drag draws a selection rectangle. Default: false */
   selectionTool?: boolean;
+}
+
+export interface ClusteringConfig extends IClusteringConfig {
+  clusterBillboards?: boolean;
+  clusterLabels?: boolean;
+  clusterPoints?: boolean;
 }
 
 export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
@@ -436,6 +449,14 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
   selectionIndicator?: boolean;
   infoBox?: boolean;
   multiSelect?: MultiSelectConfig;
+  /** Clustering config: { global?: ClusteringConfig, [layerId]: ClusteringConfig } */
+  clusteringConfig?: Record<string, ClusteringConfig | undefined> & { global?: ClusteringConfig };
+  /** Called when entities are clustered. Use to customize cluster visuals. */
+  onCluster?: (
+    layerId: string,
+    clusteredEntities: Entity[],
+    cluster: { billboard: unknown; label: unknown; point: unknown },
+  ) => void;
   animateActivation?: boolean;
   animateVisibility?: boolean;
   onApiChange?: (api: MapApi) => void;

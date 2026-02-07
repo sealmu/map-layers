@@ -26,6 +26,8 @@ const CesiumDataSourceLayer = <R extends RendererRegistry>({
   onEntityChange,
   onEntityCreating,
   onEntityCreate,
+  clusteringConfig,
+  onCluster,
 }: DataSourceLayerProps<R>) => {
   const dataSourceRef = useRef<CesiumCustomDataSource | null>(null);
 
@@ -33,9 +35,11 @@ const CesiumDataSourceLayer = <R extends RendererRegistry>({
   const onEntityChangeRef = useRef(onEntityChange);
   const onEntityCreatingRef = useRef(onEntityCreating);
   const onEntityCreateRef = useRef(onEntityCreate);
+  const onClusterRef = useRef(onCluster);
   onEntityChangeRef.current = onEntityChange;
   onEntityCreatingRef.current = onEntityCreating;
   onEntityCreateRef.current = onEntityCreate;
+  onClusterRef.current = onCluster;
 
   // Helper to get current dataSource instance
   const getDataSourceInstance = useCallback(() => dataSourceRef.current, []);
@@ -100,6 +104,34 @@ const CesiumDataSourceLayer = <R extends RendererRegistry>({
 
     dataSourceInstance.show = isVisible ?? true;
   }, [isVisible, getDataSourceInstance]);
+
+  // Apply clustering configuration
+  useEffect(() => {
+    const ds = getDataSourceInstance();
+    if (!ds) return;
+
+    if (!clusteringConfig?.enabled) {
+      ds.clustering.enabled = false;
+      return;
+    }
+
+    ds.clustering.enabled = true;
+    ds.clustering.pixelRange = clusteringConfig.pixelRange ?? 80;
+    ds.clustering.minimumClusterSize = clusteringConfig.minimumClusterSize ?? 2;
+    ds.clustering.clusterBillboards = clusteringConfig.clusterBillboards ?? true;
+    ds.clustering.clusterLabels = clusteringConfig.clusterLabels ?? true;
+    ds.clustering.clusterPoints = clusteringConfig.clusterPoints ?? true;
+
+    const removeListener = ds.clustering.clusterEvent.addEventListener(
+      (clusteredEntities: Entity[], cluster: { billboard: unknown; label: unknown; point: unknown }) => {
+        onClusterRef.current?.(id, clusteredEntities, cluster);
+      },
+    );
+
+    return () => {
+      removeListener();
+    };
+  }, [clusteringConfig, getDataSourceInstance, id]);
 
   // Update entities when data or type changes
   useEffect(() => {

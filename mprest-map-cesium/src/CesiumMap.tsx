@@ -17,6 +17,7 @@ import type {
   LayerData,
   ViewerWithConfigs,
   MapApi,
+  ClusteringConfig,
 } from "./types";
 import { useViewer, createEventHandler, callAllSubscribers, setLogHandler, type IViewerWithConfigs, type IMapConfig } from "@mprest/map-core";
 import { extractLayersFromChildren, hasLayersChanged } from "./utils";
@@ -28,6 +29,16 @@ import { createCesiumDataManager } from "./CesiumDataManager";
 
 // Module-level variable to hold current API
 let currentViewerApi: MapApi | null = null;
+
+/** Merge clustering configs: global < mapPerLayer < layerProp */
+function resolveClusteringConfig(
+  global?: ClusteringConfig,
+  perLayer?: ClusteringConfig,
+  layerProp?: ClusteringConfig,
+): ClusteringConfig | undefined {
+  if (!global && !perLayer && !layerProp) return undefined;
+  return { ...global, ...perLayer, ...layerProp } as ClusteringConfig;
+}
 
 // Default map configuration
 const DEFAULT_MAP_CONFIG: IMapConfig = {
@@ -45,6 +56,8 @@ const CesiumMap = <R extends RendererRegistry>({
   selectionIndicator = true,
   infoBox = true,
   multiSelect,
+  clusteringConfig,
+  onCluster,
   animateActivation = false,
   animateVisibility = false,
   onApiChange,
@@ -362,6 +375,12 @@ const CesiumMap = <R extends RendererRegistry>({
               }
               : processEntityCreating}
             onEntityCreate={processEntityCreate}
+            clusteringConfig={resolveClusteringConfig(
+              clusteringConfig?.global,
+              clusteringConfig?.[layer.id],
+              layer.clusteringConfig,
+            )}
+            onCluster={onCluster}
           />
         ))}
     </div>
