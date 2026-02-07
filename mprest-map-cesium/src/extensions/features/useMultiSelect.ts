@@ -9,16 +9,19 @@ import {
   PolygonHierarchy,
   PolylineDashMaterialProperty,
   CallbackProperty,
+  ScreenSpaceEventHandler,
+  ScreenSpaceEventType,
   Math as CesiumMath,
   JulianDate,
   defined,
 } from "cesium";
-import { useViewer } from "@mprest/map-core";
+import { useViewer, createEventHandler } from "@mprest/map-core";
 import type {
   ExtensionModule,
   ExtensionContext,
   ViewerWithConfigs,
   MultiSelectConfig,
+  IEventHandler,
 } from "../../types";
 
 // ============================================
@@ -52,6 +55,8 @@ export interface MultiSelectApi {
   unselect: (id: string | string[]) => void;
   /** Currently selected entities */
   selections: Entity[];
+  /** Event handler fired when selections change */
+  onMultiSelect: IEventHandler<(selections: Entity[]) => void>;
 }
 
 // ============================================
@@ -334,12 +339,14 @@ const NOOP_API: MultiSelectApi = {
   reset: () => {},
   unselect: () => {},
   selections: [],
+  onMultiSelect: createEventHandler(),
 };
 
 const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
   const config = ctx.multiSelect as MultiSelectConfig | undefined;
   const enabled = config?.isEnabled ?? false;
   const mapClickDeselect = config?.mapClickDeselect ?? true;
+  const selectionTool = config?.selectionTool ?? false;
   const { viewer } = useViewer();
   const cesiumViewer = viewer as unknown as ViewerWithConfigs | null;
 
@@ -360,7 +367,7 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
   const onMultiSelecting = ctx.onMultiSelecting as
     | ((selections: Entity[], entity: Entity) => boolean | void)
     | undefined;
-  const onMultiSelect = ctx.onMultiSelect as
+  const onMultiSelectProp = ctx.onMultiSelect as
     | ((entities: Entity[]) => void)
     | undefined;
   const onRenderMultiSelection = ctx.onRenderMultiSelection as
@@ -370,6 +377,9 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
   // Keep ref in sync so the onClick subscriber always has the latest callback
   const onMultiSelectingRef = useRef(onMultiSelecting);
   onMultiSelectingRef.current = onMultiSelecting;
+
+  // Event handler for selection changes
+  const onMultiSelectHandler = useMemo(() => createEventHandler<(selections: Entity[]) => void>(), []);
 
   // Keep ref in sync with state
   const switchMultiSelect = useCallback((enabled: boolean) => {
@@ -473,11 +483,162 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
     });
   }, [enabled, selectedMap, onRenderMultiSelection]);
 
-  // Fire onMultiSelect event when selections change
+  // Fire onMultiSelect event and notify subscribers when selections change
   useEffect(() => {
     if (!enabled) return;
-    onMultiSelect?.(Array.from(selectedMap.values()));
-  }, [enabled, selectedMap, onMultiSelect]);
+    const sels = Array.from(selectedMap.values());
+    onMultiSelectProp?.(sels);
+    onMultiSelectHandler.subscribers.forEach((cb) => cb(sels));
+  }, [enabled, selectedMap, onMultiSelectProp, onMultiSelectHandler]);
+
+  // Rubber-band selection tool — click-and-drag draws a dashed rectangle to select entities
+  useEffect(() => {
+    if (!enabled || !selectionTool || !cesiumViewer) return;
+
+    const DRAG_THRESHOLD = 5; // px — minimum drag distance to activate rubber-band
+    const canvas = cesiumViewer.scene.canvas;
+    const container = canvas.parentElement;
+    if (!container) return;
+
+    // Create DOM overlay for selection rectangle
+    const rectDiv = document.createElement("div");
+    rectDiv.style.position = "absolute";
+    rectDiv.style.border = `2px dashed ${SELECTION_RING_COLOR.toCssColorString()}`;
+    rectDiv.style.background = SELECTION_GLOW_COLOR.toCssColorString();
+    rectDiv.style.pointerEvents = "none";
+    rectDiv.style.display = "none";
+    rectDiv.style.zIndex = "1";
+    container.style.position = "relative";
+    container.appendChild(rectDiv);
+
+    let startPosition: Cartesian2 | null = null;
+    let isDragging = false;
+
+    // Save camera control state
+    const sscController = cesiumViewer.scene.screenSpaceCameraController;
+
+    const handler = new ScreenSpaceEventHandler(canvas);
+
+    handler.setInputAction((click: { position: Cartesian2 }) => {
+      if (!isMultiSelectRef.current) return;
+      startPosition = click.position.clone();
+      isDragging = false;
+    }, ScreenSpaceEventType.LEFT_DOWN);
+
+    handler.setInputAction((movement: { endPosition: Cartesian2 }) => {
+      if (!startPosition || !isMultiSelectRef.current) return;
+
+      const dx = movement.endPosition.x - startPosition.x;
+      const dy = movement.endPosition.y - startPosition.y;
+
+      if (!isDragging) {
+        if (Math.sqrt(dx * dx + dy * dy) < DRAG_THRESHOLD) return;
+        // Threshold reached — start rubber-band
+        isDragging = true;
+        sscController.enableRotate = false;
+        sscController.enableTranslate = false;
+        sscController.enableZoom = false;
+        sscController.enableTilt = false;
+        sscController.enableLook = false;
+      }
+
+      // Update rectangle overlay
+      const left = Math.min(startPosition.x, movement.endPosition.x);
+      const top = Math.min(startPosition.y, movement.endPosition.y);
+      const width = Math.abs(dx);
+      const height = Math.abs(dy);
+
+      rectDiv.style.left = `${left}px`;
+      rectDiv.style.top = `${top}px`;
+      rectDiv.style.width = `${width}px`;
+      rectDiv.style.height = `${height}px`;
+      rectDiv.style.display = "block";
+    }, ScreenSpaceEventType.MOUSE_MOVE);
+
+    handler.setInputAction((click: { position: Cartesian2 }) => {
+      if (!startPosition || !isMultiSelectRef.current) {
+        startPosition = null;
+        return;
+      }
+
+      // Re-enable camera controls
+      sscController.enableRotate = true;
+      sscController.enableTranslate = true;
+      sscController.enableZoom = true;
+      sscController.enableTilt = true;
+      sscController.enableLook = true;
+
+      // Hide overlay
+      rectDiv.style.display = "none";
+
+      if (!isDragging) {
+        // Below threshold — let normal click handler fire
+        startPosition = null;
+        isDragging = false;
+        return;
+      }
+
+      // Compute screen-space rectangle bounds
+      const minX = Math.min(startPosition.x, click.position.x);
+      const maxX = Math.max(startPosition.x, click.position.x);
+      const minY = Math.min(startPosition.y, click.position.y);
+      const maxY = Math.max(startPosition.y, click.position.y);
+
+      // Find all entities whose screen position falls inside the rectangle
+      const entitiesToSelect: Entity[] = [];
+      const currentTime = cesiumViewer.clock.currentTime;
+
+      for (let i = 0; i < cesiumViewer.dataSources.length; i++) {
+        const ds = cesiumViewer.dataSources.get(i);
+        if (ds.name === DATASOURCE_NAME) continue;
+
+        for (const entity of ds.entities.values) {
+          const pos = entity.position?.getValue(currentTime);
+          if (!pos) continue;
+          const screenPos = cesiumViewer.scene.cartesianToCanvasCoordinates(pos);
+          if (!screenPos) continue;
+          if (screenPos.x >= minX && screenPos.x <= maxX && screenPos.y >= minY && screenPos.y <= maxY) {
+            entitiesToSelect.push(entity);
+          }
+        }
+      }
+
+      // Add entities to selection (respecting onMultiSelecting veto)
+      if (entitiesToSelect.length > 0) {
+        setSelectedMap((prev) => {
+          const next = new Map(prev);
+          for (const entity of entitiesToSelect) {
+            if (next.has(entity.id)) continue;
+            if (onMultiSelectingRef.current) {
+              const currentSelections = Array.from(next.values());
+              if (onMultiSelectingRef.current(currentSelections, entity) === false) {
+                continue;
+              }
+            }
+            next.set(entity.id, entity);
+          }
+          return next;
+        });
+      }
+
+      startPosition = null;
+      isDragging = false;
+    }, ScreenSpaceEventType.LEFT_UP);
+
+    return () => {
+      handler.destroy();
+      // Re-enable camera controls in case cleanup happens mid-drag
+      sscController.enableRotate = true;
+      sscController.enableTranslate = true;
+      sscController.enableZoom = true;
+      sscController.enableTilt = true;
+      sscController.enableLook = true;
+      // Remove overlay
+      if (rectDiv.parentElement) {
+        rectDiv.parentElement.removeChild(rectDiv);
+      }
+    };
+  }, [enabled, selectionTool, cesiumViewer]);
 
   // Select function - handles all target types
   const select = useCallback(
@@ -556,9 +717,10 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
             reset,
             unselect,
             selections,
+            onMultiSelect: onMultiSelectHandler,
           }
         : NOOP_API,
-    [enabled, switchMultiSelect, isMultiSelect, select, reset, unselect, selections],
+    [enabled, switchMultiSelect, isMultiSelect, select, reset, unselect, selections, onMultiSelectHandler],
   );
 };
 

@@ -22,6 +22,7 @@ import {
 import { EntityPopup, type EntityPopupInfo, StickyPopups, usePopupPosition } from "./components/popups";
 import { SelectionOverlay, FlightOverlay } from "./components/overlays";
 import { PositionInfoBar } from "./components/PositionInfoBar";
+import { SelectionPanel } from "./components/SelectionPanel";
 import { AppLayers } from "./AppLayers";
 import { AppRenderers } from "./AppRenderers";
 import { AppPanels } from "./AppPanels";
@@ -61,7 +62,7 @@ const DataConnectorConfig = {
 };
 
 // Multi-select configuration (module-level constant for referential stability)
-const multiSelectConfig = { isEnabled: true };
+const multiSelectConfig = { isEnabled: true, selectionTool: true };
 
 // Initial map view configuration (centered on US where entities are located)
 const mapConfig: IMapConfig = {
@@ -152,6 +153,7 @@ function AppContent({
   const [selectionModeActive, setSelectionModeActive] = useState(false);
   const [selectionSourceEntity, setSelectionSourceEntity] = useState<Entity | undefined>(undefined);
   const [stickyInfoMap, setStickyInfoMap] = useState<Map<string, StickyEntityInfo>>(new Map());
+  const [, setSelectionVersion] = useState(0);
 
   const pluginsSubscribedRef = useRef(false);
   const stickyInfoSubscribedRef = useRef(false);
@@ -370,6 +372,7 @@ function AppContent({
 
   const handleMultiSelect = useCallback((entities: Entity[]) => {
     console.log('onMultiSelect:', entities.map(e => e.id));
+    setSelectionVersion((v) => v + 1);
   }, []);
 
   // const handleRenderMultiSelection = useCallback((entity: Entity): Entity.ConstructorOptions | null => {
@@ -599,6 +602,7 @@ function AppContent({
 
         <StickyPopups stickyInfoMap={stickyInfoMap} onClose={handleCloseStickyInfo} />
 
+        <SelectionPanel />
         <PositionInfoBar position={currentPosition} />
 
         {viewer && <DataConnector

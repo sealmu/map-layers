@@ -420,6 +420,8 @@ export interface MultiSelectConfig {
   isEnabled: boolean;
   /** Deselect all when clicking empty space on map. Default: true */
   mapClickDeselect?: boolean;
+  /** Enable rubber-band rectangle selection tool. When active, click-and-drag draws a selection rectangle. Default: false */
+  selectionTool?: boolean;
 }
 
 export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
