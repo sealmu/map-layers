@@ -393,13 +393,18 @@ export class CesiumDataManager implements IDataManager<LayerData> {
 
     // If no subscriber provided options, use createEntityFromData
     if (!entityOptions) {
+      const layerOnEntityCreating = layerConfig.onEntityCreating as
+        ((options: Entity.ConstructorOptions, item: LayerData) => boolean | void) | undefined;
       const onEntityCreatingWrapper = (
         options: Entity.ConstructorOptions,
         item: LayerData,
-      ) => {
-        this.viewer.handlers?.onEntityCreating?.subscribers?.forEach((cb) =>
-          cb(options, item),
-        );
+      ): boolean | void => {
+        // Layer-level onEntityCreating first
+        if (layerOnEntityCreating?.(options, item) === false) return false;
+        // Then map-level subscribers
+        for (const cb of this.viewer.handlers?.onEntityCreating?.subscribers ?? []) {
+          if (cb(options, item) === false) return false;
+        }
       };
       entityOptions = createEntityFromData(
         type as RenderTypeFromRegistry<typeof renderers>,

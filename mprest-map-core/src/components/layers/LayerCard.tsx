@@ -7,6 +7,7 @@ interface LayerCardProps {
   isDocked: boolean;
   isActive: boolean;
   isVisible: boolean;
+  isEnabled?: boolean;
   onToggleActive: () => void;
   onToggleVisible: () => void;
   onToggleDocked: () => void;
@@ -21,6 +22,7 @@ const LayerCard = ({
   isDocked,
   isActive,
   isVisible,
+  isEnabled = true,
   onToggleActive,
   onToggleVisible,
   onToggleDocked,
@@ -31,15 +33,16 @@ const LayerCard = ({
 }: LayerCardProps) => {
   if (isDocked) {
     return (
-      <div className="docked-layer-item" onClick={onToggleDocked}>
+      <div className={`docked-layer-item${!isEnabled ? " disabled" : ""}`} onClick={isEnabled ? onToggleDocked : undefined}>
         <span className="docked-layer-name">{layer.name}</span>
         <button
           className="expand-button"
           onClick={(e) => {
             e.stopPropagation();
-            onToggleDocked();
+            if (isEnabled) onToggleDocked();
           }}
           title="Expand to card view"
+          disabled={!isEnabled}
         >
           ▼
         </button>
@@ -49,7 +52,7 @@ const LayerCard = ({
 
   return (
     <div
-      className={`layer-item ${isHovered ? "hovered" : ""}`}
+      className={`layer-item${isHovered ? " hovered" : ""}${!isEnabled ? " disabled" : ""}`}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
@@ -59,6 +62,7 @@ const LayerCard = ({
           onClick={onToggleDocked}
           title="Dock layer to top"
           onMouseEnter={() => onMouseLeave()} // Clear card hover when hovering over pin
+          disabled={!isEnabled}
         >
           📌
         </button>
@@ -71,6 +75,7 @@ const LayerCard = ({
               type="checkbox"
               checked={isActive}
               onChange={onToggleActive}
+              disabled={!isEnabled}
             />
             <span className="slider"></span>
           </label>
@@ -81,7 +86,7 @@ const LayerCard = ({
             type="checkbox"
             checked={isVisible}
             onChange={onToggleVisible}
-            disabled={!isActive}
+            disabled={!isEnabled || !isActive}
           />
         </label>
       </div>

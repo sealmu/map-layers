@@ -1,9 +1,22 @@
 
 
+interface FilterConfigType {
+  isDisplayed?: boolean;
+  isEnabled?: boolean;
+  isHidden?: boolean;
+  initialVisibility?: boolean;
+}
+
+interface FilterConfig {
+  isDisplayed?: boolean;
+  isEnabled?: boolean;
+  types?: Record<string, FilterConfigType>;
+}
+
 interface FilterModalProps {
   isOpen: boolean;
   onClose: () => void;
-  filterData: Record<string, { types: Record<string, boolean>; layerType?: string; hasDataSource?: boolean; isVisible?: boolean; isActive?: boolean; displayName: string }>;
+  filterData: Record<string, { types: Record<string, boolean>; layerType?: string; hasDataSource?: boolean; isVisible?: boolean; isActive?: boolean; displayName: string; filterConfig?: FilterConfig }>;
   onFilterChange: (layerName: string, displayName: string, type: string, visible: boolean) => void;
 }
 
@@ -51,7 +64,7 @@ const FilterModal = ({ isOpen, onClose, filterData, onFilterChange }: FilterModa
         }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '20px' }}>
             {Object.entries(filterData)
-              .filter(() => true)
+              .filter(([, layerData]) => layerData.filterConfig?.isDisplayed !== false)
               .sort(([, a], [, b]) => {
                 const aEnabled = (a.isVisible !== false) && (a.isActive !== false);
                 const bEnabled = (b.isVisible !== false) && (b.isActive !== false);
@@ -70,27 +83,35 @@ const FilterModal = ({ isOpen, onClose, filterData, onFilterChange }: FilterModa
                 return bPriority - aPriority;
               })
               .map(([layerName, layerData]) => {
-                const { types, isVisible = true, isActive = true, displayName } = layerData;
-                const allTypes = Object.keys(types);
-                const allVisible = allTypes.every(type => types[type]);
-                const isDisabled = !isVisible || !isActive;
+                const { types, isVisible = true, isActive = true, displayName, filterConfig } = layerData;
+                const layerFilterDisabled = filterConfig?.isEnabled === false;
+                const typeConfigs = filterConfig?.types;
+                const visibleTypes = Object.fromEntries(
+                  Object.entries(types).filter(([type]) =>
+                    typeConfigs?.[type]?.isDisplayed !== false && typeConfigs?.[type]?.isHidden !== true
+                  )
+                );
+                const allTypes = Object.keys(visibleTypes);
+                const allVisible = allTypes.every(type => visibleTypes[type]);
+                const isInactive = !isVisible || !isActive;
+                const isDisabled = isInactive || layerFilterDisabled;
 
                 return (
                   <div
                     key={layerName}
                     style={{
                       padding: '16px 20px',
-                      background: isDisabled
+                      background: isInactive
                         ? 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)'
                         : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-                      border: `1px solid ${isDisabled ? '#ccc' : '#e9ecef'}`,
+                      border: `1px solid ${isInactive ? '#ccc' : '#e9ecef'}`,
                       borderRadius: '12px',
-                      boxShadow: isDisabled
+                      boxShadow: isInactive
                         ? '0 1px 4px rgba(0, 0, 0, 0.04)'
                         : '0 2px 8px rgba(0, 0, 0, 0.06)',
                       transition: 'all 0.3s ease',
-                      opacity: isDisabled ? 0.6 : 1,
-                      pointerEvents: isDisabled ? 'none' : 'auto',
+                      opacity: isInactive ? 0.6 : 1,
+                      pointerEvents: isInactive ? 'none' : 'auto',
                       position: 'relative',
                       overflow: 'hidden',
                     }}
@@ -164,21 +185,22 @@ const FilterModal = ({ isOpen, onClose, filterData, onFilterChange }: FilterModa
                                   padding: '6px 12px',
                                   border: '2px solid #4caf50',
                                   borderRadius: '8px',
-                                  background: isDisabled
+                                  background: isInactive
                                     ? '#f5f5f5'
                                     : allVisible ? '#4caf50' : 'rgba(76, 175, 80, 0.05)',
-                                  color: isDisabled ? '#999' : allVisible ? 'white' : '#4caf50',
+                                  color: isInactive ? '#999' : allVisible ? 'white' : '#4caf50',
                                   cursor: isDisabled ? 'not-allowed' : 'pointer',
                                   fontSize: '12px',
                                   fontWeight: '600',
                                   transition: 'all 0.2s ease',
                                   minWidth: '70px',
                                   textAlign: 'center',
-                                  boxShadow: isDisabled
+                                  boxShadow: isInactive
                                     ? 'none'
                                     : allVisible ? '0 2px 6px rgba(76, 175, 80, 0.3)' : 'none',
                                   textTransform: 'uppercase',
                                   letterSpacing: '0.5px',
+                                  opacity: layerFilterDisabled ? 0.6 : 1,
                                 }}
                                 onMouseEnter={(e) => {
                                   if (!isDisabled) {
@@ -194,32 +216,37 @@ const FilterModal = ({ isOpen, onClose, filterData, onFilterChange }: FilterModa
                                 All
                               </button>
                             )}
-                            {Object.entries(types).map(([type, isVisible]) => (
+                            {Object.entries(visibleTypes).map(([type, isVisible]) => {
+                              const typeConfigDisabled = typeConfigs?.[type]?.isEnabled === false;
+                              const typeDisabled = isDisabled || typeConfigDisabled;
+                              const typeInactive = isInactive;
+                              return (
                               <button
                                 key={type}
-                                disabled={isDisabled}
+                                disabled={typeDisabled}
                                 onClick={() => onFilterChange(layerName, displayName, type, !isVisible)}
                                 style={{
                                   padding: '6px 12px',
                                   border: '1px solid #2196f3',
                                   borderRadius: '8px',
-                                  background: isDisabled
+                                  background: typeInactive
                                     ? '#f5f5f5'
                                     : isVisible ? '#2196f3' : 'rgba(33, 150, 243, 0.05)',
-                                  color: isDisabled ? '#999' : isVisible ? 'white' : '#2196f3',
-                                  cursor: isDisabled ? 'not-allowed' : 'pointer',
+                                  color: typeInactive ? '#999' : isVisible ? 'white' : '#2196f3',
+                                  cursor: typeDisabled ? 'not-allowed' : 'pointer',
                                   fontSize: '12px',
                                   fontWeight: '500',
                                   transition: 'all 0.2s ease',
                                   minWidth: '70px',
                                   textAlign: 'center',
-                                  boxShadow: isDisabled
+                                  boxShadow: typeInactive
                                     ? 'none'
                                     : isVisible ? '0 2px 6px rgba(33, 150, 243, 0.3)' : 'none',
                                   textTransform: 'capitalize',
+                                  opacity: (layerFilterDisabled || typeConfigDisabled) ? 0.6 : 1,
                                 }}
                                 onMouseEnter={(e) => {
-                                  if (!isDisabled) {
+                                  if (!typeDisabled) {
                                     e.currentTarget.style.transform = 'scale(1.05)';
                                   }
                                 }}
@@ -229,7 +256,8 @@ const FilterModal = ({ isOpen, onClose, filterData, onFilterChange }: FilterModa
                               >
                                 {type}
                               </button>
-                            ))}
+                              );
+                            })}
                           </>
                         )}
                       </div>

@@ -61,6 +61,8 @@ export type {
   IRendererRegistry,
   IRenderType,
   IRenderTypeFromRegistry,
+  IFilterTypeConfig,
+  IFilterConfig,
   ILayerConfig,
   ILayersConfigItem,
   IExtractorSpec,

@@ -18,7 +18,7 @@ import {
   ImageryProvider,
   ImageryLayer,
 } from "cesium";
-import type { IMapAccessors, IDataManager, EntityChangeStatus, LogEntry, IMapConfig, IBaseMapsApi } from "@mprest/map-core";
+import type { IMapAccessors, IDataManager, EntityChangeStatus, LogEntry, IMapConfig, IBaseMapsApi, IFilterConfig } from "@mprest/map-core";
 
 // Re-export core types for convenience (these are provider-agnostic)
 export type {
@@ -274,6 +274,7 @@ export interface LayerProps<
   isVisible?: boolean;
   description?: string;
   customRenderer?: EntityRenderer;
+  onEntityCreating?: (options: Entity.ConstructorOptions, item: LayerData) => boolean | void;
   isDocked?: boolean;
   group?: string;
   groupName?: string;
@@ -376,7 +377,7 @@ export interface DataSourceLayerProps<
   onEntityCreating?: (
     options: Entity.ConstructorOptions,
     item: LayerData,
-  ) => void;
+  ) => boolean | void;
   onEntityCreate?: (
     type: RenderTypeFromRegistry<R>,
     item: LayerData,
@@ -392,6 +393,8 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
   mapConfig?: IMapConfig;
   /** Base map providers configuration - replaces hardcoded OpenStreetMap */
   baseMapProviders?: BaseMapProviderConfig[];
+  /** Map-level filter configuration keyed by layer ID */
+  filterConfig?: Record<string, IFilterConfig>;
   animateActivation?: boolean;
   animateVisibility?: boolean;
   onApiChange?: (api: MapApi) => void;
@@ -669,7 +672,7 @@ export interface ViewerWithConfigs<
     >;
     onApiChange: EventHandler<(api: MapApi) => void>;
     onEntityCreating: EventHandler<
-      (options: Entity.ConstructorOptions, item: LayerData) => void
+      (options: Entity.ConstructorOptions, item: LayerData) => boolean | void
     >;
     onEntityCreate: EventHandler<
       (

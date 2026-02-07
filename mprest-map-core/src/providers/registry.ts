@@ -4,6 +4,7 @@ import type {
   IProviderRegistry,
   IRendererRegistry,
   ILayerData,
+  IFilterConfig,
 } from "../types";
 
 /**
@@ -36,6 +37,7 @@ export interface IMapProps<R = IRendererRegistry> {
   defaultToken?: string;
   animateActivation?: boolean;
   animateVisibility?: boolean;
+  filterConfig?: Record<string, IFilterConfig>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onApiChange?: (api: any) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

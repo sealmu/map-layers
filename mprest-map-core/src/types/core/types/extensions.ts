@@ -1,4 +1,4 @@
-import type { ILayerConfig, ICollectedLayerData } from "./layer";
+import type { ILayerConfig, ICollectedLayerData, IFilterConfig } from "./layer";
 
 // ============================================
 // Layers Panel API
@@ -47,6 +47,7 @@ export type IFilterData = Record<
     isVisible?: boolean;
     isActive?: boolean;
     displayName: string;
+    filterConfig?: IFilterConfig;
   }
 >;
 

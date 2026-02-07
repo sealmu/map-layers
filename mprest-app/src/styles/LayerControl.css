@@ -297,6 +297,16 @@
   line-height: 1.4;
 }
 
+.layer-item.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.docked-layer-item.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 .layer-item.hovered {
   background: #e9ecef;
 }

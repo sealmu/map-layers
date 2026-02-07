@@ -66,6 +66,29 @@ export function createIRenderTypes<R extends IRendererRegistry>(
 }
 
 // ============================================
+// Filter Configuration Types
+// ============================================
+
+/**
+ * Per-type filter configuration
+ */
+export interface IFilterTypeConfig {
+  isDisplayed?: boolean;
+  isEnabled?: boolean;
+  isHidden?: boolean;
+  initialVisibility?: boolean;
+}
+
+/**
+ * Filter configuration for a layer
+ */
+export interface IFilterConfig {
+  isDisplayed?: boolean;
+  isEnabled?: boolean;
+  types?: Record<string, IFilterTypeConfig>;
+}
+
+// ============================================
 // Layer Configuration Types
 // ============================================
 
@@ -77,11 +100,14 @@ export interface ILayerConfig {
   name: string;
   isActive: boolean;
   isVisible?: boolean;
+  isDisplayed?: boolean;
+  isEnabled?: boolean;
   description?: string;
   isDocked?: boolean;
   group?: string;
   groupName?: string;
   groupIsDocked?: boolean;
+  filterConfig?: IFilterConfig;
 }
 
 /**
@@ -112,12 +138,16 @@ export interface ILayerProps<
   data: T[];
   isActive?: boolean;
   isVisible?: boolean;
+  isDisplayed?: boolean;
+  isEnabled?: boolean;
   description?: string;
   customRenderer?: IEntityRenderer;
+  onEntityCreating?: (options: IEntityOptions, item: ILayerData) => boolean | void;
   isDocked?: boolean;
   group?: string;
   groupName?: string;
   groupIsDocked?: boolean;
+  filterConfig?: IFilterConfig;
 }
 
 /**

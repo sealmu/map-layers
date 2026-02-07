@@ -6,17 +6,85 @@ import type {
   ILayerData,
   IRendererRegistry,
   IFilterData,
+  IFilterConfig,
 } from "../../types";
 
 type Layer = ILayerProps<ILayerData, IRendererRegistry>;
+
+function mergeFilterConfigs(
+  mapLevel?: IFilterConfig,
+  layerLevel?: IFilterConfig,
+): IFilterConfig | undefined {
+  if (!mapLevel && !layerLevel) return undefined;
+  if (!mapLevel) return layerLevel;
+  if (!layerLevel) return mapLevel;
+  return {
+    ...mapLevel,
+    ...layerLevel,
+    types: {
+      ...mapLevel.types,
+      ...layerLevel.types,
+    },
+  };
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const useFilters = (ctx: Record<string, any>) => {
   const { layerStates } = ctx;
   const layers = ctx.layers as Layer[];
+  const mapFilterConfig = ctx.filterConfig as Record<string, IFilterConfig> | undefined;
   const [filterData, setFilterData] = useState<IFilterData>({});
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const { viewer } = useViewer();
+
+  // Compute merged filter configs for all layers
+  const mergedFilterConfigs = useMemo(() => {
+    if (!layers) return {};
+    const configs: Record<string, IFilterConfig | undefined> = {};
+    layers.forEach((layer) => {
+      configs[layer.id] = mergeFilterConfigs(mapFilterConfig?.[layer.id], layer.filterConfig);
+    });
+    return configs;
+  }, [layers, mapFilterConfig]);
+
+  // Seed filterData with isHidden types set to false,
+  // so DataSourceLayer respects them on entity creation
+  useEffect(() => {
+    setFilterData((prev) => {
+      let changed = false;
+      const next = { ...prev };
+
+      Object.entries(mergedFilterConfigs).forEach(([layerId, config]) => {
+        if (!config?.types) return;
+        Object.entries(config.types).forEach(([type, typeConfig]) => {
+          // isHidden: always force to false
+          if (typeConfig.isHidden && next[layerId]?.types?.[type] !== false) {
+            changed = true;
+            next[layerId] = {
+              ...next[layerId],
+              types: { ...next[layerId]?.types, [type]: false },
+              displayName: next[layerId]?.displayName ?? layerId,
+            };
+          }
+          // initialVisibility: seed only when no existing entry (user can change later)
+          if (
+            !typeConfig.isHidden &&
+            typeConfig.initialVisibility !== undefined &&
+            next[layerId]?.types?.[type] === undefined
+          ) {
+            changed = true;
+            next[layerId] = {
+              ...next[layerId],
+              types: { ...next[layerId]?.types, [type]: typeConfig.initialVisibility },
+              displayName: next[layerId]?.displayName ?? layerId,
+            };
+          }
+        });
+      });
+
+      return changed ? next : prev;
+    });
+  }, [mergedFilterConfigs]);
 
   const handleFilterChange = useCallback(
     (
@@ -56,9 +124,12 @@ export const useFilters = (ctx: Record<string, any>) => {
         const updates: Array<{id: string, visible: boolean}> = [];
 
         Object.entries(layerData.types).forEach(([type, visible]) => {
+          // Respect isHidden config - never allow hidden types to become visible
+          const typeConfig = layerData.filterConfig?.types?.[type];
+          const effectiveVisible = typeConfig?.isHidden ? false : visible;
           const matchingEntities = entities.filter((e) => e.renderType === type);
           matchingEntities.forEach((entity) => {
-            updates.push({ id: entity.id, visible });
+            updates.push({ id: entity.id, visible: effectiveVisible });
           });
         });
 
@@ -77,16 +148,25 @@ export const useFilters = (ctx: Record<string, any>) => {
     // Create filter data from layer data
     const newFilterData: IFilterData = {};
     Object.entries(layerData).forEach(([layerId, data]) => {
+      const layer = layers.find((l) => l.id === layerId);
       newFilterData[layerId] = {
         types: {},
         hasDataSource: data.hasDataSource,
         isVisible: layerStates?.[layerId]?.isVisible ?? data.isVisible,
         isActive: layerStates?.[layerId]?.isActive ?? data.isActive,
         displayName: data.displayName,
+        filterConfig: mergeFilterConfigs(mapFilterConfig?.[layerId], layer?.filterConfig),
       };
 
       // Read current entity visibility state from the map
+      const mergedConfig = newFilterData[layerId].filterConfig;
       data.types.forEach((type) => {
+        // If isHidden, force to false
+        if (mergedConfig?.types?.[type]?.isHidden) {
+          newFilterData[layerId].types[type] = false;
+          return;
+        }
+
         let typeVisible = true; // Default to visible
 
         if (viewer.accessors) {
@@ -102,7 +182,7 @@ export const useFilters = (ctx: Record<string, any>) => {
     });
 
     return newFilterData;
-  }, [layers, viewer, layerStates]);
+  }, [layers, viewer, layerStates, mapFilterConfig]);
 
   const openFilterModal = useCallback(() => {
     const newFilterData = collectFilterData();

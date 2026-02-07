@@ -23,19 +23,26 @@ function droneRenderer(item: LayerData): Entity.ConstructorOptions {
     id: item.id,
     name: item.name,
     position: item.positions[0],
-    point: {
-      pixelSize: 1,
-      color: item.color,
-      outlineColor: Color.WHITE,
-      outlineWidth: 3,
-    },
+    // point: {
+    //   pixelSize: 10,
+    //   color: item.color,
+    //   outlineColor: Color.WHITE,
+    //   outlineWidth: 3,
+    // },
+    // billboard: {
+    //   image: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 52"><path d="M6 42 L6 46 L70 46 L70 42 Q70 38 66 38 L10 38 Q6 38 6 42 Z" fill="#fff"/><circle cx="14" cy="44" r="5" fill="none" stroke="#fff" stroke-width="2"/><circle cx="14" cy="44" r="2" fill="#fff"/><circle cx="28" cy="44" r="5" fill="none" stroke="#fff" stroke-width="2"/><circle cx="28" cy="44" r="2" fill="#fff"/><circle cx="42" cy="44" r="5" fill="none" stroke="#fff" stroke-width="2"/><circle cx="42" cy="44" r="2" fill="#fff"/><circle cx="56" cy="44" r="5" fill="none" stroke="#fff" stroke-width="2"/><circle cx="56" cy="44" r="2" fill="#fff"/><rect x="8" y="48" width="60" height="3" rx="1" fill="#fff"/><path d="M12 38 L12 28 Q12 24 16 24 L52 24 Q56 24 56 28 L56 38 Z" fill="#fff"/><path d="M20 24 L24 16 L48 16 L52 24 Z" fill="#fff"/><rect x="26" y="12" width="20" height="6" rx="1" fill="#fff"/><rect x="44" y="14" width="32" height="4" rx="1" fill="#fff"/><rect x="74" y="12" width="6" height="8" rx="1" fill="#fff"/><rect x="76" y="14" width="1" height="4" fill="none" stroke="#fff" stroke-width="0.5"/><rect x="78" y="14" width="1" height="4" fill="none" stroke="#fff" stroke-width="0.5"/><rect x="16" y="18" width="6" height="6" fill="#fff"/><circle cx="19" cy="21" r="2" fill="none" stroke="#fff" stroke-width="1"/></svg>`),
+    //   color: item.color as Color,
+    //   width: 32,
+    //   height: 32,
+    //   pixelOffset: new Cartesian2(0, 0),
+    // },
     label: {
       text: "🚁",
       font: "36px sans-serif",
       fillColor: item.color,
       outlineColor: Color.BLACK,
-      outlineWidth: 2,
-      pixelOffset: new Cartesian2(0, -25),
+      outlineWidth: 0,
+      pixelOffset: new Cartesian2(0, 0),
       style: 0,
     },
   };
@@ -54,11 +61,24 @@ export function AppLayers(data: AppData[], renderers: RendererRegistry) {
       type={RenderTypes.POINTS}
       data={extractPoints(data)}
       isActive={true}
-      isVisible={false}
+      isVisible={true}
       description="Point markers on the map"
       group="basic-shape"
       groupName="Basic Shapes"
       groupIsDocked={false}
+      isDisplayed={true}
+      isEnabled={true}
+      filterConfig={{
+        isDisplayed: true,
+        isEnabled: true,
+        types: {
+          points: {
+            isDisplayed: true,
+            isHidden: false,
+            initialVisibility: false
+          }
+        }
+      }}
     />,
     <Layer
       key="polygons"
@@ -100,6 +120,14 @@ export function AppLayers(data: AppData[], renderers: RendererRegistry) {
       isActive={true}
       isVisible={false}
       description="Mixed types and custom renderers"
+      onEntityCreating={(options, item) => {
+        void options;
+        void item;
+        //console.log('Creating entity for mixed layer:', { id: options.id, renderType: item.renderType, item });
+        // if (item.renderType === 'polygons') {
+        //   return false; // Skip creating polygons in mixed layer
+        // }
+      }}
     />,
     <Layer
       key="dynamic"

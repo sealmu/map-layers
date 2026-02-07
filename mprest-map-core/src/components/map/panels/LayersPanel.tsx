@@ -22,10 +22,15 @@ const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [isGrouped, setIsGrouped] = useState(false);
 
+  const displayedConfigs = useMemo(
+    () => layerConfigs.filter((layer: LayerConfig) => layer.isDisplayed !== false),
+    [layerConfigs],
+  );
+
   const groupedLayers = useMemo(() => {
     const groups: Record<string, { groupName: string; layers: LayerConfig[] }> = {};
     const ungrouped: LayerConfig[] = [];
-    layerConfigs.forEach((layer: LayerConfig) => {
+    displayedConfigs.forEach((layer: LayerConfig) => {
       if (layer.group) {
         if (!groups[layer.group]) {
           groups[layer.group] = { groupName: layer.groupName || layer.group, layers: [] };
@@ -36,16 +41,16 @@ const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
       }
     });
     return { groups, ungrouped };
-  }, [layerConfigs]);
-  const activeCount = layerConfigs.filter(
+  }, [displayedConfigs]);
+  const activeCount = displayedConfigs.filter(
     (layer: LayerConfig) => layerStates[layer.id]?.isActive ?? false,
   ).length;
-  const allActive = activeCount === layerConfigs.length;
+  const allActive = activeCount === displayedConfigs.length;
   const someActive = activeCount > 0 && !allActive;
-  const visibleCount = layerConfigs.filter(
+  const visibleCount = displayedConfigs.filter(
     (layer: LayerConfig) => layerStates[layer.id]?.isVisible ?? false,
   ).length;
-  const allVisible = visibleCount === layerConfigs.length;
+  const allVisible = visibleCount === displayedConfigs.length;
 
   return (
     <div className="layer-control">
@@ -59,13 +64,13 @@ const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
           </button>
           <h3>Layers</h3>
           {/* Docked Layers Bar */}
-          {layerConfigs.some((layer: LayerConfig) => layerStates[layer.id]?.isDocked) && (
+          {displayedConfigs.some((layer: LayerConfig) => layerStates[layer.id]?.isDocked) && (
             <div className="docked-layers-bar">
               {(() => {
                 if (isGrouped) {
                   const dockedGroups: Record<string, { groupName: string; layers: LayerConfig[] }> = {};
                   const dockedUngrouped: LayerConfig[] = [];
-                  layerConfigs.filter((layer: LayerConfig) => layerStates[layer.id]?.isDocked).forEach((layer) => {
+                  displayedConfigs.filter((layer: LayerConfig) => layerStates[layer.id]?.isDocked).forEach((layer) => {
                     if (layer.group) {
                       if (!dockedGroups[layer.group]) {
                         dockedGroups[layer.group] = { groupName: layer.groupName || layer.group, layers: [] };
@@ -99,6 +104,7 @@ const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
                           isDocked={layerStates[layer.id]?.isDocked ?? false}
                           isActive={layerStates[layer.id]?.isActive ?? false}
                           isVisible={layerStates[layer.id]?.isVisible ?? false}
+                          isEnabled={layer.isEnabled !== false}
                           onToggleActive={() => toggleLayerActive(layer.id)}
                           onToggleVisible={() => toggleLayerVisible(layer.id)}
                           onToggleDocked={() => toggleLayerDocked(layer.id)}
@@ -110,7 +116,7 @@ const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
                     </>
                   );
                 } else {
-                  return layerConfigs
+                  return displayedConfigs
                     .filter((layer: LayerConfig) => layerStates[layer.id]?.isDocked)
                     .map((layer: LayerConfig) => (
                       <LayerCard
@@ -119,6 +125,7 @@ const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
                         isDocked={layerStates[layer.id]?.isDocked ?? false}
                         isActive={layerStates[layer.id]?.isActive ?? false}
                         isVisible={layerStates[layer.id]?.isVisible ?? false}
+                        isEnabled={layer.isEnabled !== false}
                         onToggleActive={() => toggleLayerActive(layer.id)}
                         onToggleVisible={() => toggleLayerVisible(layer.id)}
                         onToggleDocked={() => toggleLayerDocked(layer.id)}
@@ -179,6 +186,7 @@ const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
                   isDocked={layer.isDocked ?? false}
                   isActive={layerStates[layer.id]?.isActive ?? false}
                   isVisible={layerStates[layer.id]?.isVisible ?? false}
+                  isEnabled={layer.isEnabled !== false}
                   onToggleActive={() => toggleLayerActive(layer.id)}
                   onToggleVisible={() => toggleLayerVisible(layer.id)}
                   onToggleDocked={() => toggleLayerDocked(layer.id)}
@@ -244,6 +252,7 @@ const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
                         isDocked={false}
                         isActive={layerStates[layer.id]?.isActive ?? false}
                         isVisible={layerStates[layer.id]?.isVisible ?? false}
+                        isEnabled={layer.isEnabled !== false}
                         onToggleActive={() => toggleLayerActive(layer.id)}
                         onToggleVisible={() => toggleLayerVisible(layer.id)}
                         onToggleDocked={() => { }}
@@ -259,7 +268,7 @@ const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
             })}
           </>
         ) : (
-          layerConfigs
+          displayedConfigs
             .filter((layer: LayerConfig) => !layer.isDocked)
             .map((layer: LayerConfig) => (
               <LayerCard
@@ -268,6 +277,7 @@ const LayersPanel = ({ api, onFilter, onSearch }: LayersPanelProps) => {
                 isDocked={layer.isDocked ?? false}
                 isActive={layerStates[layer.id]?.isActive ?? false}
                 isVisible={layerStates[layer.id]?.isVisible ?? false}
+                isEnabled={layer.isEnabled !== false}
                 onToggleActive={() => toggleLayerActive(layer.id)}
                 onToggleVisible={() => toggleLayerVisible(layer.id)}
                 onToggleDocked={() => toggleLayerDocked(layer.id)}

@@ -1,5 +1,10 @@
 import { useEffect, useCallback, useMemo } from "react";
-import { Cartesian3, Cartographic, ConstantPositionProperty, type Entity } from "cesium";
+import {
+  Cartesian3,
+  Cartographic,
+  ConstantPositionProperty,
+  type Entity,
+} from "cesium";
 import type { EntityChangeStatus } from "@mprest/map-core";
 import { DataManager, type ViewerWithConfigs } from "@mprest/map-cesium";
 import type { DroneAnimationConfig } from "../types";
@@ -63,7 +68,7 @@ export function useDroneAnimation(
       // Update drone position directly on native entity
       const entity = mapEntity.getNativeEntity<Entity>();
       entity.position = new ConstantPositionProperty(
-        Cartesian3.fromDegrees(lon, lat, alt)
+        Cartesian3.fromDegrees(lon, lat, alt),
       );
 
       rafId = requestAnimationFrame(step);
@@ -115,8 +120,12 @@ export function useDroneAnimation2(viewer: ViewerWithConfigs | null) {
       const drone2Entity = drone2MapEntity.getNativeEntity<Entity>();
 
       // Get current positions
-      const drone1Position = drone1Entity.position?.getValue(undefined as never);
-      const drone2Position = drone2Entity.position?.getValue(undefined as never);
+      const drone1Position = drone1Entity.position?.getValue(
+        undefined as never,
+      );
+      const drone2Position = drone2Entity.position?.getValue(
+        undefined as never,
+      );
 
       if (!drone1Position || !drone2Position) return;
 
@@ -144,7 +153,7 @@ export function useDroneAnimation2(viewer: ViewerWithConfigs | null) {
 
       // Dynamic speed: 10x when far, 5x when close
       const closeDistanceThreshold = 1; // radians
-      const speedMultiplier = distance > closeDistanceThreshold ? 10 : 5;
+      const speedMultiplier = distance > closeDistanceThreshold ? 20 : 5;
       const baseSpeed = 0.15 / 60; // drone2 speed per frame (0.15 degrees/sec / 60 fps)
       const maxMoveDistance = baseSpeed * speedMultiplier;
       const moveDistance = Math.min(maxMoveDistance, distance);
@@ -160,7 +169,7 @@ export function useDroneAnimation2(viewer: ViewerWithConfigs | null) {
 
       // Update drone1 position directly on native entity
       drone1Entity.position = new ConstantPositionProperty(
-        Cartesian3.fromRadians(newLon, newLat, newAlt)
+        Cartesian3.fromRadians(newLon, newLat, newAlt),
       );
     },
     [dataManager],

@@ -95,7 +95,7 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
   processEntityCreating?: (
     options: Entity.ConstructorOptions,
     item: LayerData,
-  ) => void;
+  ) => boolean | void;
   processEntityCreate?: (
     type: RenderTypeFromRegistry<R>,
     item: LayerData,
@@ -253,11 +253,11 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
     [viewer],
   );
 
-  // Create processEntityCreating function - calls all subscribers
+  // Create processEntityCreating function - calls all subscribers, returns false to skip entity
   const processEntityCreating = useCallback(
-    (options: Entity.ConstructorOptions, item: LayerData) => {
+    (options: Entity.ConstructorOptions, item: LayerData): boolean | void => {
       if (viewer) {
-        callAllSubscribers(viewer.handlers.onEntityCreating, options, item);
+        return callAllSubscribers(viewer.handlers.onEntityCreating, options, item) ? undefined : false;
       }
     },
     [viewer],

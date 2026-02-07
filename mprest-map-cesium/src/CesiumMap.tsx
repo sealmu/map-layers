@@ -41,6 +41,7 @@ const CesiumMap = <R extends RendererRegistry>({
   renderers,
   mapConfig,
   baseMapProviders,
+  filterConfig,
   animateActivation = false,
   animateVisibility = false,
   onApiChange,
@@ -84,7 +85,7 @@ const CesiumMap = <R extends RendererRegistry>({
     return layersRef.current;
   }, [children]);
 
-  const extensionContext = useMemo(() => ({ baseMapProviders }), [baseMapProviders]);
+  const extensionContext = useMemo(() => ({ baseMapProviders, filterConfig }), [baseMapProviders, filterConfig]);
   const featuresApi = useExtensions(layers, extensionContext) as MapApi;
   const { layers: layersApi, filters: filtersApi, search: searchApi, entities: entitiesApi } = featuresApi;
 
@@ -328,7 +329,12 @@ const CesiumMap = <R extends RendererRegistry>({
             animateActivation={animateActivation}
             animateVisibility={animateVisibility}
             onEntityChange={processEntityChange}
-            onEntityCreating={processEntityCreating}
+            onEntityCreating={layer.onEntityCreating
+              ? (options, item) => {
+                  if (layer.onEntityCreating!(options, item) === false) return false;
+                  return processEntityCreating?.(options, item);
+                }
+              : processEntityCreating}
             onEntityCreate={processEntityCreate}
           />
         ))}

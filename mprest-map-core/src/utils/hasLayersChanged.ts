@@ -9,6 +9,9 @@ interface ComparableLayer {
     isDocked?: boolean;
     isActive?: boolean;
     isVisible?: boolean;
+    isDisplayed?: boolean;
+    isEnabled?: boolean;
+    filterConfig?: unknown;
 }
 
 /**
@@ -33,7 +36,10 @@ export default function hasLayersChanged<T extends ComparableLayer>(
             layer.data !== prev.data ||
             layer.isDocked !== prev.isDocked ||
             layer.isActive !== prev.isActive ||
-            layer.isVisible !== prev.isVisible
+            layer.isVisible !== prev.isVisible ||
+            layer.isDisplayed !== prev.isDisplayed ||
+            layer.isEnabled !== prev.isEnabled ||
+            layer.filterConfig !== prev.filterConfig
         );
     });
 }

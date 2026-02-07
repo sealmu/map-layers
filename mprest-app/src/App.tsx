@@ -13,6 +13,7 @@ import {
   useCesiumViewer,
   EntitySelectionPlugin,
   type AppContentProps,
+  type LayerData,
   type LayeredDataWithPayload,
   type MapClickLocation,
   type BaseMapProviderConfig,
@@ -356,10 +357,25 @@ function AppContent({
     }
   }, [viewer]);
 
-  // const enrichEntity = useCallback((entity: Entity.ConstructorOptions) => {
-  //   console.log('Entity is being created', entity);
-  //   void entity; // Return null to use default createEntityFromData
-  // }, []);
+  const handleDataConnectorItem = useCallback((item: LayerData, layerName: string) => {
+    void item;
+    void layerName;
+
+    // console.log('DataConnector onItem:', { layerName, item });
+    // return false;
+  }, []);
+
+  const handleEntityCreating = useCallback((options: Entity.ConstructorOptions, item: LayeredDataWithPayload<MyDataPayload>) => {
+    //console.log('onEntityCreating:', { id: options.id, renderType: item.renderType, item });
+
+    void options;
+    void item;
+    // if (item.id === 'drone3') {
+    //   console.log('Custom entity creation for drone:', options);
+    //   // For drones, use a custom model and set up for animation
+    //   return false; // Return false to skip default creation, we will create manually in customRenderer
+    // }
+  }, []);
 
   // const onEntityCreate = useCallback((
   //   type: RenderTypeFromRegistry<RendererRegistry>,
@@ -505,7 +521,7 @@ function AppContent({
       <div style={{ position: 'relative', width: '100%', height: '100vh', cursor: selectionModeActive ? 'crosshair' : 'default' }}>
         <Mmap
           provider="cesium"
-          // onEntityCreating={enrichEntity}
+          onEntityCreating={handleEntityCreating}
           // onEntityCreate={onEntityCreate}
           renderers={AppRenderers}
           mapConfig={mapConfig}
@@ -546,7 +562,11 @@ function AppContent({
 
         <PositionInfoBar position={currentPosition} />
 
-        {viewer && <DataConnector dataSource={dataSourceDynamic} config={DataConnectorConfig} />}
+        {viewer && <DataConnector
+          dataSource={dataSourceDynamic}
+          config={DataConnectorConfig}
+          onItem={handleDataConnectorItem}
+        />}
       </div>
     </>
   );

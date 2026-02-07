@@ -12,7 +12,7 @@ export function createEntityFromData<R extends RendererRegistry>(
     item: LayerData,
     renderers: R,
     layerId?: string,
-    onEntityCreating?: (options: Entity.ConstructorOptions, item: LayerData) => void,
+    onEntityCreating?: (options: Entity.ConstructorOptions, item: LayerData) => boolean | void,
 ): Entity.ConstructorOptions | null {
     const registry = renderers;
 
@@ -23,7 +23,7 @@ export function createEntityFromData<R extends RendererRegistry>(
             const options = item.customRenderer(item);
             if (options) {
                 enrichEntity(options, "custom", layerId);
-                onEntityCreating?.(options, item);
+                if (onEntityCreating?.(options, item) === false) return null;
 
                 return options;
             }
@@ -34,7 +34,7 @@ export function createEntityFromData<R extends RendererRegistry>(
             const options = renderer ? renderer(item) : null;
             if (options) {
                 enrichEntity(options, item.renderType, layerId);
-                onEntityCreating?.(options, item);
+                if (onEntityCreating?.(options, item) === false) return null;
 
                 return options;
             }
@@ -47,7 +47,7 @@ export function createEntityFromData<R extends RendererRegistry>(
     const options = renderer ? renderer(item) : null;
     if (options) {
         enrichEntity(options, type, layerId);
-        onEntityCreating?.(options, item);
+        if (onEntityCreating?.(options, item) === false) return null;
 
         return options;
     }
