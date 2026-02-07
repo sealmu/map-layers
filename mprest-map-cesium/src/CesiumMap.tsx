@@ -42,6 +42,9 @@ const CesiumMap = <R extends RendererRegistry>({
   mapConfig,
   baseMapProviders,
   filterConfig,
+  selectionIndicator = true,
+  infoBox = true,
+  multiSelect,
   animateActivation = false,
   animateVisibility = false,
   onApiChange,
@@ -54,7 +57,16 @@ const CesiumMap = <R extends RendererRegistry>({
   onSelecting,
   onClickPrevented,
   onSelected,
+  onRightClick,
+  onDblClick,
+  onLeftDown,
+  onLeftUp,
+  onRightDown,
+  onRightUp,
   onChangePosition,
+  onMultiSelecting,
+  onMultiSelect,
+  onRenderMultiSelection,
   onExtensionStateChanged,
   plugins = {},
 }: CesiumMapProps<R>) => {
@@ -85,7 +97,7 @@ const CesiumMap = <R extends RendererRegistry>({
     return layersRef.current;
   }, [children]);
 
-  const extensionContext = useMemo(() => ({ baseMapProviders, filterConfig }), [baseMapProviders, filterConfig]);
+  const extensionContext = useMemo(() => ({ baseMapProviders, filterConfig, multiSelect, onMultiSelecting, onMultiSelect, onRenderMultiSelection }), [baseMapProviders, filterConfig, multiSelect, onMultiSelecting, onMultiSelect, onRenderMultiSelection]);
   const featuresApi = useExtensions(layers, extensionContext) as MapApi;
   const { layers: layersApi, filters: filtersApi, search: searchApi, entities: entitiesApi } = featuresApi;
 
@@ -108,6 +120,8 @@ const CesiumMap = <R extends RendererRegistry>({
       sceneModePicker: false,
       navigationHelpButton: false,
       fullscreenButton: false,
+      selectionIndicator,
+      infoBox,
     }) as ViewerWithConfigs<R>;
 
     // Remove default imagery layer if baseMapProviders is used
@@ -129,6 +143,12 @@ const CesiumMap = <R extends RendererRegistry>({
       onSelecting: createEventHandler(),
       onClickPrevented: createEventHandler(),
       onSelected: createEventHandler(),
+      onRightClick: createEventHandler(),
+      onDblClick: createEventHandler(),
+      onLeftDown: createEventHandler(),
+      onLeftUp: createEventHandler(),
+      onRightDown: createEventHandler(),
+      onRightUp: createEventHandler(),
       onChangePosition: createEventHandler(),
       onEntityChange: createEventHandler(),
       onApiChange: createEventHandler(),
@@ -281,6 +301,12 @@ const CesiumMap = <R extends RendererRegistry>({
     onSelecting,
     onClickPrevented,
     onSelected,
+    onRightClick,
+    onDblClick,
+    onLeftDown,
+    onLeftUp,
+    onRightDown,
+    onRightUp,
     onChangePosition,
     onEntityChange,
     onEntityCreating,
@@ -331,9 +357,9 @@ const CesiumMap = <R extends RendererRegistry>({
             onEntityChange={processEntityChange}
             onEntityCreating={layer.onEntityCreating
               ? (options, item) => {
-                  if (layer.onEntityCreating!(options, item) === false) return false;
-                  return processEntityCreating?.(options, item);
-                }
+                if (layer.onEntityCreating!(options, item) === false) return false;
+                return processEntityCreating?.(options, item);
+              }
               : processEntityCreating}
             onEntityCreate={processEntityCreate}
           />

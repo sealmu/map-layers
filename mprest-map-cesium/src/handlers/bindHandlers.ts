@@ -69,6 +69,36 @@ export interface BindHandlersOptions<
     renderers: RendererRegistry,
     layerId?: string,
   ) => Entity.ConstructorOptions | null;
+  onRightClick?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
+  onDblClick?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
+  onLeftDown?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
+  onLeftUp?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
+  onRightDown?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
+  onRightUp?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
 }
 
 /**
@@ -86,6 +116,12 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
   onEntityChange,
   onEntityCreating,
   onEntityCreate,
+  onRightClick,
+  onDblClick,
+  onLeftDown,
+  onLeftUp,
+  onRightDown,
+  onRightUp,
 }: BindHandlersOptions<R>): {
   processEntityChange?: (
     entity: Entity,
@@ -135,7 +171,25 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
     if (onEntityCreate) {
       viewer.handlers.onEntityCreate.subscribe(onEntityCreate);
     }
-  }, [viewer, onClick, onSelecting, onClickPrevented, onSelected, onChangePosition, onEntityChange, onEntityCreating, onEntityCreate]);
+    if (onRightClick) {
+      viewer.handlers.onRightClick.subscribe(onRightClick);
+    }
+    if (onDblClick) {
+      viewer.handlers.onDblClick.subscribe(onDblClick);
+    }
+    if (onLeftDown) {
+      viewer.handlers.onLeftDown.subscribe(onLeftDown);
+    }
+    if (onLeftUp) {
+      viewer.handlers.onLeftUp.subscribe(onLeftUp);
+    }
+    if (onRightDown) {
+      viewer.handlers.onRightDown.subscribe(onRightDown);
+    }
+    if (onRightUp) {
+      viewer.handlers.onRightUp.subscribe(onRightUp);
+    }
+  }, [viewer, onClick, onSelecting, onClickPrevented, onSelected, onChangePosition, onEntityChange, onEntityCreating, onEntityCreate, onRightClick, onDblClick, onLeftDown, onLeftUp, onRightDown, onRightUp]);
 
   useClickHandler({
     viewer,
@@ -212,6 +266,42 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
             location,
             screenPosition,
           );
+        }
+      : undefined,
+    onRightClick: viewer
+      ? (entity: Entity | null, location: MapClickLocation, screenPosition?: Cartesian2) => {
+          if (!callPluginMethod(viewer.plugins, "onRightClick", entity, location, screenPosition)) return false;
+          return callAllSubscribers(viewer.handlers.onRightClick, entity, location, screenPosition);
+        }
+      : undefined,
+    onDblClick: viewer
+      ? (entity: Entity | null, location: MapClickLocation, screenPosition?: Cartesian2) => {
+          if (!callPluginMethod(viewer.plugins, "onDblClick", entity, location, screenPosition)) return false;
+          return callAllSubscribers(viewer.handlers.onDblClick, entity, location, screenPosition);
+        }
+      : undefined,
+    onLeftDown: viewer
+      ? (entity: Entity | null, location: MapClickLocation, screenPosition?: Cartesian2) => {
+          if (!callPluginMethod(viewer.plugins, "onLeftDown", entity, location, screenPosition)) return false;
+          return callAllSubscribers(viewer.handlers.onLeftDown, entity, location, screenPosition);
+        }
+      : undefined,
+    onLeftUp: viewer
+      ? (entity: Entity | null, location: MapClickLocation, screenPosition?: Cartesian2) => {
+          if (!callPluginMethod(viewer.plugins, "onLeftUp", entity, location, screenPosition)) return false;
+          return callAllSubscribers(viewer.handlers.onLeftUp, entity, location, screenPosition);
+        }
+      : undefined,
+    onRightDown: viewer
+      ? (entity: Entity | null, location: MapClickLocation, screenPosition?: Cartesian2) => {
+          if (!callPluginMethod(viewer.plugins, "onRightDown", entity, location, screenPosition)) return false;
+          return callAllSubscribers(viewer.handlers.onRightDown, entity, location, screenPosition);
+        }
+      : undefined,
+    onRightUp: viewer
+      ? (entity: Entity | null, location: MapClickLocation, screenPosition?: Cartesian2) => {
+          if (!callPluginMethod(viewer.plugins, "onRightUp", entity, location, screenPosition)) return false;
+          return callAllSubscribers(viewer.handlers.onRightUp, entity, location, screenPosition);
         }
       : undefined,
   });

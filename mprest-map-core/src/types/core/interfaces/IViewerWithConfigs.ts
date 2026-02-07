@@ -33,6 +33,24 @@ export interface IViewerHandlers {
   onSelected: IEventHandler<
     (entity: IMapEntity | null, location?: IClickLocation) => void
   >;
+  onRightClick: IEventHandler<
+    (entity: IMapEntity | null, location: IClickLocation) => void
+  >;
+  onDblClick: IEventHandler<
+    (entity: IMapEntity | null, location: IClickLocation) => void
+  >;
+  onLeftDown: IEventHandler<
+    (entity: IMapEntity | null, location: IClickLocation) => void
+  >;
+  onLeftUp: IEventHandler<
+    (entity: IMapEntity | null, location: IClickLocation) => void
+  >;
+  onRightDown: IEventHandler<
+    (entity: IMapEntity | null, location: IClickLocation) => void
+  >;
+  onRightUp: IEventHandler<
+    (entity: IMapEntity | null, location: IClickLocation) => void
+  >;
   onChangePosition: IEventHandler<(location: IClickLocation | null) => void>;
   onEntityChange: IEventHandler<
     (entity: IMapEntity, status: EntityChangeStatus, layerName: string) => void

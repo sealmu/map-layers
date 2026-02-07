@@ -125,6 +125,36 @@ export abstract class BasePlugin<
     location?: MapClickLocation,
     screenPosition?: Cartesian2,
   ) => boolean | void;
+  onRightClick?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
+  onDblClick?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
+  onLeftDown?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
+  onLeftUp?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
+  onRightDown?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
+  onRightUp?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
   onChangePosition?: (location: MapClickLocation | null) => boolean | void;
   onEntityChange?: (
     entity: Entity,
@@ -386,6 +416,12 @@ export interface DataSourceLayerProps<
   ) => Entity.ConstructorOptions | null;
 }
 
+export interface MultiSelectConfig {
+  isEnabled: boolean;
+  /** Deselect all when clicking empty space on map. Default: true */
+  mapClickDeselect?: boolean;
+}
+
 export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
   children: ReactNode;
   defaultToken?: string;
@@ -395,6 +431,9 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
   baseMapProviders?: BaseMapProviderConfig[];
   /** Map-level filter configuration keyed by layer ID */
   filterConfig?: Record<string, IFilterConfig>;
+  selectionIndicator?: boolean;
+  infoBox?: boolean;
+  multiSelect?: MultiSelectConfig;
   animateActivation?: boolean;
   animateVisibility?: boolean;
   onApiChange?: (api: MapApi) => void;
@@ -430,7 +469,40 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
     location?: MapClickLocation,
     screenPosition?: Cartesian2,
   ) => boolean | void;
+  onRightClick?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
+  onDblClick?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
+  onLeftDown?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
+  onLeftUp?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
+  onRightDown?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
+  onRightUp?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
   onChangePosition?: (location: MapClickLocation | null) => boolean | void;
+  onMultiSelecting?: (selections: Entity[], entity: Entity) => boolean | void;
+  onMultiSelect?: (entities: Entity[]) => void;
+  onRenderMultiSelection?: (entity: Entity) => Entity.ConstructorOptions | null;
   onExtensionStateChanged?: (
     name: "layers" | "filters" | "search" | "entities",
     state: ExtensionState,
@@ -659,6 +731,48 @@ export interface ViewerWithConfigs<
       (
         entity: Entity | null,
         location?: MapClickLocation,
+        screenPosition?: Cartesian2,
+      ) => void
+    >;
+    onRightClick: EventHandler<
+      (
+        entity: Entity | null,
+        location: MapClickLocation,
+        screenPosition?: Cartesian2,
+      ) => void
+    >;
+    onDblClick: EventHandler<
+      (
+        entity: Entity | null,
+        location: MapClickLocation,
+        screenPosition?: Cartesian2,
+      ) => void
+    >;
+    onLeftDown: EventHandler<
+      (
+        entity: Entity | null,
+        location: MapClickLocation,
+        screenPosition?: Cartesian2,
+      ) => void
+    >;
+    onLeftUp: EventHandler<
+      (
+        entity: Entity | null,
+        location: MapClickLocation,
+        screenPosition?: Cartesian2,
+      ) => void
+    >;
+    onRightDown: EventHandler<
+      (
+        entity: Entity | null,
+        location: MapClickLocation,
+        screenPosition?: Cartesian2,
+      ) => void
+    >;
+    onRightUp: EventHandler<
+      (
+        entity: Entity | null,
+        location: MapClickLocation,
         screenPosition?: Cartesian2,
       ) => void
     >;

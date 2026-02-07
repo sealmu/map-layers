@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
@@ -24,13 +24,18 @@ export interface UsePositionHandlerOptions<
 export function usePositionHandler<
   R extends RendererRegistry = RendererRegistry,
 >({ viewer, onChangePosition }: UsePositionHandlerOptions<R>): void {
+  const onChangePositionRef = useRef(onChangePosition);
+  onChangePositionRef.current = onChangePosition;
+
   useEffect(() => {
-    if (!viewer || !onChangePosition) return;
+    if (!viewer) return;
 
     const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
 
     // Handle mouse move events for position tracking
     handler.setInputAction((movement: { endPosition: Cartesian2 }) => {
+      if (!onChangePositionRef.current) return;
+
       const cartesian = viewer.camera.pickEllipsoid(
         movement.endPosition,
         viewer.scene.globe.ellipsoid,
@@ -46,14 +51,15 @@ export function usePositionHandler<
           latitude: (cartographic.latitude * 180) / Math.PI,
           height: cartographic.height,
         };
-        onChangePosition(location);
+        onChangePositionRef.current(location);
       } else {
-        onChangePosition(null);
+        onChangePositionRef.current(null);
       }
     }, ScreenSpaceEventType.MOUSE_MOVE);
 
     return () => {
       handler.destroy();
     };
-  }, [viewer, onChangePosition]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewer]);
 }

@@ -75,7 +75,7 @@ export function AppLayers(data: AppData[], renderers: RendererRegistry) {
           points: {
             isDisplayed: true,
             isHidden: false,
-            initialVisibility: false
+            initialVisibility: true
           }
         }
       }}
@@ -118,7 +118,7 @@ export function AppLayers(data: AppData[], renderers: RendererRegistry) {
       type={RenderTypes.CUSTOM}
       data={extractMixed(data)}
       isActive={true}
-      isVisible={false}
+      isVisible={true}
       description="Mixed types and custom renderers"
       onEntityCreating={(options, item) => {
         void options;

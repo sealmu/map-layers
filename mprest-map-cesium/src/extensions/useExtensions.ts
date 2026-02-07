@@ -11,17 +11,24 @@ const useWithCtx = <T>(ctx: ExtensionContext, hook: (ctx: ExtensionContext) => T
 
 // Hook to compose all discovered plugins
 const usePlugins = (ctx: ExtensionContext) => {
-  // Collect all plugin APIs
-  const pluginApis: Record<string, unknown> = {};
+  // Collect all plugin APIs (array length is fixed — featureExtensions is static)
+  const apis: unknown[] = [];
 
-  // Compose each plugin in order (respecting dependencies)
   for (const plugin of featureExtensions) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const api = useWithCtx(ctx, plugin.useExtension);
-    pluginApis[plugin.name] = api;
+    apis.push(api);
   }
 
-  return pluginApis;
+  // Memoize the container object so it only changes when an individual API changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(() => {
+    const pluginApis: Record<string, unknown> = {};
+    featureExtensions.forEach((plugin, i) => {
+      pluginApis[plugin.name] = apis[i];
+    });
+    return pluginApis;
+  }, apis);
 };
 
 export const useExtensions = <R extends RendererRegistry>(

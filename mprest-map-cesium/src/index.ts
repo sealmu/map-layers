@@ -102,6 +102,12 @@ export type {
   ZoomToLocationOptions,
 } from "./extensions/features/useMap";
 
+export type {
+  MultiSelectApi,
+  SelectTarget,
+  SelectRectangle,
+} from "./extensions/features/useMultiSelect";
+
 // ============================================
 // Types
 // ============================================
@@ -170,6 +176,9 @@ export type {
 
   // Base Map Types
   BaseMapProviderConfig,
+
+  // Multi-Select Types
+  MultiSelectConfig,
 } from "./types";
 
 export { BasePlugin, createRenderTypes } from "./types";

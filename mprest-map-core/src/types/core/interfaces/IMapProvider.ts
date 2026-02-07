@@ -51,6 +51,36 @@ export interface IMapProviderEvents {
     location?: IMapClickLocation,
   ) => boolean | void;
 
+  onRightClick: (
+    entity: IMapEntity | null,
+    location: IMapClickLocation,
+  ) => boolean | void;
+
+  onDblClick: (
+    entity: IMapEntity | null,
+    location: IMapClickLocation,
+  ) => boolean | void;
+
+  onLeftDown: (
+    entity: IMapEntity | null,
+    location: IMapClickLocation,
+  ) => boolean | void;
+
+  onLeftUp: (
+    entity: IMapEntity | null,
+    location: IMapClickLocation,
+  ) => boolean | void;
+
+  onRightDown: (
+    entity: IMapEntity | null,
+    location: IMapClickLocation,
+  ) => boolean | void;
+
+  onRightUp: (
+    entity: IMapEntity | null,
+    location: IMapClickLocation,
+  ) => boolean | void;
+
   onChangePosition: (
     location: IMapClickLocation | null,
   ) => boolean | void;

@@ -60,6 +60,9 @@ const DataConnectorConfig = {
   },
 };
 
+// Multi-select configuration (module-level constant for referential stability)
+const multiSelectConfig = { isEnabled: true };
+
 // Initial map view configuration (centered on US where entities are located)
 const mapConfig: IMapConfig = {
   center: {
@@ -357,6 +360,35 @@ function AppContent({
     }
   }, [viewer]);
 
+  // const handleRightClick = useCallback((entity: Entity | null, location: MapClickLocation) => {
+  //   console.log('onRightClick:', { entity: entity?.id, location });
+  // }, []);
+
+  // const handleDblClick = useCallback((entity: Entity | null, location: MapClickLocation) => {
+  //   console.log('onDblClick:', { entity: entity?.id, location });
+  // }, []);
+
+  const handleMultiSelect = useCallback((entities: Entity[]) => {
+    console.log('onMultiSelect:', entities.map(e => e.id));
+  }, []);
+
+  // const handleRenderMultiSelection = useCallback((entity: Entity): Entity.ConstructorOptions | null => {
+  //   // Custom render: use a larger yellow circle for drones, default for others
+  //   if (entity.id?.toString().includes('drone')) {
+  //     return {
+  //       id: `__ms_${entity.id}`,
+  //       position: entity.position!,
+  //       point: {
+  //         pixelSize: 50,
+  //         color: Color.TRANSPARENT,
+  //         outlineColor: Color.YELLOW.withAlpha(0.8),
+  //         outlineWidth: 4,
+  //       },
+  //     };
+  //   }
+  //   return null; // Use default for other entities
+  // }, []);
+
   const handleDataConnectorItem = useCallback((item: LayerData, layerName: string) => {
     void item;
     void layerName;
@@ -534,8 +566,15 @@ function AppContent({
           onSelecting={handleSelecting}
           onClickPrevented={handleClickPrevented}
           onSelected={handleSelected}
+          // onRightClick={handleRightClick}
+          // onDblClick={handleDblClick}
           onChangePosition={handleChangePosition}
           onLog={handleLog}
+          selectionIndicator={true}
+          infoBox={false}
+          multiSelect={multiSelectConfig}
+          onMultiSelect={handleMultiSelect}
+          // onRenderMultiSelection={handleRenderMultiSelection}
           // onFeatureStateChanged={handleFeatureStateChanged}
           plugins={plugins}
         >

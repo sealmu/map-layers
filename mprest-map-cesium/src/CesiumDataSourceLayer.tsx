@@ -29,6 +29,14 @@ const CesiumDataSourceLayer = <R extends RendererRegistry>({
 }: DataSourceLayerProps<R>) => {
   const dataSourceRef = useRef<CesiumCustomDataSource | null>(null);
 
+  // Store callbacks in refs to avoid triggering entity rebuild on reference changes
+  const onEntityChangeRef = useRef(onEntityChange);
+  const onEntityCreatingRef = useRef(onEntityCreating);
+  const onEntityCreateRef = useRef(onEntityCreate);
+  onEntityChangeRef.current = onEntityChange;
+  onEntityCreatingRef.current = onEntityCreating;
+  onEntityCreateRef.current = onEntityCreate;
+
   // Helper to get current dataSource instance
   const getDataSourceInstance = useCallback(() => dataSourceRef.current, []);
 
@@ -55,9 +63,9 @@ const CesiumDataSourceLayer = <R extends RendererRegistry>({
 
     // Add event listener for entity changes
     const onEntityChangeCallback = (_collection: EntityCollection, _added: Entity[], _removed: Entity[], _changed: Entity[]) => {
-      _added.forEach(entity => onEntityChange?.(entity, 'added' as EntityChangeStatus, id));
-      _removed.forEach(entity => onEntityChange?.(entity, 'removed' as EntityChangeStatus, id));
-      _changed.forEach(entity => onEntityChange?.(entity, 'changed' as EntityChangeStatus, id));
+      _added.forEach(entity => onEntityChangeRef.current?.(entity, 'added' as EntityChangeStatus, id));
+      _removed.forEach(entity => onEntityChangeRef.current?.(entity, 'removed' as EntityChangeStatus, id));
+      _changed.forEach(entity => onEntityChangeRef.current?.(entity, 'changed' as EntityChangeStatus, id));
     };
     dataSource.entities.collectionChanged.addEventListener(onEntityChangeCallback);
 
@@ -74,7 +82,8 @@ const CesiumDataSourceLayer = <R extends RendererRegistry>({
         setDataSourceInstance(null);
       }
     };
-  }, [viewer, getDataSourceInstance, onEntityChange, id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewer, getDataSourceInstance, id]);
 
   // Update name when it changes
   useEffect(() => {
@@ -109,8 +118,8 @@ const CesiumDataSourceLayer = <R extends RendererRegistry>({
 
         // Call onEntityCreate - first non-null result wins
         let entityOptions: Entity.ConstructorOptions | null = null;
-        if (onEntityCreate) {
-          entityOptions = onEntityCreate(type, itemWithRenderer, renderers, id);
+        if (onEntityCreateRef.current) {
+          entityOptions = onEntityCreateRef.current(type, itemWithRenderer, renderers, id);
         }
 
         // If no result, use createEntityFromData
@@ -120,7 +129,7 @@ const CesiumDataSourceLayer = <R extends RendererRegistry>({
             itemWithRenderer,
             renderers,
             id,
-            onEntityCreating,
+            onEntityCreatingRef.current,
           );
         }
         if (entityOptions) {
@@ -136,7 +145,8 @@ const CesiumDataSourceLayer = <R extends RendererRegistry>({
         }
       });
     }
-  }, [data, type, customRenderer, renderers, getDataSourceInstance, viewer, id, onEntityCreate, onEntityCreating]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, type, customRenderer, renderers, getDataSourceInstance, viewer, id]);
 
   // Update enabled(active) by removing/adding dataSource from viewer
   useEffect(() => {

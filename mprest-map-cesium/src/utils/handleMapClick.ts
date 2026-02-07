@@ -44,9 +44,16 @@ export function handleMapClick<R extends RendererRegistry = RendererRegistry>({
   const location = getLocationFromPosition(viewer, position);
   if (!location) return;
 
-  const pickedObject = viewer.scene.pick(position);
-  const pickedEntity: Entity | null =
-    defined(pickedObject) && pickedObject.id ? pickedObject.id : null;
+  // Pick entity, skipping internal selection visuals (__ms_ prefix)
+  let pickedEntity: Entity | null = null;
+  const picks = viewer.scene.drillPick(position);
+  for (const pick of picks) {
+    if (defined(pick) && pick.id instanceof Entity) {
+      if (typeof pick.id.id === "string" && pick.id.id.startsWith("__ms_")) continue;
+      pickedEntity = pick.id;
+      break;
+    }
+  }
 
   const screenPosition = viewer.scene.cartesianToCanvasCoordinates(
     location.cartesian,
