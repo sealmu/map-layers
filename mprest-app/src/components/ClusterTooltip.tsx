@@ -4,12 +4,22 @@ import { useCesiumViewer } from "@mprest/map-cesium";
 import type { ClusterBillboardId } from "../utils/clusterCanvas";
 
 interface TooltipState {
-  entities: Array<{ id: string; name: string }>;
+  entities: Array<{ id: string; name: string; type?: string }>;
   x: number;
   y: number;
 }
 
 const MAX_VISIBLE = 8;
+
+const TYPE_COLORS: Record<string, string> = {
+  points: "#1976D2",
+  polylines: "#F57C00",
+  polygons: "#388E3C",
+  labels: "#7B1FA2",
+  domes: "#0097A7",
+  cone: "#D32F2F",
+  custom: "#757575",
+};
 
 export function ClusterTooltip() {
   const { viewer } = useCesiumViewer();
@@ -90,66 +100,95 @@ export function ClusterTooltip() {
     <div
       style={{
         position: "fixed",
-        left: tooltip.x + 18,
+        left: tooltip.x + 16,
         top: tooltip.y,
         transform: "translateY(-50%)",
-        background:
-          "linear-gradient(135deg, rgba(10, 10, 20, 0.94), rgba(20, 20, 35, 0.9))",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        color: "#e5e7eb",
-        borderRadius: "10px",
-        border: "1px solid rgba(99, 102, 241, 0.25)",
+        background: "#ffffff",
+        color: "#212121",
+        borderRadius: "8px",
         boxShadow:
-          "0 12px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
+          "0 3px 5px -1px rgba(0,0,0,0.2), 0 6px 10px rgba(0,0,0,0.14), 0 1px 18px rgba(0,0,0,0.12)",
         padding: "8px 0",
-        fontSize: "12px",
-        fontFamily:
-          "'SF Mono', Monaco, Inconsolata, 'Roboto Mono', monospace",
-        fontWeight: 500,
+        fontSize: "13px",
+        fontFamily: '"Roboto", "Segoe UI", system-ui, sans-serif',
+        fontWeight: 400,
         zIndex: 10000,
-        minWidth: "150px",
+        minWidth: "160px",
         maxWidth: "260px",
         pointerEvents: "none",
       }}
     >
       <div
         style={{
-          padding: "2px 12px 6px",
-          fontSize: "10px",
-          color: "#818cf8",
-          fontWeight: 700,
+          padding: "4px 16px 8px",
+          fontSize: "11px",
+          color: "#1976D2",
+          fontWeight: 500,
           textTransform: "uppercase",
-          letterSpacing: "0.6px",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
-          marginBottom: "2px",
+          letterSpacing: "0.5px",
+          borderBottom: "1px solid #E0E0E0",
+          marginBottom: "4px",
         }}
       >
         {tooltip.entities.length} entities
       </div>
 
-      {tooltip.entities.slice(0, MAX_VISIBLE).map((e) => (
-        <div
-          key={e.id}
-          style={{
-            padding: "3px 12px",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-            color: "#d1d5db",
-          }}
-        >
-          {e.name}
-        </div>
-      ))}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "1fr auto",
+        columnGap: "12px",
+        padding: "0 16px",
+        color: "#424242",
+        lineHeight: "1.4",
+      }}>
+        {tooltip.entities.slice(0, MAX_VISIBLE).map((e) => (
+          <>
+            <span
+              key={e.id}
+              style={{
+                padding: "4px 0",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {e.name}
+            </span>
+            <span
+              key={`${e.id}-type`}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                padding: "4px 0",
+              }}
+            >
+              {e.type && (
+                <>
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      backgroundColor: TYPE_COLORS[e.type] ?? "#BDBDBD",
+                    }}
+                  />
+                  <span style={{ fontSize: "11px", color: "#9E9E9E" }}>
+                    {e.type}
+                  </span>
+                </>
+              )}
+            </span>
+          </>
+        ))}
+      </div>
 
       {remaining > 0 && (
         <div
           style={{
-            padding: "3px 12px",
-            color: "#6b7280",
-            fontStyle: "italic",
-            fontSize: "11px",
+            padding: "4px 16px",
+            color: "#9E9E9E",
+            fontSize: "12px",
           }}
         >
           +{remaining} more

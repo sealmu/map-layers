@@ -43,3 +43,8 @@
 .zoom-button:active {
   background-color: rgba(32, 32, 32, 0.9);
 }
+
+.zoom-home {
+  margin-bottom: 6px;
+  font-size: 20px;
+}

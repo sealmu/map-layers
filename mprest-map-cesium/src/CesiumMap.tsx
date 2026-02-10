@@ -10,6 +10,7 @@ import {
   Viewer as CesiumViewer,
 } from "cesium";
 import CesiumDataSourceLayer from "./CesiumDataSourceLayer";
+import { CesiumMapControls } from "./CesiumMapControls";
 import type {
   CesiumMapProps,
   LayerProps,
@@ -329,30 +330,7 @@ const CesiumMap = <R extends RendererRegistry>({
   return (
     <div className="cesium-map-container">
       <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
-      {viewer && (
-        <div className="zoom-controls">
-          <button
-            className="zoom-button zoom-in"
-            onClick={() => {
-              const height = viewer.camera.positionCartographic.height;
-              const zoomAmount = Math.max(height * 0.1, 10000);
-              viewer.camera.zoomIn(zoomAmount);
-            }}
-          >
-            +
-          </button>
-          <button
-            className="zoom-button zoom-out"
-            onClick={() => {
-              const height = viewer.camera.positionCartographic.height;
-              const zoomAmount = Math.max(height * 0.1, 10000);
-              viewer.camera.zoomOut(zoomAmount);
-            }}
-          >
-            -
-          </button>
-        </div>
-      )}
+      {viewer && <CesiumMapControls viewer={viewer} mapConfig={mapConfig} />}
       {viewer &&
         layers.map((layer) => (
           <CesiumDataSourceLayer

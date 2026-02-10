@@ -429,6 +429,8 @@ export interface MultiSelectConfig {
   mapClickDeselect?: boolean;
   /** Enable rubber-band rectangle selection tool. When active, click-and-drag draws a selection rectangle. Default: false */
   selectionTool?: boolean;
+  /** Modifier key that activates multi-select. When set, multi-select only works while this key is held. Default: undefined (always active) */
+  modifier?: "ctrl" | "shift" | "alt";
 }
 
 export interface ClusteringConfig extends IClusteringConfig {

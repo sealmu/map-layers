@@ -11,6 +11,7 @@ import {
   CallbackProperty,
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
+  KeyboardEventModifier,
   Math as CesiumMath,
   JulianDate,
   defined,
@@ -294,16 +295,36 @@ function createDefaultSelectionVisual(
   entity: Entity,
   viewer: ViewerWithConfigs,
 ): Entity.ConstructorOptions | null {
-  // Polygon entities — circle at centroid
+  // Polygon entities — bounding circle around the polygon
   if (entity.polygon) {
-    const getPos = () => {
-      const hierarchy = getPropertyValue<PolygonHierarchy>(entity.polygon!.hierarchy);
-      if (!hierarchy || hierarchy.positions.length === 0) return undefined;
-      const { center } = computeBoundingCircle(hierarchy.positions);
-      return Cartesian3.fromRadians(center.longitude, center.latitude, center.height);
-    };
-    if (getPos()) {
-      return buildCircleVisual(entity.id, getPos, viewer, DEFAULT_SELECTION_SIZE);
+    const getHierarchy = () => getPropertyValue<PolygonHierarchy>(entity.polygon!.hierarchy);
+    const hierarchy = getHierarchy();
+    if (hierarchy && hierarchy.positions.length > 0) {
+      const computeCircle = (): Cartesian3[] => {
+        const h = getHierarchy();
+        if (!h || h.positions.length === 0) return [];
+        const { center, radius } = computeBoundingCircle(h.positions);
+        const height = center.height + SELECTION_Z_OFFSET;
+        return generateCirclePositions(center, radius * 1.15, height);
+      };
+      return {
+        id: `__ms_${entity.id}`,
+        polygon: {
+          hierarchy: new CallbackProperty(() => new PolygonHierarchy(computeCircle()), false),
+          material: SELECTION_GLOW_COLOR,
+          height: new CallbackProperty(() => {
+            const h = getHierarchy();
+            if (!h || h.positions.length === 0) return 0;
+            const { center } = computeBoundingCircle(h.positions);
+            return center.height + SELECTION_Z_OFFSET;
+          }, false),
+        },
+        polyline: {
+          positions: new CallbackProperty(computeCircle, false),
+          width: 3,
+          material: SELECTION_DASH_MATERIAL,
+        },
+      };
     }
   }
 
@@ -347,6 +368,11 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
   const enabled = config?.isEnabled ?? false;
   const mapClickDeselect = config?.mapClickDeselect ?? true;
   const selectionTool = config?.selectionTool ?? false;
+  const modifier = config?.modifier;
+  const cesiumModifier: KeyboardEventModifier | undefined =
+    modifier === "ctrl" ? KeyboardEventModifier.CTRL :
+    modifier === "shift" ? KeyboardEventModifier.SHIFT :
+    modifier === "alt" ? KeyboardEventModifier.ALT : undefined;
   const { viewer } = useViewer();
   const cesiumViewer = viewer as unknown as ViewerWithConfigs | null;
 
@@ -356,12 +382,37 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
   );
   const selectionDataSourceRef = useRef<CustomDataSource | null>(null);
   const isMultiSelectRef = useRef(enabled);
+  const modifierHeldRef = useRef(false);
 
   // Sync multi-select mode with the enabled prop
   useEffect(() => {
     isMultiSelectRef.current = enabled;
     setIsMultiSelect(enabled);
   }, [enabled]);
+
+  // Track modifier key state via DOM events
+  useEffect(() => {
+    if (!enabled || !modifier) return;
+
+    const checkModifier = (e: KeyboardEvent) => {
+      modifierHeldRef.current =
+        modifier === "ctrl" ? (e.ctrlKey || e.metaKey) :
+        modifier === "shift" ? e.shiftKey :
+        modifier === "alt" ? e.altKey : false;
+    };
+    const resetModifier = () => { modifierHeldRef.current = false; };
+
+    document.addEventListener("keydown", checkModifier);
+    document.addEventListener("keyup", checkModifier);
+    window.addEventListener("blur", resetModifier);
+
+    return () => {
+      document.removeEventListener("keydown", checkModifier);
+      document.removeEventListener("keyup", checkModifier);
+      window.removeEventListener("blur", resetModifier);
+      modifierHeldRef.current = false;
+    };
+  }, [enabled, modifier]);
 
   // Get callbacks from context (passed from CesiumMapProps via extensionContext)
   const onMultiSelecting = ctx.onMultiSelecting as
@@ -414,37 +465,89 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
 
     const unsubscribe = cesiumViewer.handlers.onClick.subscribe(
       (entity: Entity | null) => {
-        if (!isMultiSelectRef.current) return; // Pass through when not in multi-select
+        if (!isMultiSelectRef.current) return; // Pass through to Cesium native select
+
+        const isMultiMode = !modifier || modifierHeldRef.current;
 
         if (entity) {
-          // Toggle selection
-          setSelectedMap((prev) => {
-            const next = new Map(prev);
-            if (next.has(entity.id)) {
-              next.delete(entity.id);
-            } else {
-              // Check onMultiSelecting before adding
-              if (onMultiSelectingRef.current) {
-                const currentSelections = Array.from(prev.values());
-                if (onMultiSelectingRef.current(currentSelections, entity) === false) {
-                  return prev; // Selection vetoed — no change
+          if (isMultiMode) {
+            // Modifier held (or no modifier configured) — toggle in multi-selection
+            setSelectedMap((prev) => {
+              const next = new Map(prev);
+              if (next.has(entity.id)) {
+                next.delete(entity.id);
+              } else {
+                if (onMultiSelectingRef.current) {
+                  const currentSelections = Array.from(prev.values());
+                  if (onMultiSelectingRef.current(currentSelections, entity) === false) {
+                    return prev;
+                  }
                 }
+                next.set(entity.id, entity);
               }
-              next.set(entity.id, entity);
-            }
-            return next;
-          });
+              return next;
+            });
+          } else {
+            // No modifier held — single-select: replace selection with just this entity
+            setSelectedMap(new Map([[entity.id, entity]]));
+          }
         } else if (mapClickDeselect) {
           // Clicked empty space — deselect all
           setSelectedMap(new Map());
         }
 
-        return false; // Prevent single-entity selection
+        return false; // Always prevent Cesium native selection when multi-select is enabled
       },
     );
 
     return unsubscribe;
   }, [enabled, cesiumViewer]);
+
+  // Handle modifier+click directly via ScreenSpaceEventHandler
+  // (Cesium routes modifier-qualified clicks separately from unmodified clicks)
+  useEffect(() => {
+    if (!enabled || !cesiumViewer || cesiumModifier === undefined) return;
+
+    const handler = new ScreenSpaceEventHandler(cesiumViewer.scene.canvas);
+
+    handler.setInputAction((click: { position: Cartesian2 }) => {
+      if (!isMultiSelectRef.current) return;
+
+      // Pick entity at click position
+      let pickedEntity: Entity | null = null;
+      const picks = cesiumViewer.scene.drillPick(click.position);
+      for (const pick of picks) {
+        if (defined(pick) && pick.id instanceof Entity) {
+          if (typeof pick.id.id === "string" && pick.id.id.startsWith("__ms_")) continue;
+          pickedEntity = pick.id;
+          break;
+        }
+      }
+
+      if (pickedEntity) {
+        // Modifier is held — toggle in multi-selection
+        setSelectedMap((prev) => {
+          const next = new Map(prev);
+          if (next.has(pickedEntity!.id)) {
+            next.delete(pickedEntity!.id);
+          } else {
+            if (onMultiSelectingRef.current) {
+              const currentSelections = Array.from(prev.values());
+              if (onMultiSelectingRef.current(currentSelections, pickedEntity!) === false) {
+                return prev;
+              }
+            }
+            next.set(pickedEntity!.id, pickedEntity!);
+          }
+          return next;
+        });
+      } else if (mapClickDeselect) {
+        setSelectedMap(new Map());
+      }
+    }, ScreenSpaceEventType.LEFT_CLICK, cesiumModifier);
+
+    return () => { handler.destroy(); };
+  }, [enabled, cesiumViewer, cesiumModifier]);
 
   // Render selection visuals when selected entities change (incremental diff)
   useEffect(() => {
@@ -519,14 +622,16 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
 
     const handler = new ScreenSpaceEventHandler(canvas);
 
-    handler.setInputAction((click: { position: Cartesian2 }) => {
+    const onLeftDown = (click: { position: Cartesian2 }) => {
       if (!isMultiSelectRef.current) return;
+      if (modifier && !modifierHeldRef.current) return;
       startPosition = click.position.clone();
       isDragging = false;
-    }, ScreenSpaceEventType.LEFT_DOWN);
+    };
 
-    handler.setInputAction((movement: { endPosition: Cartesian2 }) => {
+    const onMouseMove = (movement: { endPosition: Cartesian2 }) => {
       if (!startPosition || !isMultiSelectRef.current) return;
+      if (modifier && !modifierHeldRef.current) { startPosition = null; return; }
 
       const dx = movement.endPosition.x - startPosition.x;
       const dy = movement.endPosition.y - startPosition.y;
@@ -553,9 +658,9 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
       rectDiv.style.width = `${width}px`;
       rectDiv.style.height = `${height}px`;
       rectDiv.style.display = "block";
-    }, ScreenSpaceEventType.MOUSE_MOVE);
+    };
 
-    handler.setInputAction((click: { position: Cartesian2 }) => {
+    const onLeftUp = (click: { position: Cartesian2 }) => {
       if (!startPosition || !isMultiSelectRef.current) {
         startPosition = null;
         return;
@@ -623,7 +728,19 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
 
       startPosition = null;
       isDragging = false;
-    }, ScreenSpaceEventType.LEFT_UP);
+    };
+
+    // Register for unmodified events
+    handler.setInputAction(onLeftDown, ScreenSpaceEventType.LEFT_DOWN);
+    handler.setInputAction(onMouseMove, ScreenSpaceEventType.MOUSE_MOVE);
+    handler.setInputAction(onLeftUp, ScreenSpaceEventType.LEFT_UP);
+
+    // Also register for modifier-qualified events so Cesium routes them correctly
+    if (cesiumModifier !== undefined) {
+      handler.setInputAction(onLeftDown, ScreenSpaceEventType.LEFT_DOWN, cesiumModifier);
+      handler.setInputAction(onMouseMove, ScreenSpaceEventType.MOUSE_MOVE, cesiumModifier);
+      handler.setInputAction(onLeftUp, ScreenSpaceEventType.LEFT_UP, cesiumModifier);
+    }
 
     return () => {
       handler.destroy();
@@ -638,7 +755,7 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
         rectDiv.parentElement.removeChild(rectDiv);
       }
     };
-  }, [enabled, selectionTool, cesiumViewer]);
+  }, [enabled, selectionTool, cesiumViewer, cesiumModifier]);
 
   // Select function - handles all target types
   const select = useCallback(

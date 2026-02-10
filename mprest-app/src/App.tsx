@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 
-import { Cartesian2, Entity, OpenStreetMapImageryProvider, UrlTemplateImageryProvider } from "cesium";
+import { Cartesian2, Entity, JulianDate, OpenStreetMapImageryProvider, UrlTemplateImageryProvider } from "cesium";
 
 import { useDroneAnimation, useDroneAnimation2 } from "./hooks/useDroneAnimation";
 import { useRadarAnimation } from "./hooks/useRadarAnimation";
@@ -64,7 +64,7 @@ const DataConnectorConfig = {
 };
 
 // Multi-select configuration (module-level constant for referential stability)
-const multiSelectConfig = { isEnabled: true, selectionTool: true };
+const multiSelectConfig = { isEnabled: true, selectionTool: true, modifier: "ctrl" as const };
 
 // Clustering configuration (global for all layers)
 const clusteringConfig = {
@@ -382,6 +382,11 @@ function AppContent({
     setSelectionVersion((v) => v + 1);
   }, []);
 
+  const handleSelectionPanelClick = useCallback((entity: Entity, actions: { zoom?: { zoomToEntity: (id: string) => void } }) => {
+    console.log('Selection panel click:', entity.id);
+    actions.zoom?.zoomToEntity(entity.id);
+  }, []);
+
   const handleCluster = useCallback((
     layerId: string,
     clusteredEntities: Entity[],
@@ -399,6 +404,7 @@ function AppContent({
       entities: clusteredEntities.map((e) => ({
         id: String(e.id),
         name: e.name ?? String(e.id),
+        type: e.properties?.getValue?.(JulianDate.now())?.rendererType as string | undefined,
       })),
     } as ClusterBillboardId;
 
@@ -635,7 +641,7 @@ function AppContent({
 
         <StickyPopups stickyInfoMap={stickyInfoMap} onClose={handleCloseStickyInfo} />
 
-        <SelectionPanel />
+        <SelectionPanel onEntityClick={handleSelectionPanelClick} modifier={multiSelectConfig.modifier} />
         <ClusterTooltip />
         <PositionInfoBar position={currentPosition} />
 

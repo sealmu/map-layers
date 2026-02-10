@@ -68,6 +68,7 @@ export { CesiumMapAccessors } from "./CesiumMapAccessors";
 export { CesiumMapEntity } from "./CesiumMapEntity";
 export { CesiumDataSource } from "./CesiumDataSource";
 export { CesiumDataManager } from "./CesiumDataManager";
+export { CesiumMapControls } from "./CesiumMapControls";
 
 // ============================================
 // Data
