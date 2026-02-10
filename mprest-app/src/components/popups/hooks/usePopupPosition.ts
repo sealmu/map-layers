@@ -6,7 +6,7 @@ export function usePopupPosition(
   popupDimensions: { width: number; height: number }
 ) {
   return useMemo(() => {
-    if (!popupInfo?.location) return null;
+    if (!popupInfo?.screenPosition) return null;
 
     const offset = 10;
     let left = popupInfo.screenPosition!.x + offset;

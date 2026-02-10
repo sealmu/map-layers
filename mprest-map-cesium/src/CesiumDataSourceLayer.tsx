@@ -27,7 +27,7 @@ const CesiumDataSourceLayer = <R extends RendererRegistry>({
   onEntityCreating,
   onEntityCreate,
   clusteringConfig,
-  onCluster,
+  onClusterRender,
 }: DataSourceLayerProps<R>) => {
   const dataSourceRef = useRef<CesiumCustomDataSource | null>(null);
 
@@ -35,11 +35,11 @@ const CesiumDataSourceLayer = <R extends RendererRegistry>({
   const onEntityChangeRef = useRef(onEntityChange);
   const onEntityCreatingRef = useRef(onEntityCreating);
   const onEntityCreateRef = useRef(onEntityCreate);
-  const onClusterRef = useRef(onCluster);
+  const onClusterRenderRef = useRef(onClusterRender);
   onEntityChangeRef.current = onEntityChange;
   onEntityCreatingRef.current = onEntityCreating;
   onEntityCreateRef.current = onEntityCreate;
-  onClusterRef.current = onCluster;
+  onClusterRenderRef.current = onClusterRender;
 
   // Helper to get current dataSource instance
   const getDataSourceInstance = useCallback(() => dataSourceRef.current, []);
@@ -124,7 +124,7 @@ const CesiumDataSourceLayer = <R extends RendererRegistry>({
 
     const removeListener = ds.clustering.clusterEvent.addEventListener(
       (clusteredEntities: Entity[], cluster: { billboard: unknown; label: unknown; point: unknown }) => {
-        onClusterRef.current?.(id, clusteredEntities, cluster);
+        onClusterRenderRef.current?.(id, clusteredEntities, cluster);
       },
     );
 

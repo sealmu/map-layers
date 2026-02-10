@@ -17,6 +17,8 @@ import {
   type LayeredDataWithPayload,
   type MapClickLocation,
   type BaseMapProviderConfig,
+  type ClusterBillboardId,
+  DblClickAction,
 } from "@mprest/map-cesium";
 
 import { EntityPopup, type EntityPopupInfo, StickyPopups, usePopupPosition } from "./components/popups";
@@ -24,7 +26,8 @@ import { SelectionOverlay, FlightOverlay } from "./components/overlays";
 import { PositionInfoBar } from "./components/PositionInfoBar";
 import { SelectionPanel } from "./components/SelectionPanel";
 import { ClusterTooltip } from "./components/ClusterTooltip";
-import { createClusterCanvas, type ClusterBillboardId } from "./utils/clusterCanvas";
+import { Toast, type ToastRef } from "./components/Toast";
+import { createClusterCanvas } from "./utils/clusterCanvas";
 import { AppLayers } from "./AppLayers";
 import { AppRenderers } from "./AppRenderers";
 import { AppPanels } from "./AppPanels";
@@ -64,7 +67,7 @@ const DataConnectorConfig = {
 };
 
 // Multi-select configuration (module-level constant for referential stability)
-const multiSelectConfig = { isEnabled: true, selectionTool: true, modifier: "ctrl" as const };
+const multiSelectConfig = { isEnabled: true, selectionTool: true, modifier: "shift" as const, dblClickAction: DblClickAction.SELECT_BY_LAYER };
 
 // Clustering configuration (global for all layers)
 const clusteringConfig = {
@@ -160,7 +163,6 @@ function AppContent({
   const [selectionModeActive, setSelectionModeActive] = useState(false);
   const [selectionSourceEntity, setSelectionSourceEntity] = useState<Entity | undefined>(undefined);
   const [stickyInfoMap, setStickyInfoMap] = useState<Map<string, StickyEntityInfo>>(new Map());
-  const [, setSelectionVersion] = useState(0);
 
   const pluginsSubscribedRef = useRef(false);
   const stickyInfoSubscribedRef = useRef(false);
@@ -377,14 +379,40 @@ function AppContent({
   //   console.log('onDblClick:', { entity: entity?.id, location });
   // }, []);
 
-  const handleMultiSelect = useCallback((entities: Entity[]) => {
-    console.log('onMultiSelect:', entities.map(e => e.id));
-    setSelectionVersion((v) => v + 1);
+  const handleMultiSelect = useCallback((entities: Entity[], prevEntities: Entity[], utils: { getScreenPosition: (entity: Entity) => Cartesian2 | undefined }) => {
+    console.log('onMultiSelect:', entities.map(e => e.id), 'prev:', prevEntities.map(e => e.id));
+
+    // Only show popup when selection grew to exactly 1 (not when shrinking via removal)
+    if (entities.length === 1 && prevEntities.length < 1) {
+      const entity = entities[0];
+      if (!entity.id?.toString().includes('drone')) {
+        const screenPosition = utils.getScreenPosition(entity);
+        setPopupInfo({ entity, screenPosition });
+      }
+    } else {
+      setPopupInfo(null);
+    }
   }, []);
 
   const handleSelectionPanelClick = useCallback((entity: Entity, actions: { zoom?: { zoomToEntity: (id: string) => void } }) => {
     console.log('Selection panel click:', entity.id);
     actions.zoom?.zoomToEntity(entity.id);
+  }, []);
+
+  const toastRef = useRef<ToastRef>(null);
+
+  const handleGroupClick = useCallback((groupKey: string, entities: Entity[]) => {
+    const names = entities.map(e => e.name || e.id).join(", ");
+    toastRef.current?.show(`Activating all ${groupKey} entities: ${names}`);
+  }, []);
+
+  const handleClusterAction = useCallback((entity: { id: string; name: string; type?: string }, layerId: string) => {
+    toastRef.current?.show(`Action: ${entity.name} (${layerId})`);
+  }, []);
+
+  const handleClusterAllActions = useCallback((entities: Array<{ id: string; name: string; type?: string }>, layerId: string) => {
+    const names = entities.map(e => e.name).join(", ");
+    toastRef.current?.show(`Action on all ${entities.length} entities (${layerId}): ${names}`);
   }, []);
 
   const handleCluster = useCallback((
@@ -471,7 +499,7 @@ function AppContent({
     entity: Entity,
     //location: MapClickLocation
   ): boolean | void => {
-    setPopupInfo({ entity });
+    setPopupInfo({ entity, prevented: true });
   }, []);
 
   const handleSelected = useCallback((entity: Entity | null, location?: MapClickLocation, screenPosition?: Cartesian2): boolean | void => {
@@ -615,7 +643,7 @@ function AppContent({
           multiSelect={multiSelectConfig}
           onMultiSelect={handleMultiSelect}
           clusteringConfig={clusteringConfig}
-          onCluster={handleCluster}
+          onClusterRender={handleCluster}
           // onRenderMultiSelection={handleRenderMultiSelection}
           // onFeatureStateChanged={handleFeatureStateChanged}
           plugins={plugins}
@@ -641,8 +669,12 @@ function AppContent({
 
         <StickyPopups stickyInfoMap={stickyInfoMap} onClose={handleCloseStickyInfo} />
 
-        <SelectionPanel onEntityClick={handleSelectionPanelClick} modifier={multiSelectConfig.modifier} />
-        <ClusterTooltip />
+        <SelectionPanel onEntityClick={handleSelectionPanelClick} onGroupClick={handleGroupClick} />
+        <Toast ref={toastRef} />
+        <ClusterTooltip
+          onAction={handleClusterAction}
+          onAllActions={handleClusterAllActions}
+        />
         <PositionInfoBar position={currentPosition} />
 
         {viewer && <DataConnector

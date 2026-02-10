@@ -1,13 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import { ScreenSpaceEventHandler, ScreenSpaceEventType, Cartesian2, Cartesian3, BoundingSphere } from "cesium";
+import React, { useState, useLayoutEffect, useMemo, useCallback } from "react";
 import { useCesiumViewer } from "@mprest/map-cesium";
-import type { ClusterBillboardId } from "../utils/clusterCanvas";
-
-interface TooltipState {
-  entities: Array<{ id: string; name: string; type?: string }>;
-  x: number;
-  y: number;
-}
+import type { MapApi, MultiSelectApi } from "@mprest/map-cesium";
 
 const MAX_VISIBLE = 8;
 
@@ -21,83 +14,69 @@ const TYPE_COLORS: Record<string, string> = {
   custom: "#757575",
 };
 
-export function ClusterTooltip() {
+type HoverState = { entities: Array<{ id: string; name: string; type?: string }>; layerId: string; x: number; y: number };
+
+interface ClusterTooltipProps {
+  onAction?: (entity: { id: string; name: string; type?: string }, layerId: string) => void;
+  onAllActions?: (entities: Array<{ id: string; name: string; type?: string }>, layerId: string) => void;
+}
+
+export function ClusterTooltip({ onAction, onAllActions }: ClusterTooltipProps) {
   const { viewer } = useCesiumViewer();
-  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (!viewer) return;
-
-    const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
-
-    handler.setInputAction(
-      (movement: { endPosition: Cartesian2 }) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const picked: any = viewer.scene.pick(movement.endPosition);
-        const data: ClusterBillboardId | undefined = picked?.id?.isCluster
-          ? picked.id
-          : undefined;
-
-        if (data) {
-          if (hideTimer.current) clearTimeout(hideTimer.current);
-          setTooltip({
-            entities: data.entities,
-            x: movement.endPosition.x,
-            y: movement.endPosition.y,
-          });
-        } else {
-          if (hideTimer.current) clearTimeout(hideTimer.current);
-          hideTimer.current = setTimeout(() => setTooltip(null), 80);
-        }
-      },
-      ScreenSpaceEventType.MOUSE_MOVE,
-    );
-
-    handler.setInputAction(
-      (click: { position: Cartesian2 }) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const picked: any = viewer.scene.pick(click.position);
-        const data: ClusterBillboardId | undefined = picked?.id?.isCluster
-          ? picked.id
-          : undefined;
-
-        if (data) {
-          setTooltip(null);
-
-          // Collect entity positions from all data sources
-          const positions: Cartesian3[] = [];
-          for (let i = 0; i < viewer.dataSources.length; i++) {
-            const ds = viewer.dataSources.get(i);
-            for (const info of data.entities) {
-              const entity = ds.entities.getById(info.id);
-              const pos = entity?.position?.getValue(viewer.clock.currentTime);
-              if (pos) positions.push(pos);
-            }
-          }
-
-          if (positions.length > 0) {
-            const bs = BoundingSphere.fromPoints(positions);
-            bs.radius = Math.max(bs.radius * 2.5, 50000);
-            viewer.camera.flyToBoundingSphere(bs, { duration: 1.0 });
-          }
-        }
-      },
-      ScreenSpaceEventType.LEFT_CLICK,
-    );
-
-    return () => {
-      handler.destroy();
-      if (hideTimer.current) clearTimeout(hideTimer.current);
-    };
+  const [api, setApi] = useState<MapApi | undefined>(undefined);
+  const [pinned, setPinned] = useState<HoverState | null>(null);
+  // Subscribe to API changes (same pattern as SelectionPanel)
+  useLayoutEffect(() => {
+    if (!viewer?.handlers?.onApiChange) return;
+    return viewer.handlers.onApiChange.subscribe((newApi) => {
+      setApi(newApi as MapApi);
+    });
   }, [viewer]);
+
+  // Read hover state directly from API (updates when API object changes)
+  const hoverState = api?.cluster?.hoverState ?? null;
+  // Use pinned data when mouse is inside the tooltip, otherwise live hover state
+  const tooltip = pinned ?? hoverState;
+
+  const multiSelect = api?.multiSelect as MultiSelectApi | undefined;
+  const selections = multiSelect?.selections;
+  const selectedIds = useMemo(() => {
+    const set = new Set<string>();
+    if (selections) {
+      for (const e of selections) set.add(e.id);
+    }
+    return set;
+  }, [selections]);
+
+  const handleMouseEnter = useCallback(() => {
+    // Pin current tooltip data so it stays visible when mouse leaves the billboard
+    const live = hoverState;
+    if (live) setPinned(live);
+  }, [hoverState]);
+
+  const handleMouseLeave = useCallback(() => {
+    setPinned(null);
+  }, []);
+
+  const toggleSelection = useCallback((entityId: string) => {
+    if (!multiSelect) return;
+    if (selectedIds.has(entityId)) {
+      multiSelect.unselect(entityId);
+    } else {
+      multiSelect.select(entityId);
+    }
+  }, [multiSelect, selectedIds]);
 
   if (!tooltip) return null;
 
   const remaining = tooltip.entities.length - MAX_VISIBLE;
+  const selectedInCluster = tooltip.entities.filter((e) => selectedIds.has(e.id)).length;
+  const isInteractive = pinned !== null;
 
   return (
     <div
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       style={{
         position: "fixed",
         left: tooltip.x + 16,
@@ -115,7 +94,7 @@ export function ClusterTooltip() {
         zIndex: 10000,
         minWidth: "160px",
         maxWidth: "260px",
-        pointerEvents: "none",
+        pointerEvents: "auto",
       }}
     >
       <div
@@ -128,59 +107,122 @@ export function ClusterTooltip() {
           letterSpacing: "0.5px",
           borderBottom: "1px solid #E0E0E0",
           marginBottom: "4px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        {tooltip.entities.length} entities
+        <span>{tooltip.entities.length} entities</span>
+        <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {selectedInCluster > 0 && (
+            <span style={{ color: "#43A047", fontSize: "11px" }}>
+              {selectedInCluster} selected
+            </span>
+          )}
+          {onAllActions && (
+            <span
+              onClick={() => onAllActions(tooltip.entities, tooltip.layerId)}
+              style={{
+                cursor: "pointer",
+                fontSize: "13px",
+                color: "#1976D2",
+                lineHeight: 1,
+              }}
+              title="Action on all"
+            >
+              ▶
+            </span>
+          )}
+        </span>
       </div>
 
       <div style={{
         display: "grid",
-        gridTemplateColumns: "1fr auto",
-        columnGap: "12px",
-        padding: "0 16px",
+        gridTemplateColumns: "20px 1fr auto 20px",
+        columnGap: "10px",
+        padding: "0 12px 0 6px",
         color: "#424242",
         lineHeight: "1.4",
       }}>
-        {tooltip.entities.slice(0, MAX_VISIBLE).map((e) => (
-          <>
-            <span
-              key={e.id}
-              style={{
-                padding: "4px 0",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {e.name}
-            </span>
-            <span
-              key={`${e.id}-type`}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-                padding: "4px 0",
-              }}
-            >
-              {e.type && (
-                <>
-                  <span
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      backgroundColor: TYPE_COLORS[e.type] ?? "#BDBDBD",
-                    }}
-                  />
-                  <span style={{ fontSize: "11px", color: "#9E9E9E" }}>
-                    {e.type}
-                  </span>
-                </>
-              )}
-            </span>
-          </>
-        ))}
+        {tooltip.entities.slice(0, MAX_VISIBLE).map((e) => {
+          const isSelected = selectedIds.has(e.id);
+          return (
+            <React.Fragment key={e.id}>
+              <span
+                onClick={() => toggleSelection(e.id)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  width: 14,
+                  height: 14,
+                  borderRadius: "2px",
+                  background: isSelected ? "#43A047" : "#E0E0E0",
+                  alignSelf: "center",
+                  color: "#fff",
+                  fontSize: "10px",
+                  lineHeight: 1,
+                }}
+              >
+                {isSelected ? "✓" : ""}
+              </span>
+              <span
+                onClick={() => toggleSelection(e.id)}
+                style={{
+                  padding: "4px 0",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  fontWeight: isSelected ? 600 : 400,
+                  color: isSelected ? "#1B5E20" : "#424242",
+                  cursor: "pointer",
+                }}
+              >
+                {e.name}
+              </span>
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  padding: "4px 0",
+                }}
+              >
+                {e.type && (
+                  <>
+                    <span
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        backgroundColor: TYPE_COLORS[e.type] ?? "#BDBDBD",
+                      }}
+                    />
+                    <span style={{ fontSize: "11px", color: "#9E9E9E" }}>
+                      {e.type}
+                    </span>
+                  </>
+                )}
+              </span>
+              <span
+                onClick={() => onAction?.(e, tooltip.layerId)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: onAction ? "pointer" : "default",
+                  fontSize: "11px",
+                  color: "#9E9E9E",
+                  padding: "4px 0",
+                }}
+                title="Action"
+              >
+                ▶
+              </span>
+            </React.Fragment>
+          );
+        })}
       </div>
 
       {remaining > 0 && (
@@ -192,6 +234,21 @@ export function ClusterTooltip() {
           }}
         >
           +{remaining} more
+        </div>
+      )}
+
+      {isInteractive && (
+        <div
+          style={{
+            padding: "4px 16px 2px",
+            fontSize: "10px",
+            color: "#BDBDBD",
+            textAlign: "center",
+            borderTop: "1px solid #F5F5F5",
+            marginTop: "4px",
+          }}
+        >
+          click to toggle selection
         </div>
       )}
     </div>

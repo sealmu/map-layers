@@ -22,6 +22,8 @@ import type {
   ExtensionContext,
   ViewerWithConfigs,
   MultiSelectConfig,
+  DblClickAction,
+  ClusterBillboardId,
   IEventHandler,
 } from "../../types";
 
@@ -43,6 +45,11 @@ export type SelectTarget =
   | Cartesian2[]
   | SelectRectangle;
 
+export interface MultiSelectEventUtils {
+  /** Compute screen position for an entity (handles points, polygons, polylines) */
+  getScreenPosition: (entity: Entity) => Cartesian2 | undefined;
+}
+
 export interface MultiSelectApi {
   /** Switch multi-select mode on/off */
   switchMultiSelect: (enabled: boolean) => void;
@@ -56,8 +63,12 @@ export interface MultiSelectApi {
   unselect: (id: string | string[]) => void;
   /** Currently selected entities */
   selections: Entity[];
+  /** Configured modifier key (if any) */
+  modifier?: "ctrl" | "shift" | "alt";
+  /** Configured double-click action */
+  dblClickAction: DblClickAction;
   /** Event handler fired when selections change */
-  onMultiSelect: IEventHandler<(selections: Entity[]) => void>;
+  onMultiSelect: IEventHandler<(selections: Entity[], prevSelections: Entity[], utils: MultiSelectEventUtils) => void>;
 }
 
 // ============================================
@@ -100,6 +111,41 @@ function pickEntityAtPosition(
   return null;
 }
 
+/** Pick entities at a screen position, resolving cluster billboards to their contained entities */
+function pickEntitiesAtPosition(
+  viewer: ViewerWithConfigs,
+  screenPosition: Cartesian2,
+): Entity[] {
+  const picks = viewer.scene.drillPick(screenPosition);
+  for (const pick of picks) {
+    if (!defined(pick)) continue;
+    // Check for cluster billboard
+    const id = pick.id as { isCluster?: boolean; entities?: Array<{ id: string }> } | Entity | undefined;
+    if (id && typeof id === "object" && "isCluster" in id && (id as ClusterBillboardId).isCluster) {
+      const clusterData = id as ClusterBillboardId;
+      const entities: Entity[] = [];
+      for (const entry of clusterData.entities) {
+        const entity = findEntityById(viewer, entry.id);
+        if (entity) entities.push(entity);
+      }
+      return entities;
+    }
+    // Regular entity
+    if (id instanceof Entity) {
+      if (typeof id.id === "string" && id.id.startsWith("__ms_")) continue;
+      return [id];
+    }
+  }
+  return [];
+}
+
+function isPositionInRect(pos: Cartesian3, rect: SelectRectangle): boolean {
+  const cartographic = Cartographic.fromCartesian(pos);
+  const lon = CesiumMath.toDegrees(cartographic.longitude);
+  const lat = CesiumMath.toDegrees(cartographic.latitude);
+  return lon >= rect.west && lon <= rect.east && lat >= rect.south && lat <= rect.north;
+}
+
 function findEntitiesInRectangle(
   viewer: ViewerWithConfigs,
   rect: SelectRectangle,
@@ -114,15 +160,23 @@ function findEntitiesInRectangle(
     ds.entities.values.forEach((entity) => {
       const position = entity.position?.getValue(currentTime);
       if (position) {
-        const cartographic = Cartographic.fromCartesian(position);
-        const lon = CesiumMath.toDegrees(cartographic.longitude);
-        const lat = CesiumMath.toDegrees(cartographic.latitude);
-        if (
-          lon >= rect.west &&
-          lon <= rect.east &&
-          lat >= rect.south &&
-          lat <= rect.north
-        ) {
+        if (isPositionInRect(position, rect)) entities.push(entity);
+        return;
+      }
+
+      // Polygon entities — check if any vertex is in the rectangle
+      if (entity.polygon) {
+        const hierarchy = getPropertyValue<PolygonHierarchy>(entity.polygon.hierarchy);
+        if (hierarchy && hierarchy.positions.some((p) => isPositionInRect(p, rect))) {
+          entities.push(entity);
+          return;
+        }
+      }
+
+      // Polyline entities — check if any vertex is in the rectangle
+      if (entity.polyline) {
+        const positions = getPropertyValue<Cartesian3[]>(entity.polyline.positions);
+        if (positions && positions.some((p) => isPositionInRect(p, rect))) {
           entities.push(entity);
         }
       }
@@ -145,6 +199,65 @@ function getPropertyValue<T>(property: unknown): T | undefined {
     );
   }
   return undefined;
+}
+
+function getEntityRendererType(entity: Entity): string | undefined {
+  return entity.properties?.getValue?.(JulianDate.now())?.rendererType as string | undefined;
+}
+
+function getEntityDataSource(viewer: ViewerWithConfigs, entity: Entity): CustomDataSource | null {
+  for (let i = 0; i < viewer.dataSources.length; i++) {
+    const ds = viewer.dataSources.get(i);
+    if (ds.name === DATASOURCE_NAME) continue;
+    if (ds.name.startsWith("__")) continue;
+    if (ds.entities.getById(entity.id)) return ds;
+  }
+  return null;
+}
+
+function findEntitiesByAction(
+  viewer: ViewerWithConfigs,
+  entity: Entity,
+  action: DblClickAction,
+): Entity[] {
+  if (action === "none") return [];
+
+  const entityDs = getEntityDataSource(viewer, entity);
+  const entityType = getEntityRendererType(entity);
+  const results: Entity[] = [];
+
+  for (let i = 0; i < viewer.dataSources.length; i++) {
+    const ds = viewer.dataSources.get(i);
+    if (ds.name === DATASOURCE_NAME) continue;
+    if (ds.name.startsWith("__")) continue;
+
+    const matchesLayer = action === "selectByLayer" || action === "selectByLayerAndType";
+    if (matchesLayer && ds !== entityDs) continue;
+
+    for (const e of ds.entities.values) {
+      if (action === "selectByType" || action === "selectByLayerAndType") {
+        if (getEntityRendererType(e) !== entityType) continue;
+      }
+      results.push(e);
+    }
+  }
+  return results;
+}
+
+/** Check if an entity is currently visible on screen (not hidden by clustering) */
+function isEntityVisibleOnScreen(viewer: ViewerWithConfigs, entity: Entity): boolean {
+  const pos = entity.position?.getValue(viewer.clock.currentTime);
+  if (!pos) return true; // Non-positioned entities (polygons, polylines) aren't clustered
+  const screenPos = viewer.scene.cartesianToCanvasCoordinates(pos);
+  if (!screenPos) return false;
+  // If entity can be found via drillPick at its own position, it's visible.
+  // When Cesium clusters an entity, its visual is removed from the scene entirely.
+  const picks = viewer.scene.drillPick(screenPos, 5);
+  for (const pick of picks) {
+    if (!defined(pick)) continue;
+    if (pick.id instanceof Entity && pick.id.id === entity.id) return true;
+  }
+  return false;
 }
 
 const SELECTION_PADDING = 16;
@@ -349,6 +462,20 @@ function createDefaultSelectionVisual(
   return buildCircleVisual(entity.id, getPos, viewer, calculateEntityPixelSize(entity));
 }
 
+/** Build a selection visual for a cluster billboard at a fixed world position */
+function createClusterSelectionVisual(
+  visualId: string,
+  clusterPosition: Cartesian3,
+  viewer: ViewerWithConfigs,
+): Entity.ConstructorOptions {
+  const getPos = () => clusterPosition;
+  // Clusters are typically larger than individual entities
+  const CLUSTER_VISUAL_SIZE = 60;
+  // buildCircleVisual prefixes with "__ms_", so strip it from our visualId
+  const rawId = visualId.replace(/^__ms_/, "");
+  return buildCircleVisual(rawId, getPos, viewer, CLUSTER_VISUAL_SIZE);
+}
+
 // ============================================
 // Extension Hook
 // ============================================
@@ -360,6 +487,7 @@ const NOOP_API: MultiSelectApi = {
   reset: () => {},
   unselect: () => {},
   selections: [],
+  dblClickAction: "none",
   onMultiSelect: createEventHandler(),
 };
 
@@ -369,6 +497,7 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
   const mapClickDeselect = config?.mapClickDeselect ?? true;
   const selectionTool = config?.selectionTool ?? false;
   const modifier = config?.modifier;
+  const dblClickAction: DblClickAction = config?.dblClickAction ?? "none";
   const cesiumModifier: KeyboardEventModifier | undefined =
     modifier === "ctrl" ? KeyboardEventModifier.CTRL :
     modifier === "shift" ? KeyboardEventModifier.SHIFT :
@@ -383,6 +512,7 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
   const selectionDataSourceRef = useRef<CustomDataSource | null>(null);
   const isMultiSelectRef = useRef(enabled);
   const modifierHeldRef = useRef(false);
+  const [clusterVersion, setClusterVersion] = useState(0);
 
   // Sync multi-select mode with the enabled prop
   useEffect(() => {
@@ -419,7 +549,7 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
     | ((selections: Entity[], entity: Entity) => boolean | void)
     | undefined;
   const onMultiSelectProp = ctx.onMultiSelect as
-    | ((entities: Entity[]) => void)
+    | ((entities: Entity[], prevEntities: Entity[], utils: MultiSelectEventUtils) => void)
     | undefined;
   const onRenderMultiSelection = ctx.onRenderMultiSelection as
     | ((entity: Entity) => Entity.ConstructorOptions | null)
@@ -430,7 +560,7 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
   onMultiSelectingRef.current = onMultiSelecting;
 
   // Event handler for selection changes
-  const onMultiSelectHandler = useMemo(() => createEventHandler<(selections: Entity[]) => void>(), []);
+  const onMultiSelectHandler = useMemo(() => createEventHandler<(selections: Entity[], prevSelections: Entity[], utils: MultiSelectEventUtils) => void>(), []);
 
   // Keep ref in sync with state
   const switchMultiSelect = useCallback((enabled: boolean) => {
@@ -457,6 +587,15 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
         selectionDataSourceRef.current = null;
       }
     };
+  }, [enabled, cesiumViewer]);
+
+  // Re-evaluate selection visuals when camera stops moving (clustering may have changed)
+  useEffect(() => {
+    if (!enabled || !cesiumViewer) return;
+    const removeListener = cesiumViewer.camera.moveEnd.addEventListener(() => {
+      setClusterVersion((v) => v + 1);
+    });
+    return removeListener;
   }, [enabled, cesiumViewer]);
 
   // Subscribe to onClick to handle click-to-select in multi-select mode
@@ -513,31 +652,24 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
     handler.setInputAction((click: { position: Cartesian2 }) => {
       if (!isMultiSelectRef.current) return;
 
-      // Pick entity at click position
-      let pickedEntity: Entity | null = null;
-      const picks = cesiumViewer.scene.drillPick(click.position);
-      for (const pick of picks) {
-        if (defined(pick) && pick.id instanceof Entity) {
-          if (typeof pick.id.id === "string" && pick.id.id.startsWith("__ms_")) continue;
-          pickedEntity = pick.id;
-          break;
-        }
-      }
+      const pickedEntities = pickEntitiesAtPosition(cesiumViewer, click.position);
 
-      if (pickedEntity) {
+      if (pickedEntities.length > 0) {
         // Modifier is held — toggle in multi-selection
         setSelectedMap((prev) => {
           const next = new Map(prev);
-          if (next.has(pickedEntity!.id)) {
-            next.delete(pickedEntity!.id);
-          } else {
-            if (onMultiSelectingRef.current) {
-              const currentSelections = Array.from(prev.values());
-              if (onMultiSelectingRef.current(currentSelections, pickedEntity!) === false) {
-                return prev;
+          for (const entity of pickedEntities) {
+            if (next.has(entity.id)) {
+              next.delete(entity.id);
+            } else {
+              if (onMultiSelectingRef.current) {
+                const currentSelections = Array.from(next.values());
+                if (onMultiSelectingRef.current(currentSelections, entity) === false) {
+                  continue;
+                }
               }
+              next.set(entity.id, entity);
             }
-            next.set(pickedEntity!.id, pickedEntity!);
           }
           return next;
         });
@@ -549,19 +681,120 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
     return () => { handler.destroy(); };
   }, [enabled, cesiumViewer, cesiumModifier]);
 
-  // Render selection visuals when selected entities change (incremental diff)
+  // Handle modifier + double-click to batch-select by layer/type
+  useEffect(() => {
+    if (!enabled || !cesiumViewer || dblClickAction === "none") return;
+
+    const handler = new ScreenSpaceEventHandler(cesiumViewer.scene.canvas);
+
+    const onDblClick = (click: { position: Cartesian2 }) => {
+      if (!isMultiSelectRef.current) return;
+      if (modifier && !modifierHeldRef.current) return;
+
+      const pickedEntities = pickEntitiesAtPosition(cesiumViewer, click.position);
+      if (pickedEntities.length === 0) return;
+
+      // Collect all entities matched by the dblClickAction for each picked entity
+      const matched = new Map<string, Entity>();
+      for (const picked of pickedEntities) {
+        for (const e of findEntitiesByAction(cesiumViewer, picked, dblClickAction)) {
+          matched.set(e.id, e);
+        }
+      }
+      if (matched.size === 0) return;
+
+      setSelectedMap((prev) => {
+        const next = new Map(prev);
+        for (const entity of matched.values()) {
+          if (next.has(entity.id)) continue;
+          if (onMultiSelectingRef.current) {
+            const currentSelections = Array.from(next.values());
+            if (onMultiSelectingRef.current(currentSelections, entity) === false) continue;
+          }
+          next.set(entity.id, entity);
+        }
+        return next;
+      });
+    };
+
+    handler.setInputAction(onDblClick, ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+    if (cesiumModifier !== undefined) {
+      handler.setInputAction(onDblClick, ScreenSpaceEventType.LEFT_DOUBLE_CLICK, cesiumModifier);
+    }
+
+    return () => { handler.destroy(); };
+  }, [enabled, cesiumViewer, dblClickAction, modifier, cesiumModifier]);
+
+  // Render selection visuals when selected entities change or clustering state changes.
   useEffect(() => {
     if (!enabled) return;
     const ds = selectionDataSourceRef.current;
-    if (!ds) return;
+    if (!ds || !cesiumViewer) return;
 
-    // Build set of expected visual IDs from current selection
+    // Determine which entities should have visuals (selected AND not hidden by cluster)
+    const shouldShowVisual = new Set<string>();
+    selectedMap.forEach((entity, id) => {
+      if (isEntityVisibleOnScreen(cesiumViewer, entity)) {
+        shouldShowVisual.add(id);
+      }
+    });
+
+    // Build set of expected visual IDs
     const expectedIds = new Set<string>();
-    selectedMap.forEach((_entity, id) => {
+    shouldShowVisual.forEach((id) => {
       expectedIds.add(`__ms_${id}`);
     });
 
-    // Remove visuals that are no longer selected
+    // Collect selected entities that are NOT visible (hidden by clustering)
+    const selectedIds = new Set(selectedMap.keys());
+    const clusteredEntities: Entity[] = [];
+    selectedMap.forEach((entity, id) => {
+      if (!shouldShowVisual.has(id)) clusteredEntities.push(entity);
+    });
+
+    // Scan for cluster billboards containing selected entities
+    const clusterVisuals: Array<{ visualId: string; position: Cartesian3 }> = [];
+    const foundClusterKeys = new Set<string>();
+    let clusterIdx = 0;
+
+    const SEARCH_RADIUS = 150;
+    const SEARCH_STEP = 40;
+    for (const entity of clusteredEntities) {
+      const pos = entity.position?.getValue(cesiumViewer.clock.currentTime);
+      if (!pos) continue;
+      const screenPos = cesiumViewer.scene.cartesianToCanvasCoordinates(pos);
+      if (!screenPos) continue;
+
+      let found = false;
+      // Spiral outward: check center first, then expand
+      for (let dx = 0; Math.abs(dx) <= SEARCH_RADIUS && !found; dx = dx <= 0 ? -dx + SEARCH_STEP : -dx) {
+        for (let dy = 0; Math.abs(dy) <= SEARCH_RADIUS && !found; dy = dy <= 0 ? -dy + SEARCH_STEP : -dy) {
+          const picked = cesiumViewer.scene.pick(new Cartesian2(screenPos.x + dx, screenPos.y + dy));
+          if (!picked) continue;
+          const pickId = picked.id as ClusterBillboardId | undefined;
+          if (!pickId || typeof pickId !== "object" || !pickId.isCluster) continue;
+          if (!pickId.entities.some((e) => selectedIds.has(e.id))) continue;
+
+          const key = pickId.entities.map((e) => e.id).sort().join(",");
+          if (foundClusterKeys.has(key)) { found = true; continue; }
+          foundClusterKeys.add(key);
+
+          const bbPosition = (picked.primitive as { position?: Cartesian3 })?.position;
+          if (!bbPosition) continue;
+
+          const visualId = `__ms_cluster_${clusterIdx++}`;
+          clusterVisuals.push({ visualId, position: bbPosition });
+          found = true;
+        }
+      }
+    }
+
+    // Add cluster visual IDs to the expected set
+    for (const { visualId } of clusterVisuals) {
+      expectedIds.add(visualId);
+    }
+
+    // Remove all stale visuals (deselected, now-clustered, or stale cluster visuals)
     const toRemove: Entity[] = [];
     for (let i = 0; i < ds.entities.values.length; i++) {
       const visual = ds.entities.values[i];
@@ -571,28 +804,63 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
     }
     toRemove.forEach((e) => ds.entities.remove(e));
 
-    // Add visuals for newly selected entities
-    selectedMap.forEach((entity, id) => {
+    // Add visuals for individual entities
+    shouldShowVisual.forEach((id) => {
       const visualId = `__ms_${id}`;
-      if (ds.entities.getById(visualId)) return; // already exists
+      if (ds.entities.getById(visualId)) return;
 
+      const entity = selectedMap.get(id)!;
       let visual = onRenderMultiSelection?.(entity) ?? null;
       if (!visual) {
-        visual = createDefaultSelectionVisual(entity, cesiumViewer!);
+        visual = createDefaultSelectionVisual(entity, cesiumViewer);
       }
       if (visual) {
         ds.entities.add(visual);
       }
     });
-  }, [enabled, selectedMap, onRenderMultiSelection]);
+
+    // Add new cluster visuals
+    for (const { visualId, position } of clusterVisuals) {
+      if (ds.entities.getById(visualId)) continue;
+      const visual = createClusterSelectionVisual(visualId, position, cesiumViewer);
+      ds.entities.add(visual);
+    }
+  }, [enabled, cesiumViewer, selectedMap, onRenderMultiSelection, clusterVersion]);
+
+  // Compute screen position for any entity type (point, polygon, polyline)
+  const getScreenPosition = useCallback((entity: Entity): Cartesian2 | undefined => {
+    if (!cesiumViewer) return undefined;
+    let worldPos = entity.position?.getValue(cesiumViewer.clock.currentTime);
+    if (!worldPos && entity.polygon) {
+      const hierarchy = getPropertyValue<PolygonHierarchy>(entity.polygon.hierarchy);
+      if (hierarchy && hierarchy.positions.length > 0) {
+        const pts = hierarchy.positions;
+        const sum = pts.reduce((acc, p) => Cartesian3.add(acc, p, acc), new Cartesian3(0, 0, 0));
+        worldPos = Cartesian3.divideByScalar(sum, pts.length, new Cartesian3());
+      }
+    }
+    if (!worldPos && entity.polyline) {
+      const positions = getPropertyValue<Cartesian3[]>(entity.polyline.positions);
+      if (positions && positions.length > 0) {
+        const sum = positions.reduce((acc, p) => Cartesian3.add(acc, p, acc), new Cartesian3(0, 0, 0));
+        worldPos = Cartesian3.divideByScalar(sum, positions.length, new Cartesian3());
+      }
+    }
+    if (!worldPos) return undefined;
+    return cesiumViewer.scene.cartesianToCanvasCoordinates(worldPos) ?? undefined;
+  }, [cesiumViewer]);
 
   // Fire onMultiSelect event and notify subscribers when selections change
+  const prevSelectionsRef = useRef<Entity[]>([]);
   useEffect(() => {
     if (!enabled) return;
     const sels = Array.from(selectedMap.values());
-    onMultiSelectProp?.(sels);
-    onMultiSelectHandler.subscribers.forEach((cb) => cb(sels));
-  }, [enabled, selectedMap, onMultiSelectProp, onMultiSelectHandler]);
+    const prev = prevSelectionsRef.current;
+    prevSelectionsRef.current = sels;
+    const utils: MultiSelectEventUtils = { getScreenPosition };
+    onMultiSelectProp?.(sels, prev, utils);
+    onMultiSelectHandler.subscribers.forEach((cb) => cb(sels, prev, utils));
+  }, [enabled, selectedMap, onMultiSelectProp, onMultiSelectHandler, getScreenPosition]);
 
   // Rubber-band selection tool — click-and-drag draws a dashed rectangle to select entities
   useEffect(() => {
@@ -693,17 +961,63 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
       const entitiesToSelect: Entity[] = [];
       const currentTime = cesiumViewer.clock.currentTime;
 
+      const isScreenPosInRect = (pos: Cartesian3): boolean => {
+        const screenPos = cesiumViewer.scene.cartesianToCanvasCoordinates(pos);
+        if (!screenPos) return false;
+        return screenPos.x >= minX && screenPos.x <= maxX && screenPos.y >= minY && screenPos.y <= maxY;
+      };
+
       for (let i = 0; i < cesiumViewer.dataSources.length; i++) {
         const ds = cesiumViewer.dataSources.get(i);
         if (ds.name === DATASOURCE_NAME) continue;
 
         for (const entity of ds.entities.values) {
+          // Position-based entities (points, billboards, labels, etc.)
           const pos = entity.position?.getValue(currentTime);
-          if (!pos) continue;
-          const screenPos = cesiumViewer.scene.cartesianToCanvasCoordinates(pos);
-          if (!screenPos) continue;
-          if (screenPos.x >= minX && screenPos.x <= maxX && screenPos.y >= minY && screenPos.y <= maxY) {
-            entitiesToSelect.push(entity);
+          if (pos) {
+            if (isScreenPosInRect(pos)) entitiesToSelect.push(entity);
+            continue;
+          }
+
+          // Polygon entities — check if any vertex projects into the rectangle
+          if (entity.polygon) {
+            const hierarchy = getPropertyValue<PolygonHierarchy>(entity.polygon.hierarchy);
+            if (hierarchy && hierarchy.positions.some(isScreenPosInRect)) {
+              entitiesToSelect.push(entity);
+              continue;
+            }
+          }
+
+          // Polyline entities — check if any vertex projects into the rectangle
+          if (entity.polyline) {
+            const positions = getPropertyValue<Cartesian3[]>(entity.polyline.positions);
+            if (positions && positions.some(isScreenPosInRect)) {
+              entitiesToSelect.push(entity);
+            }
+          }
+        }
+      }
+
+      // Also detect cluster billboards within the lasso rectangle.
+      // When entities are clustered, their individual screen positions may not match the
+      // cluster billboard's position, so sample the rectangle to find cluster picks.
+      const alreadyFound = new Set(entitiesToSelect.map((e) => e.id));
+      const CLUSTER_SAMPLE_STEP = 30; // px
+      for (let sx = minX; sx <= maxX; sx += CLUSTER_SAMPLE_STEP) {
+        for (let sy = minY; sy <= maxY; sy += CLUSTER_SAMPLE_STEP) {
+          const pick = cesiumViewer.scene.pick(new Cartesian2(sx, sy));
+          if (!defined(pick)) continue;
+          const id = pick.id as { isCluster?: boolean } | undefined;
+          if (id && typeof id === "object" && "isCluster" in id && id.isCluster) {
+            const clusterData = id as ClusterBillboardId;
+            for (const entry of clusterData.entities) {
+              if (alreadyFound.has(entry.id)) continue;
+              const entity = findEntityById(cesiumViewer, entry.id);
+              if (entity) {
+                entitiesToSelect.push(entity);
+                alreadyFound.add(entry.id);
+              }
+            }
           }
         }
       }
@@ -834,10 +1148,12 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
             reset,
             unselect,
             selections,
+            modifier,
+            dblClickAction,
             onMultiSelect: onMultiSelectHandler,
           }
         : NOOP_API,
-    [enabled, switchMultiSelect, isMultiSelect, select, reset, unselect, selections, onMultiSelectHandler],
+    [enabled, switchMultiSelect, isMultiSelect, select, reset, unselect, selections, modifier, dblClickAction, onMultiSelectHandler],
   );
 };
 

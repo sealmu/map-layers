@@ -1,10 +1,4 @@
-const imageCache = new Map<number, HTMLCanvasElement>();
-
-export interface ClusterBillboardId {
-  isCluster: true;
-  layerId: string;
-  entities: Array<{ id: string; name: string; type?: string }>;
-}
+const imageCache = new Map<string, HTMLCanvasElement>();
 
 /** Material color tiers based on cluster density */
 function clusterColor(count: number): string {
@@ -14,11 +8,14 @@ function clusterColor(count: number): string {
   return "#D32F2F";                   // Red 700
 }
 
-export function createClusterCanvas(count: number): HTMLCanvasElement {
-  const cached = imageCache.get(count);
+export function createClusterCanvas(count: number, hasSelection = false): HTMLCanvasElement {
+  const key = `${count}:${hasSelection ? 1 : 0}`;
+  const cached = imageCache.get(key);
   if (cached) return cached;
 
-  const size = count < 10 ? 48 : count < 50 ? 56 : count < 100 ? 64 : 72;
+  const baseSize = count < 10 ? 48 : count < 50 ? 56 : count < 100 ? 64 : 72;
+  const selectionPad = hasSelection ? 6 : 0;
+  const size = baseSize + selectionPad * 2;
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
@@ -26,7 +23,20 @@ export function createClusterCanvas(count: number): HTMLCanvasElement {
 
   const cx = size / 2;
   const cy = size / 2;
-  const r = size / 2 - 2;
+
+  // Selection ring (dashed green circle)
+  if (hasSelection) {
+    const selR = size / 2 - 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, selR, 0, Math.PI * 2);
+    ctx.strokeStyle = "#43A047";
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([5, 3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  const r = baseSize / 2 - 2;
   const color = clusterColor(count);
 
   // Outer ring (semi-transparent)
@@ -50,6 +60,6 @@ export function createClusterCanvas(count: number): HTMLCanvasElement {
   ctx.textBaseline = "middle";
   ctx.fillText(String(count), cx, cy);
 
-  imageCache.set(count, canvas);
+  imageCache.set(key, canvas);
   return canvas;
 }

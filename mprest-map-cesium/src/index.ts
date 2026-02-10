@@ -109,6 +109,12 @@ export type {
   SelectRectangle,
 } from "./extensions/features/useMultiSelect";
 
+export type {
+  ClusterApi,
+  ClusterHoverState,
+  ClusterClickEvent,
+} from "./extensions/features/useCluster";
+
 // ============================================
 // Types
 // ============================================
@@ -183,9 +189,10 @@ export type {
 
   // Clustering Types
   ClusteringConfig,
+  ClusterBillboardId,
 } from "./types";
 
-export { BasePlugin, createRenderTypes } from "./types";
+export { BasePlugin, createRenderTypes, DblClickAction } from "./types";
 
 // ============================================
 // Re-export core types for convenience

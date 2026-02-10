@@ -5,6 +5,8 @@ export interface EntityPopupInfo {
   entity: Entity;
   location?: MapClickLocation;
   screenPosition?: Cartesian2;
+  /** When true, shows "Selection Prevented" UI. Default: false */
+  prevented?: boolean;
 }
 
 interface EntityPopupProps {
@@ -16,20 +18,23 @@ interface EntityPopupProps {
 export function EntityPopup({ popupInfo, popupPosition, onClose }: EntityPopupProps) {
   if (!popupInfo) return null;
 
+  const isPrevented = popupInfo.prevented === true;
+  const hasPosition = !!popupInfo.screenPosition;
+
   return (
     <div
       className="entity-popup"
       style={{
-        position: !popupInfo.location ? "fixed" : "absolute",
-        ...(!popupInfo.location
+        position: hasPosition ? "absolute" : "fixed",
+        ...(hasPosition
           ? {
+            top: `${popupPosition!.top}px`,
+            left: `${popupPosition!.left}px`,
+          }
+          : {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-          }
-          : {
-            top: `${popupPosition!.top}px`,
-            left: `${popupPosition!.left}px`,
           }),
         backgroundColor: "rgba(0, 0, 0, 0.85)",
         color: "white",
@@ -43,7 +48,7 @@ export function EntityPopup({ popupInfo, popupPosition, onClose }: EntityPopupPr
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-        <h3 style={{ margin: 0, fontSize: "16px" }}>{!popupInfo.location ? "Selection Prevented" : "Entity Info"}</h3>
+        <h3 style={{ margin: 0, fontSize: "16px" }}>{isPrevented ? "Selection Prevented" : "Entity Info"}</h3>
         <button
           onClick={onClose}
           style={{
@@ -71,7 +76,7 @@ export function EntityPopup({ popupInfo, popupPosition, onClose }: EntityPopupPr
             </div>
           </div>
         )}
-        {!popupInfo.location && (
+        {isPrevented && (
           <div style={{ marginTop: "8px", color: "#ff6b6b" }}>
             <strong>Selection of this entity is not allowed.</strong>
           </div>

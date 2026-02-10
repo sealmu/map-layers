@@ -9,25 +9,25 @@ const useWithCtx = <T>(ctx: ExtensionContext, hook: (ctx: ExtensionContext) => T
   return api;
 };
 
-// Hook to compose all discovered plugins
-const usePlugins = (ctx: ExtensionContext) => {
-  // Collect all plugin APIs (array length is fixed — featureExtensions is static)
+// Hook to compose all discovered feature extensions
+const useFeatureExtensions = (ctx: ExtensionContext) => {
+  // Collect all extension APIs (array length is fixed — featureExtensions is static)
   const apis: unknown[] = [];
 
-  for (const plugin of featureExtensions) {
+  for (const ext of featureExtensions) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const api = useWithCtx(ctx, plugin.useExtension);
+    const api = useWithCtx(ctx, ext.useExtension);
     apis.push(api);
   }
 
   // Memoize the container object so it only changes when an individual API changes
   // eslint-disable-next-line react-hooks/exhaustive-deps
   return useMemo(() => {
-    const pluginApis: Record<string, unknown> = {};
-    featureExtensions.forEach((plugin, i) => {
-      pluginApis[plugin.name] = apis[i];
+    const extensionApis: Record<string, unknown> = {};
+    featureExtensions.forEach((ext, i) => {
+      extensionApis[ext.name] = apis[i];
     });
-    return pluginApis;
+    return extensionApis;
   }, apis);
 };
 
@@ -43,11 +43,11 @@ export const useExtensions = <R extends RendererRegistry>(
   const search = useWithCtx(ctx, useSearch);
   const entities = useWithCtx(ctx, useEntities);
 
-  // Dynamic plugins from plugins folder
-  const plugins = usePlugins(ctx);
+  // Dynamic feature extensions
+  const features = useFeatureExtensions(ctx);
 
   return useMemo(
-    () => ({ layers, filters, search, entities, ...plugins }),
-    [layers, filters, search, entities, plugins],
+    () => ({ layers, filters, search, entities, ...features }),
+    [layers, filters, search, entities, features],
   );
 };

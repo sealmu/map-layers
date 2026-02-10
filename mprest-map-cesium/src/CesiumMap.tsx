@@ -58,7 +58,7 @@ const CesiumMap = <R extends RendererRegistry>({
   infoBox = true,
   multiSelect,
   clusteringConfig,
-  onCluster,
+  onClusterRender,
   animateActivation = false,
   animateVisibility = false,
   onApiChange,
@@ -111,7 +111,7 @@ const CesiumMap = <R extends RendererRegistry>({
     return layersRef.current;
   }, [children]);
 
-  const extensionContext = useMemo(() => ({ baseMapProviders, filterConfig, multiSelect, onMultiSelecting, onMultiSelect, onRenderMultiSelection }), [baseMapProviders, filterConfig, multiSelect, onMultiSelecting, onMultiSelect, onRenderMultiSelection]);
+  const extensionContext = useMemo(() => ({ baseMapProviders, filterConfig, multiSelect, clusteringConfig, onMultiSelecting, onMultiSelect, onRenderMultiSelection }), [baseMapProviders, filterConfig, multiSelect, clusteringConfig, onMultiSelecting, onMultiSelect, onRenderMultiSelection]);
   const featuresApi = useExtensions(layers, extensionContext) as MapApi;
   const { layers: layersApi, filters: filtersApi, search: searchApi, entities: entitiesApi } = featuresApi;
 
@@ -358,7 +358,7 @@ const CesiumMap = <R extends RendererRegistry>({
               clusteringConfig?.[layer.id],
               layer.clusteringConfig,
             )}
-            onCluster={onCluster}
+            onClusterRender={onClusterRender}
           />
         ))}
     </div>

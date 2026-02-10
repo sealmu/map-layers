@@ -416,12 +416,21 @@ export interface DataSourceLayerProps<
     layerId?: string,
   ) => Entity.ConstructorOptions | null;
   clusteringConfig?: ClusteringConfig;
-  onCluster?: (
+  onClusterRender?: (
     layerId: string,
     clusteredEntities: Entity[],
     cluster: { billboard: unknown; label: unknown; point: unknown },
   ) => void;
 }
+
+export const DblClickAction = {
+  NONE: "none",
+  SELECT_BY_LAYER: "selectByLayer",
+  SELECT_BY_TYPE: "selectByType",
+  SELECT_BY_LAYER_AND_TYPE: "selectByLayerAndType",
+} as const;
+
+export type DblClickAction = (typeof DblClickAction)[keyof typeof DblClickAction];
 
 export interface MultiSelectConfig {
   isEnabled: boolean;
@@ -431,12 +440,20 @@ export interface MultiSelectConfig {
   selectionTool?: boolean;
   /** Modifier key that activates multi-select. When set, multi-select only works while this key is held. Default: undefined (always active) */
   modifier?: "ctrl" | "shift" | "alt";
+  /** Action on modifier + double-click on an entity. Default: "none" */
+  dblClickAction?: DblClickAction;
 }
 
 export interface ClusteringConfig extends IClusteringConfig {
   clusterBillboards?: boolean;
   clusterLabels?: boolean;
   clusterPoints?: boolean;
+}
+
+export interface ClusterBillboardId {
+  isCluster: true;
+  layerId: string;
+  entities: Array<{ id: string; name: string; type?: string }>;
 }
 
 export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
@@ -454,7 +471,7 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
   /** Clustering config: { global?: ClusteringConfig, [layerId]: ClusteringConfig } */
   clusteringConfig?: Record<string, ClusteringConfig | undefined> & { global?: ClusteringConfig };
   /** Called when entities are clustered. Use to customize cluster visuals. */
-  onCluster?: (
+  onClusterRender?: (
     layerId: string,
     clusteredEntities: Entity[],
     cluster: { billboard: unknown; label: unknown; point: unknown },
@@ -526,7 +543,7 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
   ) => boolean | void;
   onChangePosition?: (location: MapClickLocation | null) => boolean | void;
   onMultiSelecting?: (selections: Entity[], entity: Entity) => boolean | void;
-  onMultiSelect?: (entities: Entity[]) => void;
+  onMultiSelect?: (entities: Entity[], prevEntities: Entity[], utils: { getScreenPosition: (entity: Entity) => Cartesian2 | undefined }) => void;
   onRenderMultiSelection?: (entity: Entity) => Entity.ConstructorOptions | null;
   onExtensionStateChanged?: (
     name: "layers" | "filters" | "search" | "entities",
