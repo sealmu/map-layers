@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 
-import { Cartesian2, Entity, JulianDate, OpenStreetMapImageryProvider, UrlTemplateImageryProvider } from "cesium";
+import { Cartesian2, Entity, JulianDate, OpenStreetMapImageryProvider, PropertyBag, UrlTemplateImageryProvider } from "cesium";
 
 import { useDroneAnimation, useDroneAnimation2 } from "./hooks/useDroneAnimation";
 import { useRadarAnimation } from "./hooks/useRadarAnimation";
@@ -12,6 +12,7 @@ import {
   DataConnector,
   useCesiumViewer,
   EntitySelectionPlugin,
+  ContextMenuPlugin,
   type AppContentProps,
   type LayerData,
   type LayeredDataWithPayload,
@@ -27,6 +28,7 @@ import { PositionInfoBar } from "./components/PositionInfoBar";
 import { SelectionPanel } from "./components/SelectionPanel";
 import { ClusterTooltip } from "./components/ClusterTooltip";
 import { Toast, type ToastRef } from "./components/Toast";
+import { CustomContextMenu } from "./components/CustomContextMenu";
 import { createClusterCanvas } from "./utils/clusterCanvas";
 import { AppLayers } from "./AppLayers";
 import { AppRenderers } from "./AppRenderers";
@@ -156,6 +158,8 @@ function AppContent({
 }: AppContentProps<AppRenderers> & { data: AppData[] }) {
   const { viewer } = useCesiumViewer();
 
+  const contextMenuPlugin = viewer?.plugins?.["contextMenu"] as ContextMenuPlugin | undefined;
+  contextMenuPlugin?.actions.configure({ contextProp: "contextMenu" });
 
   const [popupInfo, setPopupInfo] = useState<EntityPopupInfo | null>(null);
   const [popupDimensions] = useState({ width: 350, height: 250 });
@@ -184,6 +188,7 @@ function AppContent({
     entitySelection: EntitySelectionPlugin,
     stickyInfo: StickyInfoPlugin,
     tracer: TracerPlugin,
+    contextMenu: ContextMenuPlugin,
   }), []);
 
   // Subscribe to plugin events
@@ -466,15 +471,16 @@ function AppContent({
   }, []);
 
   const handleEntityCreating = useCallback((options: Entity.ConstructorOptions, item: LayeredDataWithPayload<MyDataPayload>) => {
-    //console.log('onEntityCreating:', { id: options.id, renderType: item.renderType, item });
-
-    void options;
-    void item;
-    // if (item.id === 'drone3') {
-    //   console.log('Custom entity creation for drone:', options);
-    //   // For drones, use a custom model and set up for animation
-    //   return false; // Return false to skip default creation, we will create manually in customRenderer
-    // }
+    // Add context menu property to point entities
+    if (item.view === 'points' || item.renderType === 'points') {
+      (options.properties as PropertyBag).addProperty("contextMenu", {
+        items: [
+          { label: "Zoom", action: () => toastRef.current?.show(`Zooming to "${item.name || item.id}"`) },
+          { label: "Details", action: () => toastRef.current?.show(`Showing details for "${item.name || item.id}"`) },
+          { label: "Delete", action: () => toastRef.current?.show(`Deleting "${item.name || item.id}"`) },
+        ],
+      });
+    }
   }, []);
 
   // const onEntityCreate = useCallback((
@@ -533,6 +539,11 @@ function AppContent({
   // const handleEntityChange = useCallback((entity: Entity, status: EntityChangeStatus, collectionName: string) => {
   //   console.log('Entity changed:', { entityId: entity.id, status, collectionName });
   // }, []);
+
+  const handleLongClick = useCallback((entity: Entity | null, location: MapClickLocation) => {
+    const entityLabel = entity ? `"${entity.name || entity.id}"` : 'empty space';
+    toastRef.current?.show(`Long click on ${entityLabel} at (${location.longitude.toFixed(4)}, ${location.latitude.toFixed(4)})`);
+  }, []);
 
   const handleChangePosition = useCallback((location: MapClickLocation | null): boolean | void => {
     setCurrentPosition(location);
@@ -634,9 +645,11 @@ function AppContent({
           onSelecting={handleSelecting}
           onClickPrevented={handleClickPrevented}
           onSelected={handleSelected}
+          // contextMenuProp="contextMenu"
           // onRightClick={handleRightClick}
           // onDblClick={handleDblClick}
           onChangePosition={handleChangePosition}
+          onLongClick={handleLongClick}
           onLog={handleLog}
           selectionIndicator={true}
           infoBox={false}
@@ -668,6 +681,32 @@ function AppContent({
         />
 
         <StickyPopups stickyInfoMap={stickyInfoMap} onClose={handleCloseStickyInfo} />
+        {contextMenuPlugin && (
+          <contextMenuPlugin.Renderer
+            onRenderItem={(item) => (
+              <div
+                style={{
+                  padding: "7px 14px",
+                  cursor: item.disabled ? "default" : "pointer",
+                  opacity: item.disabled ? 0.35 : 1,
+                  fontSize: "13px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  color: "#e0e0e0",
+                }}
+              >
+                {item.icon && <span style={{ fontSize: "14px" }}>{item.icon}</span>}
+                <span>{item.label}</span>
+              </div>
+            )}
+            onRenderMenu={(info, defaultContent, close) => (
+              <CustomContextMenu info={info} onClose={close}>
+                {defaultContent}
+              </CustomContextMenu>
+            )}
+          />
+        )}
 
         <SelectionPanel onEntityClick={handleSelectionPanelClick} onGroupClick={handleGroupClick} />
         <Toast ref={toastRef} />

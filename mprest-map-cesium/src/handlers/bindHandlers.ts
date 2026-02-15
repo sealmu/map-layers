@@ -74,6 +74,13 @@ export interface BindHandlersOptions<
     location: MapClickLocation,
     screenPosition?: Cartesian2,
   ) => boolean | void;
+  contextMenuProp?: string;
+  onContextMenu?: (
+    entity: Entity,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+    contextMenuParams?: unknown,
+  ) => boolean | void;
   onDblClick?: (
     entity: Entity | null,
     location: MapClickLocation,
@@ -99,6 +106,11 @@ export interface BindHandlersOptions<
     location: MapClickLocation,
     screenPosition?: Cartesian2,
   ) => boolean | void;
+  onLongClick?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
 }
 
 /**
@@ -117,11 +129,14 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
   onEntityCreating,
   onEntityCreate,
   onRightClick,
+  contextMenuProp,
+  onContextMenu,
   onDblClick,
   onLeftDown,
   onLeftUp,
   onRightDown,
   onRightUp,
+  onLongClick,
 }: BindHandlersOptions<R>): {
   processEntityChange?: (
     entity: Entity,
@@ -174,6 +189,9 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
     if (onRightClick) {
       viewer.handlers.onRightClick.subscribe(onRightClick);
     }
+    if (onContextMenu) {
+      viewer.handlers.onContextMenu.subscribe(onContextMenu);
+    }
     if (onDblClick) {
       viewer.handlers.onDblClick.subscribe(onDblClick);
     }
@@ -189,7 +207,10 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
     if (onRightUp) {
       viewer.handlers.onRightUp.subscribe(onRightUp);
     }
-  }, [viewer, onClick, onSelecting, onClickPrevented, onSelected, onChangePosition, onEntityChange, onEntityCreating, onEntityCreate, onRightClick, onDblClick, onLeftDown, onLeftUp, onRightDown, onRightUp]);
+    if (onLongClick) {
+      viewer.handlers.onLongClick.subscribe(onLongClick);
+    }
+  }, [viewer, onClick, onSelecting, onClickPrevented, onSelected, onChangePosition, onEntityChange, onEntityCreating, onEntityCreate, onRightClick, onContextMenu, onDblClick, onLeftDown, onLeftUp, onRightDown, onRightUp, onLongClick]);
 
   useClickHandler({
     viewer,
@@ -270,6 +291,14 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
       : undefined,
     onRightClick: viewer
       ? (entity: Entity | null, location: MapClickLocation, screenPosition?: Cartesian2) => {
+          // Check if entity has a context menu property — route to onContextMenu instead
+          if (entity && contextMenuProp) {
+            const contextMenuParams = entity.properties?.[contextMenuProp]?.getValue?.(viewer.clock.currentTime);
+            if (contextMenuParams !== undefined) {
+              if (!callPluginMethod(viewer.plugins, "onContextMenu", entity, location, screenPosition, contextMenuParams)) return false;
+              return callAllSubscribers(viewer.handlers.onContextMenu, entity, location, screenPosition, contextMenuParams);
+            }
+          }
           if (!callPluginMethod(viewer.plugins, "onRightClick", entity, location, screenPosition)) return false;
           return callAllSubscribers(viewer.handlers.onRightClick, entity, location, screenPosition);
         }
@@ -302,6 +331,12 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
       ? (entity: Entity | null, location: MapClickLocation, screenPosition?: Cartesian2) => {
           if (!callPluginMethod(viewer.plugins, "onRightUp", entity, location, screenPosition)) return false;
           return callAllSubscribers(viewer.handlers.onRightUp, entity, location, screenPosition);
+        }
+      : undefined,
+    onLongClick: viewer
+      ? (entity: Entity | null, location: MapClickLocation, screenPosition?: Cartesian2) => {
+          if (!callPluginMethod(viewer.plugins, "onLongClick", entity, location, screenPosition)) return false;
+          return callAllSubscribers(viewer.handlers.onLongClick, entity, location, screenPosition);
         }
       : undefined,
   });

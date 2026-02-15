@@ -598,85 +598,87 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
     return removeListener;
   }, [enabled, cesiumViewer]);
 
-  // Subscribe to onClick to handle click-to-select in multi-select mode
+  // Prevent Cesium native selection when multi-select is active
   useEffect(() => {
     if (!enabled || !cesiumViewer) return;
 
     const unsubscribe = cesiumViewer.handlers.onClick.subscribe(
-      (entity: Entity | null) => {
+      () => {
         if (!isMultiSelectRef.current) return; // Pass through to Cesium native select
-
-        const isMultiMode = !modifier || modifierHeldRef.current;
-
-        if (entity) {
-          if (isMultiMode) {
-            // Modifier held (or no modifier configured) — toggle in multi-selection
-            setSelectedMap((prev) => {
-              const next = new Map(prev);
-              if (next.has(entity.id)) {
-                next.delete(entity.id);
-              } else {
-                if (onMultiSelectingRef.current) {
-                  const currentSelections = Array.from(prev.values());
-                  if (onMultiSelectingRef.current(currentSelections, entity) === false) {
-                    return prev;
-                  }
-                }
-                next.set(entity.id, entity);
-              }
-              return next;
-            });
-          } else {
-            // No modifier held — single-select: replace selection with just this entity
-            setSelectedMap(new Map([[entity.id, entity]]));
-          }
-        } else if (mapClickDeselect) {
-          // Clicked empty space — deselect all
-          setSelectedMap(new Map());
-        }
-
-        return false; // Always prevent Cesium native selection when multi-select is enabled
+        return false; // Prevent Cesium native selection when multi-select is enabled
       },
     );
 
     return unsubscribe;
   }, [enabled, cesiumViewer]);
 
-  // Handle modifier+click directly via ScreenSpaceEventHandler
-  // (Cesium routes modifier-qualified clicks separately from unmodified clicks)
+  // Handle all clicks directly via ScreenSpaceEventHandler
+  // This ensures multi-select works independently of the handleMapClick flow
+  // (e.g. off-globe clicks, or any other case where handleMapClick bails early)
   useEffect(() => {
-    if (!enabled || !cesiumViewer || cesiumModifier === undefined) return;
+    if (!enabled || !cesiumViewer) return;
 
     const handler = new ScreenSpaceEventHandler(cesiumViewer.scene.canvas);
 
-    handler.setInputAction((click: { position: Cartesian2 }) => {
+    const processClick = (click: { position: Cartesian2 }, isMultiMode: boolean) => {
       if (!isMultiSelectRef.current) return;
 
       const pickedEntities = pickEntitiesAtPosition(cesiumViewer, click.position);
 
       if (pickedEntities.length > 0) {
-        // Modifier is held — toggle in multi-selection
-        setSelectedMap((prev) => {
-          const next = new Map(prev);
-          for (const entity of pickedEntities) {
-            if (next.has(entity.id)) {
-              next.delete(entity.id);
-            } else {
-              if (onMultiSelectingRef.current) {
-                const currentSelections = Array.from(next.values());
-                if (onMultiSelectingRef.current(currentSelections, entity) === false) {
-                  continue;
+        if (isMultiMode) {
+          // Toggle in multi-selection
+          setSelectedMap((prev) => {
+            const next = new Map(prev);
+            for (const entity of pickedEntities) {
+              if (next.has(entity.id)) {
+                next.delete(entity.id);
+              } else {
+                if (onMultiSelectingRef.current) {
+                  const currentSelections = Array.from(next.values());
+                  if (onMultiSelectingRef.current(currentSelections, entity) === false) {
+                    continue;
+                  }
                 }
+                next.set(entity.id, entity);
               }
-              next.set(entity.id, entity);
             }
-          }
-          return next;
-        });
+            return next;
+          });
+        } else {
+          // No modifier — single-select: replace selection or deselect if already selected
+          const entity = pickedEntities[0];
+          setSelectedMap((prev) => {
+            if (prev.has(entity.id)) {
+              // Already selected — deselect
+              const next = new Map(prev);
+              next.delete(entity.id);
+              return next;
+            }
+            // Not selected — select only this entity
+            if (onMultiSelectingRef.current) {
+              if (onMultiSelectingRef.current([], entity) === false) return prev;
+            }
+            return new Map([[entity.id, entity]]);
+          });
+        }
       } else if (mapClickDeselect) {
+        // Clicked empty space — deselect all
         setSelectedMap(new Map());
       }
-    }, ScreenSpaceEventType.LEFT_CLICK, cesiumModifier);
+    };
+
+    // Unmodified click — single-select or deselect
+    handler.setInputAction((click: { position: Cartesian2 }) => {
+      processClick(click, !modifier);
+    }, ScreenSpaceEventType.LEFT_CLICK);
+
+    // Modifier-qualified click — toggle in multi-selection
+    if (cesiumModifier !== undefined) {
+      handler.setInputAction((click: { position: Cartesian2 }) => {
+        processClick(click, true);
+      }, ScreenSpaceEventType.LEFT_CLICK, cesiumModifier);
+    }
 
     return () => { handler.destroy(); };
   }, [enabled, cesiumViewer, cesiumModifier]);

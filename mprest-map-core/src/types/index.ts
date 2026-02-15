@@ -75,6 +75,13 @@ export type {
 
 export { createIRenderTypes } from "./core/types/layer";
 
+// Context Menu
+export type {
+  IContextMenuItem,
+  IContextMenuData,
+  IContextMenuRenderInfo,
+} from "./core/types/contextMenu";
+
 // Events
 export type { IEventHandler } from "./core/types/events";
 export { createEventHandler } from "./core/types/events";

@@ -18,7 +18,7 @@ import {
   ImageryProvider,
   ImageryLayer,
 } from "cesium";
-import type { IMapAccessors, IDataManager, EntityChangeStatus, LogEntry, IMapConfig, IBaseMapsApi, IFilterConfig, IClusteringConfig } from "@mprest/map-core";
+import type { IMapAccessors, IDataManager, IEventHandler, EntityChangeStatus, LogEntry, IMapConfig, IBaseMapsApi, IFilterConfig, IClusteringConfig } from "@mprest/map-core";
 
 // Re-export core types for convenience (these are provider-agnostic)
 export type {
@@ -96,7 +96,7 @@ export interface PluginActions {
 }
 
 export interface PluginEvents {
-  [key: string]: EventHandler<(...args: unknown[]) => unknown>;
+  [key: string]: IEventHandler<(...args: unknown[]) => unknown>;
 }
 
 export abstract class BasePlugin<
@@ -130,6 +130,12 @@ export abstract class BasePlugin<
     location: MapClickLocation,
     screenPosition?: Cartesian2,
   ) => boolean | void;
+  onContextMenu?: (
+    entity: Entity,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+    contextMenuParams?: unknown,
+  ) => boolean | void;
   onDblClick?: (
     entity: Entity | null,
     location: MapClickLocation,
@@ -151,6 +157,11 @@ export abstract class BasePlugin<
     screenPosition?: Cartesian2,
   ) => boolean | void;
   onRightUp?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
+  onLongClick?: (
     entity: Entity | null,
     location: MapClickLocation,
     screenPosition?: Cartesian2,
@@ -516,6 +527,13 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
     location: MapClickLocation,
     screenPosition?: Cartesian2,
   ) => boolean | void;
+  contextMenuProp?: string;
+  onContextMenu?: (
+    entity: Entity,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+    contextMenuParams?: unknown,
+  ) => boolean | void;
   onDblClick?: (
     entity: Entity | null,
     location: MapClickLocation,
@@ -537,6 +555,11 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
     screenPosition?: Cartesian2,
   ) => boolean | void;
   onRightUp?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
+  onLongClick?: (
     entity: Entity | null,
     location: MapClickLocation,
     screenPosition?: Cartesian2,
@@ -756,81 +779,96 @@ export interface ViewerWithConfigs<
   };
   api: MapApi;
   handlers: {
-    onClick: EventHandler<
+    onClick: IEventHandler<
       (
         entity: Entity | null,
         location: MapClickLocation,
         screenPosition?: Cartesian2,
       ) => void
     >;
-    onSelecting: EventHandler<
+    onSelecting: IEventHandler<
       (entity: Entity, location: MapClickLocation) => void
     >;
-    onClickPrevented: EventHandler<
+    onClickPrevented: IEventHandler<
       (entity: Entity, location: MapClickLocation) => void
     >;
-    onSelected: EventHandler<
+    onSelected: IEventHandler<
       (
         entity: Entity | null,
         location?: MapClickLocation,
         screenPosition?: Cartesian2,
       ) => void
     >;
-    onRightClick: EventHandler<
+    onRightClick: IEventHandler<
       (
         entity: Entity | null,
         location: MapClickLocation,
         screenPosition?: Cartesian2,
       ) => void
     >;
-    onDblClick: EventHandler<
+    onContextMenu: IEventHandler<
+      (
+        entity: Entity,
+        location: MapClickLocation,
+        screenPosition?: Cartesian2,
+        contextMenuParams?: unknown,
+      ) => void
+    >;
+    onDblClick: IEventHandler<
       (
         entity: Entity | null,
         location: MapClickLocation,
         screenPosition?: Cartesian2,
       ) => void
     >;
-    onLeftDown: EventHandler<
+    onLeftDown: IEventHandler<
       (
         entity: Entity | null,
         location: MapClickLocation,
         screenPosition?: Cartesian2,
       ) => void
     >;
-    onLeftUp: EventHandler<
+    onLeftUp: IEventHandler<
       (
         entity: Entity | null,
         location: MapClickLocation,
         screenPosition?: Cartesian2,
       ) => void
     >;
-    onRightDown: EventHandler<
+    onRightDown: IEventHandler<
       (
         entity: Entity | null,
         location: MapClickLocation,
         screenPosition?: Cartesian2,
       ) => void
     >;
-    onRightUp: EventHandler<
+    onRightUp: IEventHandler<
       (
         entity: Entity | null,
         location: MapClickLocation,
         screenPosition?: Cartesian2,
       ) => void
     >;
-    onChangePosition: EventHandler<(location: MapClickLocation | null) => void>;
-    onEntityChange: EventHandler<
+    onLongClick: IEventHandler<
+      (
+        entity: Entity | null,
+        location: MapClickLocation,
+        screenPosition?: Cartesian2,
+      ) => void
+    >;
+    onChangePosition: IEventHandler<(location: MapClickLocation | null) => void>;
+    onEntityChange: IEventHandler<
       (
         entity: Entity,
         status: EntityChangeStatus,
         collectionName: string,
       ) => void
     >;
-    onApiChange: EventHandler<(api: MapApi) => void>;
-    onEntityCreating: EventHandler<
+    onApiChange: IEventHandler<(api: MapApi) => void>;
+    onEntityCreating: IEventHandler<
       (options: Entity.ConstructorOptions, item: LayerData) => boolean | void
     >;
-    onEntityCreate: EventHandler<
+    onEntityCreate: IEventHandler<
       (
         type: RenderTypeFromRegistry<RendererRegistry>,
         item: LayerData,
@@ -838,8 +876,8 @@ export interface ViewerWithConfigs<
         layerId?: string,
       ) => Entity.ConstructorOptions | null
     >;
-    onMapReady: EventHandler<() => void>;
-    onLog: EventHandler<(entry: LogEntry) => void>;
+    onMapReady: IEventHandler<() => void>;
+    onLog: IEventHandler<(entry: LogEntry) => void>;
   };
   plugins: Record<string, BasePlugin>;
   accessors: IMapAccessors;

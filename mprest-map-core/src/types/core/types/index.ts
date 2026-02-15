@@ -5,3 +5,4 @@ export * from "./events";
 export * from "./extensions";
 export * from "./logging";
 export * from "./mapConfig";
+export * from "./contextMenu";

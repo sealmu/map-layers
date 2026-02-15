@@ -84,7 +84,15 @@ export { useCesiumViewer } from "./hooks/useCesiumViewer";
 // ============================================
 // Plugins
 // ============================================
-export { EntitySelectionPlugin } from "./plugins";
+export { EntitySelectionPlugin, ContextMenuPlugin } from "./plugins";
+export type {
+  ContextMenuItem,
+  ContextMenuData,
+  ContextMenuRenderInfo,
+  ContextMenuPluginOptions,
+} from "./plugins";
+export { ContextMenuRenderer } from "./plugins";
+export type { ContextMenuRendererProps } from "./plugins";
 
 // ============================================
 // Extension APIs

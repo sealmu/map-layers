@@ -1,5 +1,6 @@
 import {
   Cartesian2,
+  Cartesian3,
   Cartographic,
   Entity,
   defined,
@@ -42,7 +43,23 @@ export function handleMapClick<R extends RendererRegistry = RendererRegistry>({
   onClickPrevented,
 }: HandleMapClickOptions<R>): void {
   const location = getLocationFromPosition(viewer, position);
-  if (!location) return;
+  if (!location) {
+    // Off-globe click — still notify onClick subscribers for deselection
+    if (onClick) {
+      const fallback: MapClickLocation = {
+        cartesian: Cartesian3.ZERO,
+        cartographic: new Cartographic(0, 0, 0),
+        longitude: 0,
+        latitude: 0,
+        height: 0,
+      };
+      const result = onClick(null, fallback, undefined);
+      if (result === false) return;
+    }
+    setBypassSelectingCheck(viewer, null);
+    viewer.selectedEntity = undefined;
+    return;
+  }
 
   // Pick entity, skipping internal selection visuals (__ms_ prefix)
   let pickedEntity: Entity | null = null;

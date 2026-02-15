@@ -86,6 +86,11 @@ export interface UseClickHandlerOptions<
     location: MapClickLocation,
     screenPosition?: Cartesian2,
   ) => boolean | void;
+  onLongClick?: (
+    entity: Entity | null,
+    location: MapClickLocation,
+    screenPosition?: Cartesian2,
+  ) => boolean | void;
 }
 
 /**
@@ -104,6 +109,7 @@ export function useClickHandler<R extends RendererRegistry = RendererRegistry>({
   onLeftUp,
   onRightDown,
   onRightUp,
+  onLongClick,
 }: UseClickHandlerOptions<R>): void {
   // Store callbacks in refs so the effect doesn't re-run when they change
   const onClickRef = useRef(onClick);
@@ -116,6 +122,7 @@ export function useClickHandler<R extends RendererRegistry = RendererRegistry>({
   const onLeftUpRef = useRef(onLeftUp);
   const onRightDownRef = useRef(onRightDown);
   const onRightUpRef = useRef(onRightUp);
+  const onLongClickRef = useRef(onLongClick);
 
   // Keep refs in sync with latest callbacks
   onClickRef.current = onClick;
@@ -128,6 +135,7 @@ export function useClickHandler<R extends RendererRegistry = RendererRegistry>({
   onLeftUpRef.current = onLeftUp;
   onRightDownRef.current = onRightDown;
   onRightUpRef.current = onRightUp;
+  onLongClickRef.current = onLongClick;
 
   useEffect(() => {
     if (!viewer) return;
@@ -221,8 +229,15 @@ export function useClickHandler<R extends RendererRegistry = RendererRegistry>({
 
     const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
 
+    // Track whether a long-click consumed the current press so we can suppress LEFT_CLICK
+    let suppressNextClick = false;
+
     // Handle click events - we now control all selection
     handler.setInputAction((click: { position: Cartesian2 }) => {
+      if (suppressNextClick) {
+        suppressNextClick = false;
+        return;
+      }
       handleMapClick({
         viewer,
         position: click.position,
@@ -272,13 +287,60 @@ export function useClickHandler<R extends RendererRegistry = RendererRegistry>({
       handleSimpleEvent(click.position, onDblClickRef);
     }, ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
 
+    // Long-click detection state
+    const LONG_CLICK_DURATION = 500; // ms
+    const LONG_CLICK_MOVE_THRESHOLD = 10; // px
+    let longClickTimer: ReturnType<typeof setTimeout> | null = null;
+    let longClickStartPosition: Cartesian2 | null = null;
+    let longClickFired = false;
+
+    const cancelLongClick = () => {
+      if (longClickTimer !== null) {
+        clearTimeout(longClickTimer);
+        longClickTimer = null;
+      }
+      longClickStartPosition = null;
+    };
+
     handler.setInputAction((click: { position: Cartesian2 }) => {
       handleSimpleEvent(click.position, onLeftDownRef);
+
+      // Start long-click timer
+      cancelLongClick();
+      longClickFired = false;
+      longClickStartPosition = click.position.clone();
+      longClickTimer = setTimeout(() => {
+        longClickTimer = null;
+        longClickFired = true;
+        suppressNextClick = true;
+        if (onLongClickRef.current && longClickStartPosition) {
+          handleSimpleEvent(longClickStartPosition, onLongClickRef);
+        }
+        longClickStartPosition = null;
+      }, LONG_CLICK_DURATION);
     }, ScreenSpaceEventType.LEFT_DOWN);
 
     handler.setInputAction((click: { position: Cartesian2 }) => {
+      // If long click already fired, suppress the normal LEFT_UP
+      if (longClickFired) {
+        longClickFired = false;
+        cancelLongClick();
+        return;
+      }
+      cancelLongClick();
       handleSimpleEvent(click.position, onLeftUpRef);
     }, ScreenSpaceEventType.LEFT_UP);
+
+    // Cancel long-click if mouse moves too far
+    handler.setInputAction((movement: { endPosition: Cartesian2 }) => {
+      if (longClickStartPosition && longClickTimer !== null) {
+        const dx = movement.endPosition.x - longClickStartPosition.x;
+        const dy = movement.endPosition.y - longClickStartPosition.y;
+        if (Math.sqrt(dx * dx + dy * dy) > LONG_CLICK_MOVE_THRESHOLD) {
+          cancelLongClick();
+        }
+      }
+    }, ScreenSpaceEventType.MOUSE_MOVE);
 
     handler.setInputAction((click: { position: Cartesian2 }) => {
       handleSimpleEvent(click.position, onRightDownRef);
@@ -289,6 +351,7 @@ export function useClickHandler<R extends RendererRegistry = RendererRegistry>({
     }, ScreenSpaceEventType.RIGHT_UP);
 
     return () => {
+      cancelLongClick();
       handler.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
