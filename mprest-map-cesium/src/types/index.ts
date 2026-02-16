@@ -18,7 +18,7 @@ import {
   ImageryProvider,
   ImageryLayer,
 } from "cesium";
-import type { IMapAccessors, IDataManager, IEventHandler, EntityChangeStatus, LogEntry, IMapConfig, IBaseMapsApi, IFilterConfig, IClusteringConfig } from "@mprest/map-core";
+import type { IMapAccessors, IDataManager, IEventHandler, EntityChangeStatus, LogEntry, IMapConfig, IBaseMapsApi, IFilterConfig, IClusteringConfig, ICameraOrientation } from "@mprest/map-core";
 
 // Re-export core types for convenience (these are provider-agnostic)
 export type {
@@ -167,6 +167,7 @@ export abstract class BasePlugin<
     screenPosition?: Cartesian2,
   ) => boolean | void;
   onChangePosition?: (location: MapClickLocation | null) => boolean | void;
+  onOrientation?: (orientation: ICameraOrientation) => void;
   onEntityChange?: (
     entity: Entity,
     status: EntityChangeStatus,
@@ -565,6 +566,7 @@ export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {
     screenPosition?: Cartesian2,
   ) => boolean | void;
   onChangePosition?: (location: MapClickLocation | null) => boolean | void;
+  onOrientation?: (orientation: ICameraOrientation) => void;
   onMultiSelecting?: (selections: Entity[], entity: Entity) => boolean | void;
   onMultiSelect?: (entities: Entity[], prevEntities: Entity[], utils: { getScreenPosition: (entity: Entity) => Cartesian2 | undefined }) => void;
   onRenderMultiSelection?: (entity: Entity) => Entity.ConstructorOptions | null;
@@ -857,6 +859,7 @@ export interface ViewerWithConfigs<
       ) => void
     >;
     onChangePosition: IEventHandler<(location: MapClickLocation | null) => void>;
+    onOrientation: IEventHandler<(orientation: ICameraOrientation) => void>;
     onEntityChange: IEventHandler<
       (
         entity: Entity,

@@ -81,6 +81,7 @@ const CesiumMap = <R extends RendererRegistry>({
   onRightUp,
   onLongClick,
   onChangePosition,
+  onOrientation,
   onMultiSelecting,
   onMultiSelect,
   onRenderMultiSelection,
@@ -169,6 +170,7 @@ const CesiumMap = <R extends RendererRegistry>({
       onRightUp: createEventHandler(),
       onLongClick: createEventHandler(),
       onChangePosition: createEventHandler(),
+      onOrientation: createEventHandler(),
       onEntityChange: createEventHandler(),
       onApiChange: createEventHandler(),
       onEntityCreating: createEventHandler(),
@@ -184,7 +186,6 @@ const CesiumMap = <R extends RendererRegistry>({
     if (onLog) {
       newViewer.handlers.onLog.subscribe(onLog);
     }
-
     // Wire up global logger to route through onLog handler
     setLogHandler((entry) => {
       callAllSubscribers(newViewer.handlers.onLog, entry);
@@ -290,15 +291,8 @@ const CesiumMap = <R extends RendererRegistry>({
       // Update module-level API variable (viewer.api getter will return this)
       currentViewerApi = api;
 
-      // Notify parent component of API change
-      onApiChange?.(api);
-
-      // Emit API change event on viewer
-      viewer.handlers.onApiChange.subscribers.forEach((callback) => {
-        callback(api);
-      });
-
-      // Instantiate plugins when APIs are ready
+      // Instantiate plugins when APIs are ready (before emitting API change
+      // so consumers see plugins immediately on the triggered re-render)
       if (Object.keys(viewer.plugins).length === 0 && Object.keys(plugins).length > 0) {
         const map = { viewer };
         for (const [name, PluginClass] of Object.entries(plugins)) {
@@ -306,6 +300,14 @@ const CesiumMap = <R extends RendererRegistry>({
           viewer.plugins[name] = instance;
         }
       }
+
+      // Notify parent component of API change
+      onApiChange?.(api);
+
+      // Emit API change event on viewer
+      viewer.handlers.onApiChange.subscribers.forEach((callback) => {
+        callback(api);
+      });
 
     }
   }, [viewer, layers, renderers, featuresApi, plugins, onApiChange]);
@@ -330,6 +332,7 @@ const CesiumMap = <R extends RendererRegistry>({
     onRightUp,
     onLongClick,
     onChangePosition,
+    onOrientation,
     onEntityChange,
     onEntityCreating,
     onEntityCreate,

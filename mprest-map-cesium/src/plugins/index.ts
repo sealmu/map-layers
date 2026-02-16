@@ -7,3 +7,11 @@ export type {
   ContextMenuPluginOptions,
 } from "./ContextMenuPlugin";
 export { ContextMenuRenderer, type ContextMenuRendererProps } from "./components";
+export { OrientationGaugePlugin } from "./OrientationGaugePlugin";
+export type { OrientationGaugePluginOptions } from "./OrientationGaugePlugin";
+export {
+  OrientationGaugeRenderer,
+  type OrientationGaugeRendererProps,
+  createOrientationGaugeView,
+  type OrientationGaugeViewProps,
+} from "./components";

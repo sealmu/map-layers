@@ -10,7 +10,7 @@ import type {
   LogEntry,
 } from "../types";
 import type { IMapEntity, EntityChangeStatus } from "./IMapEntity";
-import type { ICoordinate, IScreenPosition } from "../types/coordinates";
+import type { ICoordinate, IScreenPosition, ICameraOrientation } from "../types/coordinates";
 
 /**
  * Provider-agnostic click location
@@ -52,6 +52,7 @@ export interface IViewerHandlers {
     (entity: IMapEntity | null, location: IClickLocation) => void
   >;
   onChangePosition: IEventHandler<(location: IClickLocation | null) => void>;
+  onOrientation: IEventHandler<(orientation: ICameraOrientation) => void>;
   onEntityChange: IEventHandler<
     (entity: IMapEntity, status: EntityChangeStatus, layerName: string) => void
   >;

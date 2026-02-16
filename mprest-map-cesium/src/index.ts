@@ -84,15 +84,16 @@ export { useCesiumViewer } from "./hooks/useCesiumViewer";
 // ============================================
 // Plugins
 // ============================================
-export { EntitySelectionPlugin, ContextMenuPlugin } from "./plugins";
+export { EntitySelectionPlugin, ContextMenuPlugin, OrientationGaugePlugin } from "./plugins";
 export type {
   ContextMenuItem,
   ContextMenuData,
   ContextMenuRenderInfo,
   ContextMenuPluginOptions,
+  OrientationGaugePluginOptions,
 } from "./plugins";
-export { ContextMenuRenderer } from "./plugins";
-export type { ContextMenuRendererProps } from "./plugins";
+export { ContextMenuRenderer, OrientationGaugeRenderer, createOrientationGaugeView } from "./plugins";
+export type { ContextMenuRendererProps, OrientationGaugeRendererProps, OrientationGaugeViewProps } from "./plugins";
 
 // ============================================
 // Extension APIs
@@ -122,6 +123,10 @@ export type {
   ClusterHoverState,
   ClusterClickEvent,
 } from "./extensions/features/useCluster";
+
+export type {
+  OrientationApi,
+} from "./extensions/features/useOrientation";
 
 // ============================================
 // Types

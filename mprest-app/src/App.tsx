@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect, useRef } from "react";
+import { useMemo, useState, useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
 import { Cartesian2, Entity, JulianDate, OpenStreetMapImageryProvider, PropertyBag, UrlTemplateImageryProvider } from "cesium";
 
@@ -13,6 +13,7 @@ import {
   useCesiumViewer,
   EntitySelectionPlugin,
   ContextMenuPlugin,
+  OrientationGaugePlugin,
   type AppContentProps,
   type LayerData,
   type LayeredDataWithPayload,
@@ -161,6 +162,15 @@ function AppContent({
   const contextMenuPlugin = viewer?.plugins?.["contextMenu"] as ContextMenuPlugin | undefined;
   contextMenuPlugin?.actions.configure({ contextProp: "contextMenu" });
 
+  // Force re-render when API (and plugins) become ready
+  const [, setApiReady] = useState(0);
+  useLayoutEffect(() => {
+    if (!viewer?.handlers?.onApiChange) return;
+    return viewer.handlers.onApiChange.subscribe(() => setApiReady((n) => n + 1));
+  }, [viewer]);
+
+  const orientationGaugePlugin = viewer?.plugins?.["orientationGauge"] as OrientationGaugePlugin | undefined;
+
   const [popupInfo, setPopupInfo] = useState<EntityPopupInfo | null>(null);
   const [popupDimensions] = useState({ width: 350, height: 250 });
   const [currentPosition, setCurrentPosition] = useState<MapClickLocation | null>(null);
@@ -189,6 +199,7 @@ function AppContent({
     stickyInfo: StickyInfoPlugin,
     tracer: TracerPlugin,
     contextMenu: ContextMenuPlugin,
+    orientationGauge: OrientationGaugePlugin,
   }), []);
 
   // Subscribe to plugin events
@@ -714,6 +725,7 @@ function AppContent({
           onAction={handleClusterAction}
           onAllActions={handleClusterAllActions}
         />
+        {orientationGaugePlugin && <orientationGaugePlugin.Renderer />}
         <PositionInfoBar position={currentPosition} />
 
         {viewer && <DataConnector

@@ -1,7 +1,8 @@
-export { ContextMenuRenderer, type ContextMenuRendererProps } from "./ContextMenu";
 export {
   OrientationGaugeRenderer,
   type OrientationGaugeRendererProps,
+} from "./OrientationGaugeRenderer";
+export {
   createOrientationGaugeView,
   type OrientationGaugeViewProps,
-} from "./OrientationGauge";
+} from "./createOrientationGaugeView";

@@ -85,6 +85,8 @@ export interface IMapProviderEvents {
     location: IMapClickLocation | null,
   ) => boolean | void;
 
+  onOrientation: (orientation: ICameraOrientation) => void;
+
   onEntityChange: (
     entity: IMapEntity,
     status: EntityChangeStatus,

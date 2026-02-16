@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useClickHandler } from "./useClickHandler";
 import { usePositionHandler } from "./usePositionHandler";
+import { useOrientationHandler } from "./useOrientationHandler";
 import type {
   ViewerWithConfigs,
   RendererRegistry,
@@ -12,6 +13,7 @@ import type {
 } from "../types";
 import { Entity, Cartesian2 } from "cesium";
 import { callAllSubscribers } from "@mprest/map-core";
+import type { ICameraOrientation } from "@mprest/map-core";
 
 function callPluginMethod(
   plugins: Record<string, BasePlugin>,
@@ -111,6 +113,7 @@ export interface BindHandlersOptions<
     location: MapClickLocation,
     screenPosition?: Cartesian2,
   ) => boolean | void;
+  onOrientation?: (orientation: ICameraOrientation) => void;
 }
 
 /**
@@ -137,6 +140,7 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
   onRightDown,
   onRightUp,
   onLongClick,
+  onOrientation,
 }: BindHandlersOptions<R>): {
   processEntityChange?: (
     entity: Entity,
@@ -210,7 +214,10 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
     if (onLongClick) {
       viewer.handlers.onLongClick.subscribe(onLongClick);
     }
-  }, [viewer, onClick, onSelecting, onClickPrevented, onSelected, onChangePosition, onEntityChange, onEntityCreating, onEntityCreate, onRightClick, onContextMenu, onDblClick, onLeftDown, onLeftUp, onRightDown, onRightUp, onLongClick]);
+    if (onOrientation) {
+      viewer.handlers.onOrientation.subscribe(onOrientation);
+    }
+  }, [viewer, onClick, onSelecting, onClickPrevented, onSelected, onChangePosition, onEntityChange, onEntityCreating, onEntityCreate, onRightClick, onContextMenu, onDblClick, onLeftDown, onLeftUp, onRightDown, onRightUp, onLongClick, onOrientation]);
 
   useClickHandler({
     viewer,
@@ -348,6 +355,15 @@ export function useBindHandlers<R extends RendererRegistry = RendererRegistry>({
           if (!callPluginMethod(viewer.plugins, "onChangePosition", location))
             return false;
           return callAllSubscribers(viewer.handlers.onChangePosition, location);
+        }
+      : undefined,
+  });
+
+  useOrientationHandler({
+    viewer,
+    onOrientation: viewer
+      ? (orientation: ICameraOrientation) => {
+          callAllSubscribers(viewer.handlers.onOrientation, orientation);
         }
       : undefined,
   });
