@@ -725,7 +725,9 @@ function AppContent({
           onAction={handleClusterAction}
           onAllActions={handleClusterAllActions}
         />
-        {orientationGaugePlugin && <orientationGaugePlugin.Renderer />}
+        {orientationGaugePlugin && (
+          <orientationGaugePlugin.Renderer />
+        )}
         <PositionInfoBar position={currentPosition} />
 
         {viewer && <DataConnector
