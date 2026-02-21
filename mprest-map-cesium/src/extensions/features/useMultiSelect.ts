@@ -265,12 +265,12 @@ function isEntityVisibleOnScreen(viewer: ViewerWithConfigs, entity: Entity): boo
   return false;
 }
 
-const SELECTION_PADDING = 16;
-const DEFAULT_SELECTION_SIZE = 40;
+const SELECTION_GAP = 4; // total extra pixels added to entity diameter (2px gap per side)
+const DEFAULT_ENTITY_SIZE = 32; // fallback pixel size for entities with unknown dimensions
 const SELECTION_Z_OFFSET = 5; // meters above original to avoid z-fighting
 
 // Modern selection color palette
-const SELECTION_COLOR = Color.fromCssColorString("#29B6F6"); // Light Blue 400
+const SELECTION_COLOR = Color.fromCssColorString("#EF5350"); // Red 400
 const SELECTION_GLOW_COLOR = SELECTION_COLOR.withAlpha(0.15);
 const SELECTION_RING_COLOR = SELECTION_COLOR.withAlpha(0.9);
 const SELECTION_DASH_MATERIAL = new PolylineDashMaterialProperty({
@@ -281,47 +281,43 @@ const SELECTION_DASH_MATERIAL = new PolylineDashMaterialProperty({
 
 
 function calculateEntityPixelSize(entity: Entity): number {
-  let maxSize = 0;
-
-  // Point graphics — pixelSize is in pixels
+  // Point with visible size — selection wraps the point marker, ignoring label text
   if (entity.point) {
     const px = getPropertyValue<number>(entity.point.pixelSize);
-    if (px) maxSize = Math.max(maxSize, px);
+    if (px && px > 3) {
+      const outlineWidth = getPropertyValue<number>(entity.point.outlineWidth) ?? 0;
+      return px + outlineWidth * 2;
+    }
   }
 
-  // Billboard graphics — width/height in pixels
+  // Billboard with known dimensions — selection wraps the billboard
   if (entity.billboard) {
     const w = getPropertyValue<number>(entity.billboard.width);
     const h = getPropertyValue<number>(entity.billboard.height);
-    const dim = Math.max(w ?? 0, h ?? 0);
-    if (dim > 0) maxSize = Math.max(maxSize, dim);
+    const scale = getPropertyValue<number>(entity.billboard.scale) ?? 1;
+    const dim = Math.max(w ?? 0, h ?? 0) * scale;
+    if (dim > 0) return dim;
   }
 
-  // Label graphics — estimate from font size and text length
+  // Label-only entities (or entities with tiny/hidden point markers like emoji labels)
   if (entity.label) {
     const font = getPropertyValue<string>(entity.label.font);
-    const text = getPropertyValue<string>(entity.label.text);
     if (font) {
       const match = font.match(/(\d+)(px|pt)/);
       if (match) {
         let fontSize = parseInt(match[1], 10);
         if (match[2] === "pt") fontSize = Math.round(fontSize * 1.33);
-        const charCount = text?.length ?? 5;
-        const estimatedWidth = charCount * fontSize * 0.6;
-        const estimatedHeight = fontSize * 1.2;
-        // Use diagonal of bounding box so the circle wraps the whole text
-        const diagonal = Math.sqrt(estimatedWidth ** 2 + estimatedHeight ** 2);
-        maxSize = Math.max(maxSize, diagonal);
+        return fontSize;
       }
     }
   }
 
   // Ellipse / model — no easy pixel conversion; use a generous fallback
   if (entity.ellipse || entity.model) {
-    maxSize = Math.max(maxSize, 60);
+    return 60;
   }
 
-  return maxSize > 0 ? maxSize + SELECTION_PADDING : DEFAULT_SELECTION_SIZE;
+  return DEFAULT_ENTITY_SIZE;
 }
 
 const CIRCLE_SEGMENTS = 64;
@@ -370,41 +366,54 @@ function generateCirclePositions(
   return positions;
 }
 
-/** Build the standard dashed-circle selection visual that dynamically follows entity position */
+// Cache for ring SVG data URIs keyed by rounded diameter
+const ringSvgCache = new Map<number, { svg: string; size: number }>();
+
+function getRingSvg(diameter: number): { svg: string; size: number } {
+  const key = Math.round(diameter);
+  const cached = ringSvgCache.get(key);
+  if (cached) return cached;
+
+  const strokeWidth = 2.5;
+  const padding = Math.ceil(strokeWidth) * 2;
+  const size = key + padding;
+  const cx = size / 2;
+  const r = key / 2;
+
+  const svg = `data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">` +
+    `<circle cx="${cx}" cy="${cx}" r="${r}" ` +
+    `fill="rgba(239,83,80,0.15)" ` +
+    `stroke="rgba(239,83,80,0.9)" stroke-width="${strokeWidth}" ` +
+    `stroke-dasharray="6,4"/>` +
+    `</svg>`,
+  )}`;
+
+  const result = { svg, size };
+  ringSvgCache.set(key, result);
+  return result;
+}
+
+/** Build a screen-space billboard selection ring that follows entity position */
 function buildCircleVisual(
   entityId: string,
   getPos: () => Cartesian3 | undefined,
-  viewer: ViewerWithConfigs,
+  _viewer: ViewerWithConfigs,
   pixelSize: number,
+  pixelOffset?: Cartesian2,
 ): Entity.ConstructorOptions {
-  const computeCirclePositions = (): Cartesian3[] => {
-    const pos = getPos();
-    if (!pos) return [];
-    const distance = Cartesian3.distance(viewer.camera.positionWC, pos);
-    const frustum = viewer.camera.frustum as { fov?: number };
-    const fov = frustum.fov ?? Math.PI / 3;
-    const metersPerPixel = distance * 2 * Math.tan(fov / 2) / viewer.scene.canvas.clientHeight;
-    const radiusMeters = ((pixelSize - SELECTION_PADDING + 4) / 2) * metersPerPixel;
-    const center = Cartographic.fromCartesian(pos);
-    const height = center.height + SELECTION_Z_OFFSET;
-    return generateCirclePositions(center, radiusMeters, height);
-  };
+  const ringDiameter = pixelSize + SELECTION_GAP;
+  const { svg, size } = getRingSvg(ringDiameter);
 
   return {
     id: `__ms_${entityId}`,
-    polygon: {
-      hierarchy: new CallbackProperty(() => new PolygonHierarchy(computeCirclePositions()), false),
-      material: SELECTION_GLOW_COLOR,
-      height: new CallbackProperty(() => {
-        const pos = getPos();
-        if (!pos) return 0;
-        return Cartographic.fromCartesian(pos).height + SELECTION_Z_OFFSET;
-      }, false),
-    },
-    polyline: {
-      positions: new CallbackProperty(computeCirclePositions, false),
-      width: 3,
-      material: SELECTION_DASH_MATERIAL,
+    position: new CallbackProperty(getPos, false) as unknown as Cartesian3,
+    billboard: {
+      image: svg,
+      width: size,
+      height: size,
+      pixelOffset: pixelOffset ?? Cartesian2.ZERO,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
     },
   };
 }
@@ -423,7 +432,7 @@ function createDefaultSelectionVisual(
         if (!h || h.positions.length === 0) return [];
         const { center, radius } = computeBoundingCircle(h.positions);
         const height = center.height + SELECTION_Z_OFFSET;
-        return generateCirclePositions(center, radius * 1.15, height);
+        return generateCirclePositions(center, radius * 1.05, height);
       };
       return {
         id: `__ms_${entity.id}`,
@@ -455,7 +464,7 @@ function createDefaultSelectionVisual(
       return Cartesian3.fromRadians(center.longitude, center.latitude, center.height);
     };
     if (getPos()) {
-      return buildCircleVisual(entity.id, getPos, viewer, DEFAULT_SELECTION_SIZE);
+      return buildCircleVisual(entity.id, getPos, viewer, DEFAULT_ENTITY_SIZE);
     }
   }
 
@@ -464,7 +473,14 @@ function createDefaultSelectionVisual(
   const getPos = () => entity.position?.getValue(viewer.clock.currentTime);
   if (!getPos()) return null;
 
-  return buildCircleVisual(entity.id, getPos, viewer, calculateEntityPixelSize(entity));
+  // When the point is hidden/tiny and a label with pixelOffset is the primary visual,
+  // pass the offset so the selection ring wraps the visible label, not the invisible point.
+  const pointSize = entity.point ? getPropertyValue<number>(entity.point.pixelSize) : undefined;
+  const labelOffset = (!pointSize || pointSize <= 3) && entity.label
+    ? getPropertyValue<Cartesian2>(entity.label.pixelOffset)
+    : undefined;
+
+  return buildCircleVisual(entity.id, getPos, viewer, calculateEntityPixelSize(entity), labelOffset);
 }
 
 /** Build a selection visual for a cluster billboard at a fixed world position */
@@ -474,8 +490,7 @@ function createClusterSelectionVisual(
   viewer: ViewerWithConfigs,
 ): Entity.ConstructorOptions {
   const getPos = () => clusterPosition;
-  // Clusters are typically larger than individual entities
-  const CLUSTER_VISUAL_SIZE = 60;
+  const CLUSTER_VISUAL_SIZE = 40;
   // buildCircleVisual prefixes with "__ms_", so strip it from our visualId
   const rawId = visualId.replace(/^__ms_/, "");
   return buildCircleVisual(rawId, getPos, viewer, CLUSTER_VISUAL_SIZE);
