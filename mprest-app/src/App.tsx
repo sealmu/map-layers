@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
-import { Cartesian2, Entity, JulianDate, OpenStreetMapImageryProvider, PropertyBag, UrlTemplateImageryProvider } from "cesium";
+import { Cartesian2, Cartesian3, Entity, JulianDate, OpenStreetMapImageryProvider, PropertyBag, UrlTemplateImageryProvider } from "cesium";
 
 import { useDroneAnimation, useDroneAnimation2 } from "./hooks/useDroneAnimation";
 import { useRadarAnimation } from "./hooks/useRadarAnimation";
@@ -436,7 +436,7 @@ function AppContent({
     clusteredEntities: Entity[],
     cluster: { billboard: unknown; label: unknown; point: unknown },
   ) => {
-    const billboard = cluster.billboard as { show: boolean; image: unknown; id: unknown };
+    const billboard = cluster.billboard as { show: boolean; image: unknown; id: unknown; position?: unknown };
     const label = cluster.label as { show: boolean };
     const point = cluster.point as { show: boolean };
 
@@ -450,6 +450,7 @@ function AppContent({
         name: e.name ?? String(e.id),
         type: e.properties?.getValue?.(JulianDate.now())?.rendererType as string | undefined,
       })),
+      position: billboard.position as Cartesian3 | undefined,
     } as ClusterBillboardId;
 
     label.show = false;

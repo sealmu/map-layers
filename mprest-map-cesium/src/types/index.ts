@@ -466,6 +466,8 @@ export interface ClusterBillboardId {
   isCluster: true;
   layerId: string;
   entities: Array<{ id: string; name: string; type?: string }>;
+  /** World position of the cluster billboard, captured during cluster rendering */
+  position?: Cartesian3;
 }
 
 export interface CesiumMapProps<R extends RendererRegistry = RendererRegistry> {

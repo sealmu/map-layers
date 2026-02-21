@@ -111,11 +111,12 @@ function pickEntityAtPosition(
   return null;
 }
 
-/** Pick entities at a screen position, resolving cluster billboards to their contained entities */
+/** Pick entities at a screen position, resolving cluster billboards to their contained entities.
+ *  Also returns the cluster billboard position when a cluster was picked. */
 function pickEntitiesAtPosition(
   viewer: ViewerWithConfigs,
   screenPosition: Cartesian2,
-): Entity[] {
+): { entities: Entity[]; clusterPosition?: Cartesian3; clusterEntityIds?: string[] } {
   const picks = viewer.scene.drillPick(screenPosition);
   for (const pick of picks) {
     if (!defined(pick)) continue;
@@ -128,15 +129,19 @@ function pickEntitiesAtPosition(
         const entity = findEntityById(viewer, entry.id);
         if (entity) entities.push(entity);
       }
-      return entities;
+      return {
+        entities,
+        clusterPosition: clusterData.position,
+        clusterEntityIds: clusterData.entities.map((e) => e.id),
+      };
     }
     // Regular entity
     if (id instanceof Entity) {
       if (typeof id.id === "string" && id.id.startsWith("__ms_")) continue;
-      return [id];
+      return { entities: [id] };
     }
   }
-  return [];
+  return { entities: [] };
 }
 
 function isPositionInRect(pos: Cartesian3, rect: SelectRectangle): boolean {
@@ -513,6 +518,12 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
   const isMultiSelectRef = useRef(enabled);
   const modifierHeldRef = useRef(false);
   const [clusterVersion, setClusterVersion] = useState(0);
+  // Maps entity ID → cluster billboard world position.
+  // Populated from event handlers (rubber band, click, moveEnd) where
+  // scene.pick() works reliably; consumed by the rendering effect.
+  const clusterEntityPositionsRef = useRef<Map<string, Cartesian3>>(new Map());
+  const selectedMapRef = useRef(selectedMap);
+  selectedMapRef.current = selectedMap;
 
   // Sync multi-select mode with the enabled prop
   useEffect(() => {
@@ -589,6 +600,52 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
     };
   }, [enabled, cesiumViewer]);
 
+  // Listen to cluster events on ALL data sources to keep the entity→position
+  // map up-to-date.  This fires whenever Cesium (re)creates cluster billboards
+  // (zoom, pan, data change), giving us the billboard position directly — no
+  // scene.pick() needed.
+  useEffect(() => {
+    if (!enabled || !cesiumViewer) return;
+
+    const removers: (() => void)[] = [];
+
+    const attachClusterListeners = () => {
+      // Remove previous listeners
+      removers.forEach((r) => r());
+      removers.length = 0;
+
+      for (let i = 0; i < cesiumViewer.dataSources.length; i++) {
+        const ds = cesiumViewer.dataSources.get(i);
+        if (ds.name === DATASOURCE_NAME) continue;
+        if (!ds.clustering?.enabled) continue;
+
+        const remove = ds.clustering.clusterEvent.addEventListener(
+          (_clusteredEntities: Entity[], cluster: { billboard: { id?: unknown; position?: Cartesian3 } }) => {
+            const bbId = cluster.billboard?.id as ClusterBillboardId | undefined;
+            const pos = cluster.billboard?.position;
+            if (!bbId || !pos) return;
+            for (const entry of bbId.entities) {
+              clusterEntityPositionsRef.current.set(entry.id, pos);
+            }
+          },
+        );
+        removers.push(remove);
+      }
+    };
+
+    attachClusterListeners();
+
+    // Re-attach when data sources change
+    const removeAdded = cesiumViewer.dataSources.dataSourceAdded.addEventListener(() => attachClusterListeners());
+    const removeRemoved = cesiumViewer.dataSources.dataSourceRemoved.addEventListener(() => attachClusterListeners());
+
+    return () => {
+      removers.forEach((r) => r());
+      removeAdded();
+      removeRemoved();
+    };
+  }, [enabled, cesiumViewer]);
+
   // Re-evaluate selection visuals when camera stops moving (clustering may have changed)
   useEffect(() => {
     if (!enabled || !cesiumViewer) return;
@@ -623,7 +680,15 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
     const processClick = (click: { position: Cartesian2 }, isMultiMode: boolean) => {
       if (!isMultiSelectRef.current) return;
 
-      const pickedEntities = pickEntitiesAtPosition(cesiumViewer, click.position);
+      const pickResult = pickEntitiesAtPosition(cesiumViewer, click.position);
+      const pickedEntities = pickResult.entities;
+
+      // Store cluster billboard position for visual rendering
+      if (pickResult.clusterPosition && pickResult.clusterEntityIds) {
+        for (const eid of pickResult.clusterEntityIds) {
+          clusterEntityPositionsRef.current.set(eid, pickResult.clusterPosition);
+        }
+      }
 
       if (pickedEntities.length > 0) {
         if (isMultiMode) {
@@ -693,12 +758,12 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
       if (!isMultiSelectRef.current) return;
       if (modifier && !modifierHeldRef.current) return;
 
-      const pickedEntities = pickEntitiesAtPosition(cesiumViewer, click.position);
-      if (pickedEntities.length === 0) return;
+      const pickResult = pickEntitiesAtPosition(cesiumViewer, click.position);
+      if (pickResult.entities.length === 0) return;
 
       // Collect all entities matched by the dblClickAction for each picked entity
       const matched = new Map<string, Entity>();
-      for (const picked of pickedEntities) {
+      for (const picked of pickResult.entities) {
         for (const e of findEntitiesByAction(cesiumViewer, picked, dblClickAction)) {
           matched.set(e.id, e);
         }
@@ -748,47 +813,27 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
     });
 
     // Collect selected entities that are NOT visible (hidden by clustering)
-    const selectedIds = new Set(selectedMap.keys());
     const clusteredEntities: Entity[] = [];
     selectedMap.forEach((entity, id) => {
       if (!shouldShowVisual.has(id)) clusteredEntities.push(entity);
     });
 
-    // Scan for cluster billboards containing selected entities
+    // Build cluster visuals from positions captured by event handlers
+    // (rubber band, click, moveEnd) — no scene.pick() needed here.
     const clusterVisuals: Array<{ visualId: string; position: Cartesian3 }> = [];
-    const foundClusterKeys = new Set<string>();
+    const seenPositions = new Set<string>();
     let clusterIdx = 0;
 
-    const SEARCH_RADIUS = 150;
-    const SEARCH_STEP = 40;
     for (const entity of clusteredEntities) {
-      const pos = entity.position?.getValue(cesiumViewer.clock.currentTime);
-      if (!pos) continue;
-      const screenPos = cesiumViewer.scene.cartesianToCanvasCoordinates(pos);
-      if (!screenPos) continue;
+      const bbPosition = clusterEntityPositionsRef.current.get(entity.id);
+      if (!bbPosition) continue;
+      // Deduplicate: one visual per unique cluster billboard position
+      const posKey = `${bbPosition.x},${bbPosition.y},${bbPosition.z}`;
+      if (seenPositions.has(posKey)) continue;
+      seenPositions.add(posKey);
 
-      let found = false;
-      // Spiral outward: check center first, then expand
-      for (let dx = 0; Math.abs(dx) <= SEARCH_RADIUS && !found; dx = dx <= 0 ? -dx + SEARCH_STEP : -dx) {
-        for (let dy = 0; Math.abs(dy) <= SEARCH_RADIUS && !found; dy = dy <= 0 ? -dy + SEARCH_STEP : -dy) {
-          const picked = cesiumViewer.scene.pick(new Cartesian2(screenPos.x + dx, screenPos.y + dy));
-          if (!picked) continue;
-          const pickId = picked.id as ClusterBillboardId | undefined;
-          if (!pickId || typeof pickId !== "object" || !pickId.isCluster) continue;
-          if (!pickId.entities.some((e) => selectedIds.has(e.id))) continue;
-
-          const key = pickId.entities.map((e) => e.id).sort().join(",");
-          if (foundClusterKeys.has(key)) { found = true; continue; }
-          foundClusterKeys.add(key);
-
-          const bbPosition = (picked.primitive as { position?: Cartesian3 })?.position;
-          if (!bbPosition) continue;
-
-          const visualId = `__ms_cluster_${clusterIdx++}`;
-          clusterVisuals.push({ visualId, position: bbPosition });
-          found = true;
-        }
-      }
+      const visualId = `__ms_cluster_${clusterIdx++}`;
+      clusterVisuals.push({ visualId, position: bbPosition });
     }
 
     // Add cluster visual IDs to the expected set
@@ -1012,7 +1057,12 @@ const useMultiSelect = (ctx: ExtensionContext): MultiSelectApi => {
           const id = pick.id as { isCluster?: boolean } | undefined;
           if (id && typeof id === "object" && "isCluster" in id && id.isCluster) {
             const clusterData = id as ClusterBillboardId;
+            // Capture cluster billboard position for visual rendering
+            const clusterPos = clusterData.position;
             for (const entry of clusterData.entities) {
+              if (clusterPos) {
+                clusterEntityPositionsRef.current.set(entry.id, clusterPos);
+              }
               if (alreadyFound.has(entry.id)) continue;
               const entity = findEntityById(cesiumViewer, entry.id);
               if (entity) {
